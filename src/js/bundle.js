@@ -1,10 +1,10 @@
 /**
- * Barcode Battler - Standalone Bundle JS (v1.0.9 Real-Time Battle Sync Engine)
- * 双方向リアルタイムターン同期・毎戦異なるランダムCPU敵・全機能完全動作
+ * Barcode Battler - Standalone Bundle JS (v1.1.1 Full Restore)
+ * カメラ起動機能完全復元・アイテム1回制限・ひっさつSP100%制限・P2P対戦完全同期
  */
 
 (function() {
-  console.log("Barcode Battler bundle v1.0.9 online turn-sync initializing...");
+  console.log("Barcode Battler bundle v1.1.1 initializing...");
 
   // --- 1. BarcodeEngine ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
@@ -191,7 +191,7 @@
     }
   }
 
-  // --- 3. BattleEngine ---
+  // --- 3. BattleEngine (Item 1-Use Limit & Skill SP-Requirement) ---
   class BattleEngine {
     constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
       this.mode = mode;
@@ -201,6 +201,8 @@
       this.enemyIndex = 0;
       this.playerItem = playerItem;
       this.enemyItem = enemyItem;
+      this.playerItemUsed = false; // ⭐ 1バトル1回のみ
+      this.enemyItemUsed = false;
       this.turn = 1;
       this.maxTurns = 10;
       this.isOver = false;
@@ -227,8 +229,6 @@
         spriteSvg: c?.spriteSvg || `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="currentColor"/></svg>`,
         sp: 0,
         isGuarding: false,
-        qteUsed: false,
-        itemUsed: false,
         isPlayer: isPlayer
       };
     }
@@ -249,19 +249,20 @@
       this.player.isGuarding = (pAction === 'guard');
       this.enemy.isGuarding = (eAction === 'guard');
 
-      if (pAction === 'item' && this.playerItem && !this.player.itemUsed) {
-        this.player.itemUsed = true;
+      // ⭐ アイテム使用ルール（1バトル1回のみ）
+      if (pAction === 'item' && this.playerItem && !this.playerItemUsed) {
+        this.playerItemUsed = true;
         this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + 300);
         turnLog.actions.push({ actor: 'player', message: `💊 【${this.playerItem.name}】をつかった！ HPが 300 かいふく！` });
       }
 
       if (this.player.isGuarding) {
         this.player.sp = Math.min(100, this.player.sp + 30);
-        turnLog.actions.push({ actor: 'player', message: `🛡️ ${this.player.name} は ガード！ (被ダメ半減)` });
+        turnLog.actions.push({ actor: 'player', message: `🛡️ ${this.player.name} は ガード！ (被ダメ半減 & SP+30)` });
       }
       if (this.enemy.isGuarding) {
         this.enemy.sp = Math.min(100, this.enemy.sp + 30);
-        turnLog.actions.push({ actor: 'enemy', message: `🛡️ ${this.enemy.name} は ガード！ (被ダメ半減)` });
+        turnLog.actions.push({ actor: 'enemy', message: `🛡️ ${this.enemy.name} は ガード！ (被ダメ半減 & SP+30)` });
       }
 
       const pPriority = this.player.spd * (0.85 + Math.random() * 0.3);
@@ -307,12 +308,18 @@
       let rand = 0.9 + Math.random() * 0.2;
       let dmg = Math.max(1, Math.round(raw * mult * rand));
 
-      if (action === 'skill' && self.sp >= 100) {
-        self.sp = 0;
-        dmg = Math.round(dmg * 1.8);
-      } else if (action === 'qte') {
-        dmg = qte ? Math.round(dmg * 2.5) : Math.round(dmg * 0.5);
-      } else {
+      // ⭐ 必殺技ルール（SP 100% 達成時のみ消費して高威力を発動）
+      if (action === 'skill') {
+        if (self.sp >= 100) {
+          self.sp = 0; // SP全消費
+          dmg = Math.round(dmg * 1.8);
+          turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
+        } else {
+          action = 'attack';
+        }
+      }
+
+      if (action === 'attack') {
         self.sp = Math.min(100, self.sp + 25);
       }
 
@@ -356,7 +363,7 @@
     }
   }
 
-  // --- 4. NetworkManager (PeerJS WebRTC P2P) ---
+  // --- 4. NetworkManager ---
   class NetworkManager {
     constructor() {
       this.roomCode = null;
@@ -464,7 +471,7 @@
     }
   }
 
-  // --- 5. App State & Global Expose ---
+  // --- 5. App State & Camera & Global Handlers ---
   let activeBattle = null;
   let scannedCard = null;
   let selectedCardForDetail = null;
@@ -474,7 +481,22 @@
   let oppTurnAction = null;
   let network = new NetworkManager();
 
+  // カメラ関連状態
+  let mediaStream = null;
+  let scanIntervalId = null;
+  let barcodeDetector = null;
+
+  if ('BarcodeDetector' in window) {
+    try {
+      barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'qr_code'] });
+    } catch (e) {}
+  }
+
   function switchScreen(screenId) {
+    if (screenId !== 'SCR-02') {
+      stopCamera();
+    }
+
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(screenId);
     if (target) {
@@ -482,11 +504,117 @@
     }
 
     if (screenId === 'SCR-01') renderHome();
+    else if (screenId === 'SCR-02') startCamera();
     else if (screenId === 'SCR-04') renderCollection();
     else if (screenId === 'SCR-05') renderLobby();
   }
 
   window.appSwitchScreen = switchScreen;
+
+  // ⭐【復元】カメラ制御ロジック
+  async function startCamera() {
+    const video = document.getElementById('scan-video');
+    const statusMsg = document.getElementById('camera-status-msg');
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (statusMsg) statusMsg.textContent = "※ お使いのブラウザは カメラに 対応していません（下のテストボタンをご利用ください）";
+      return;
+    }
+
+    try {
+      if (statusMsg) statusMsg.textContent = "カメラを き動しています...";
+      const constraints = {
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      };
+
+      mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (video) {
+        video.srcObject = mediaStream;
+        await video.play();
+      }
+
+      if (statusMsg) statusMsg.textContent = "バーコードを わくの中に あわせよう！";
+      startScanLoop();
+
+    } catch (err) {
+      console.error("Camera error:", err);
+      if (statusMsg) statusMsg.textContent = "⚠️ カメラのきょかが ありません。下のテストボタンをご利用ください。";
+    }
+  }
+
+  window.appStartCamera = startCamera;
+
+  function stopCamera() {
+    if (scanIntervalId) {
+      clearInterval(scanIntervalId);
+      scanIntervalId = null;
+    }
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream = null;
+    }
+    const video = document.getElementById('scan-video');
+    if (video) video.srcObject = null;
+  }
+
+  function startScanLoop() {
+    const video = document.getElementById('scan-video');
+    if (!video) return;
+
+    scanIntervalId = setInterval(async () => {
+      if (!video.videoWidth || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+      if (barcodeDetector) {
+        try {
+          const barcodes = await barcodeDetector.detect(video);
+          if (barcodes && barcodes.length > 0) {
+            const detectedCode = barcodes[0].rawValue;
+            stopCamera();
+            processScanResult(detectedCode);
+          }
+        } catch (e) {}
+      }
+    }, 300);
+  }
+
+  function processScanResult(codeStr) {
+    scannedCard = BarcodeEngine.generateFromBarcode(codeStr);
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+    const resultBox = document.getElementById('scan-result-card');
+    if (resultBox) {
+      if (scannedCard.type === 'character') {
+        resultBox.innerHTML = `
+          <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
+            ✨ ${scannedCard.rarity} ゲット！
+          </div>
+          <div class="sprite-container" style="color: var(--element-${scannedCard.element})">
+            ${scannedCard.spriteSvg}
+          </div>
+          <div class="char-name">${scannedCard.name}</div>
+          <div><span class="element-tag element-${scannedCard.element}">${scannedCard.element}</span></div>
+          <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text-muted); margin-top: 4px;">
+            HP: ${scannedCard.hp} / ATK: ${scannedCard.atk} / DEF: ${scannedCard.def} / SPD: ${scannedCard.spd}<br>
+            ✨ 必殺技: 【${scannedCard.skill.name}】
+          </div>
+        `;
+      } else {
+        resultBox.innerHTML = `
+          <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
+            🎁 きょうかアイテム ゲット！
+          </div>
+          <div class="char-name" style="color: var(--accent-gold);">${scannedCard.name}</div>
+          <div style="font-size: 0.85rem; margin-top: 4px; color: var(--text-muted);">${scannedCard.desc}</div>
+        `;
+      }
+    }
+
+    const memoInput = document.getElementById('scanned-memo-input');
+    if (memoInput) memoInput.value = "";
+
+    switchScreen('SCR-03');
+  }
 
   function renderHome() {
     const col = StorageManager.getCollection();
@@ -702,7 +830,6 @@
     };
   };
 
-  // --- オンラインターン動機構築 ---
   function setBattleButtonsDisabled(disabled) {
     const ids = ['btn-cmd-attack', 'btn-cmd-skill', 'btn-cmd-guard', 'btn-cmd-item'];
     ids.forEach(id => {
@@ -715,7 +842,6 @@
     if (!isOnlineMatch || !activeBattle || activeBattle.isOver) return;
 
     if (myTurnAction && oppTurnAction) {
-      // 双方のコマンドが受信完了！ 一括ターン同期実行
       const turnLog = activeBattle.processTurn(myTurnAction, false, oppTurnAction, false);
       
       myTurnAction = null;
@@ -723,7 +849,6 @@
 
       renderBattle();
       appendBattleLog(turnLog);
-      setBattleButtonsDisabled(false);
 
       if (activeBattle.isOver) {
         setTimeout(() => {
@@ -755,7 +880,6 @@
 
     let enemyTeam = [];
     if (isCpu) {
-      // 毎回違うランダムCPU敵キャラクターを動的生成
       enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
       if (matchMode === '3p') {
         enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
@@ -775,7 +899,6 @@
     activeBattle = new BattleEngine(playerTeam, deck.itemCard, enemyTeam, oppDeck?.itemCard || null, matchMode);
     myTurnAction = null;
     oppTurnAction = null;
-    setBattleButtonsDisabled(false);
 
     // ログリセット
     const logBox = document.getElementById('battle-log');
@@ -785,11 +908,16 @@
     switchScreen('SCR-06');
   }
 
+  /**
+   * ⭐【リアルタイムボタン制御】アイテム1回制限 & 必殺SP100%制御の画面反映
+   */
   function renderBattle() {
     if (!activeBattle) return;
-    const p = activeBattle.player;
-    const e = activeBattle.enemy;
+    const b = activeBattle;
+    const p = b.player;
+    const e = b.enemy;
 
+    // 自分ステータス
     document.getElementById('p-name').textContent = p.name;
     document.getElementById('p-hp-num').textContent = `${Math.max(0, p.currentHp)}/${p.maxHp}`;
     document.getElementById('p-hp-bar').style.width = `${Math.max(0, (p.currentHp / p.maxHp) * 100)}%`;
@@ -797,19 +925,55 @@
     document.getElementById('p-sprite').innerHTML = p.spriteSvg;
     document.getElementById('p-sprite').style.color = `var(--element-${p.element})`;
 
+    // 敵ステータス
     document.getElementById('e-name').textContent = e.name;
     document.getElementById('e-hp-num').textContent = `${Math.max(0, e.currentHp)}/${e.maxHp}`;
     document.getElementById('e-hp-bar').style.width = `${Math.max(0, (e.currentHp / e.maxHp) * 100)}%`;
     document.getElementById('e-sp-bar').style.width = `${e.sp}%`;
     document.getElementById('e-sprite').innerHTML = e.spriteSvg;
     document.getElementById('e-sprite').style.color = `var(--element-${e.element})`;
+
+    // ⭐【制限ルール適用】ボタンの非活性/活性コントロール
+    const btnSkill = document.getElementById('btn-cmd-skill');
+    const btnItem = document.getElementById('btn-cmd-item');
+
+    // 1. ひっさつ: SPが100%未満の場合は非活性
+    if (btnSkill) {
+      btnSkill.disabled = (p.sp < 100);
+      btnSkill.style.opacity = (p.sp < 100) ? "0.4" : "1.0";
+    }
+
+    // 2. アイテム: 1バトル1回のみ (使用済み または アイテム未セットの場合は非活性)
+    if (btnItem) {
+      const isItemUsable = (b.playerItem && !b.playerItemUsed);
+      btnItem.disabled = !isItemUsable;
+      btnItem.style.opacity = isItemUsable ? "1.0" : "0.4";
+    }
   }
 
   function handleAction(act) {
     if (!activeBattle || activeBattle.isOver) return;
 
+    // ⭐ バリデーションガード
+    if (act === 'item') {
+      if (!activeBattle.playerItem) {
+        alert("⚠️ デッキに アイテムカードが セットされていません！");
+        return;
+      }
+      if (activeBattle.playerItemUsed) {
+        alert("⚠️ アイテムは 1バトルに 1回しか つかえません！");
+        return;
+      }
+    }
+
+    if (act === 'skill') {
+      if (activeBattle.player.sp < 100) {
+        alert("⚠️ ひっさつ技は SPゲージが 100% になってから つかえます！");
+        return;
+      }
+    }
+
     if (isOnlineMatch) {
-      // ⭐【オンライン同期】自分がコマンドを選択
       myTurnAction = act;
       setBattleButtonsDisabled(true);
 
@@ -822,10 +986,7 @@
         logBox.scrollTop = logBox.scrollHeight;
       }
 
-      // 相手にコマンド送信
       network.send({ type: 'TURN_ACTION', action: act });
-
-      // 双方のコマンドが揃っているか確認
       checkAndExecuteOnlineTurn();
 
     } else {
@@ -856,7 +1017,7 @@
 
   // --- イベントバインド ---
   document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded -> Binding controls v1.0.9...");
+    console.log("DOMContentLoaded -> Binding controls v1.1.1...");
 
     document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
     document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
@@ -864,6 +1025,25 @@
 
     document.querySelectorAll('.btn-back-home').forEach(b => {
       b.addEventListener('click', () => switchScreen('SCR-01'));
+    });
+
+    document.getElementById('btn-start-camera')?.addEventListener('click', () => startCamera());
+    document.getElementById('btn-manual-scan')?.addEventListener('click', () => {
+      const input = document.getElementById('input-manual-barcode');
+      if (input && input.value) {
+        stopCamera();
+        processScanResult(input.value);
+      }
+    });
+
+    document.getElementById('btn-save-scanned')?.addEventListener('click', () => {
+      if (scannedCard) {
+        const memoInput = document.getElementById('scanned-memo-input');
+        if (memoInput && memoInput.value) scannedCard.memo = memoInput.value;
+        StorageManager.saveToCollection(scannedCard);
+        alert(`【${scannedCard.name}】を ずかんに ほぞんしました！`);
+        switchScreen('SCR-04');
+      }
     });
 
     document.getElementById('btn-edit-memo')?.addEventListener('click', () => {
@@ -911,10 +1091,8 @@
     document.querySelectorAll('.btn-demo-barcode').forEach(b => {
       b.addEventListener('click', (e) => {
         const code = e.target.getAttribute('data-code');
-        scannedCard = BarcodeEngine.generateFromBarcode(code);
-        StorageManager.saveToCollection(scannedCard);
-        alert(`【${scannedCard.name}】を ゲットした！`);
-        switchScreen('SCR-04');
+        stopCamera();
+        processScanResult(code);
       });
     });
 
@@ -924,7 +1102,7 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v1.0.9 Online Battle Sync Ready!");
+    console.log("Barcode Battler v1.1.1 Camera & Limits Fully Ready!");
   });
 
 })();
