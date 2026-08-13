@@ -1,10 +1,10 @@
 /**
- * Barcode Battler - Standalone Bundle JS (v1.1.2 Attack Unlocked & Rarity Stat Balance)
- * 「こうげき」毎ターン無制限化・SSR出現率3%厳選＆レアリティ別ステータス倍率（SSR: 1.6倍）適用
+ * Barcode Battler - Standalone Bundle JS (v1.1.3 Data Migration Engine)
+ * 過去に図鑑に保存した全キャラクターのパラメータを自動再計算・SSR1.6倍補正へ自動マイグレーション
  */
 
 (function() {
-  console.log("Barcode Battler bundle v1.1.2 initializing...");
+  console.log("Barcode Battler bundle v1.1.3 initializing with migration...");
 
   // --- 1. BarcodeEngine (Balanced Rarity & Stat Multipliers) ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
@@ -71,29 +71,27 @@
       // レアリティ判定の最適化 (SSR: 3%, SR: 12%, R: 35%, N: 50%)
       const rarityScore = (hash % 100);
       let rarity = "N";
-      let rarityMultiplier = 1.0; // パラメータ倍率
+      let rarityMultiplier = 1.0;
 
       if (rarityScore < 3) {
         rarity = "SSR";
-        rarityMultiplier = 1.60; // SSRは基礎能力1.60倍！
+        rarityMultiplier = 1.60;
       } else if (rarityScore < 15) {
         rarity = "SR";
-        rarityMultiplier = 1.35; // SRは1.35倍
+        rarityMultiplier = 1.35;
       } else if (rarityScore < 50) {
         rarity = "R";
-        rarityMultiplier = 1.15; // Rは1.15倍
+        rarityMultiplier = 1.15;
       } else {
         rarity = "N";
-        rarityMultiplier = 1.00; // Nは1.00倍
+        rarityMultiplier = 1.00;
       }
 
-      // 基礎ステータス計算
       const baseHp = 900 + ((digits[9] || 7) * 80) + ((digits[10] || 8) * 10);
       const baseAtk = 90 + ((digits[7] || 5) * 15) + (digits[8] || 6);
       const baseDef = 40 + ((digits[5] || 3) * 8) + (digits[6] || 4);
       const baseSpd = 10 + ((digits[3] || 1) * 4) + (digits[4] || 2);
 
-      // レアリティ倍率の適用
       const hp = Math.round(baseHp * rarityMultiplier);
       const atk = Math.round(baseAtk * rarityMultiplier);
       const def = Math.round(baseDef * rarityMultiplier);
@@ -129,9 +127,10 @@
     }
   }
 
-  // --- 2. StorageManager ---
+  // --- 2. StorageManager (With Auto Data Migration Engine) ---
   const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
   const STORAGE_KEY_DECK = "barcode_battler_deck";
+  const MIGRATION_VERSION_KEY = "barcode_battler_migrated_v1.1.3";
 
   class StorageManager {
     static getCollection() {
@@ -139,6 +138,50 @@
         const data = localStorage.getItem(STORAGE_KEY_COLLECTION);
         return data ? JSON.parse(data) : [];
       } catch (e) { return []; }
+    }
+
+    /**
+     * ⭐【データマイグレーション】既存の保存済みカードを最新の計算式(SSR 1.6倍)で自動再計算・更新
+     */
+    static migrateCollectionData() {
+      const isMigrated = localStorage.getItem(MIGRATION_VERSION_KEY);
+      if (isMigrated === "true") return;
+
+      console.log("Migrating existing collection cards to v1.1.3 stat multipliers...");
+      const collection = this.getCollection();
+      if (collection.length === 0) {
+        localStorage.setItem(MIGRATION_VERSION_KEY, "true");
+        return;
+      }
+
+      let updatedCount = 0;
+      const updatedCollection = collection.map(card => {
+        if (card.type === 'character' && card.barcode) {
+          // メモとIDと作成日時を保持したまま、最新のバランス計算式で再生成
+          const freshCard = BarcodeEngine.generateFromBarcode(card.barcode, card.memo || "");
+          freshCard.id = card.id; // ID維持
+          freshCard.createdAt = card.createdAt || new Date().toISOString();
+          updatedCount++;
+          return freshCard;
+        }
+        return card;
+      });
+
+      try {
+        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
+        localStorage.setItem(MIGRATION_VERSION_KEY, "true");
+
+        // デッキのカードも同期更新
+        const deck = this.getDeck();
+        if (deck.mainChar) deck.mainChar = updatedCollection.find(c => c.id === deck.mainChar.id) || deck.mainChar;
+        if (deck.subChar1) deck.subChar1 = updatedCollection.find(c => c.id === deck.subChar1.id) || deck.subChar1;
+        if (deck.subChar2) deck.subChar2 = updatedCollection.find(c => c.id === deck.subChar2.id) || deck.subChar2;
+        localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
+
+        console.log(`Successfully migrated ${updatedCount} character cards!`);
+      } catch (e) {
+        console.error("Migration error:", e);
+      }
     }
 
     static saveToCollection(card) {
@@ -924,9 +967,6 @@
     switchScreen('SCR-06');
   }
 
-  /**
-   * ⭐【リアルタイムボタン制御】「こうげき」は毎ターン何度でも使用可能！
-   */
   function renderBattle() {
     if (!activeBattle) return;
     const b = activeBattle;
@@ -949,7 +989,7 @@
     document.getElementById('e-sprite').innerHTML = e.spriteSvg;
     document.getElementById('e-sprite').style.color = `var(--element-${e.element})`;
 
-    // ⭐【修復】「こうげき」と「ガード」は毎ターン必ず活性化！
+    // 「こうげき」と「ガード」は毎ターン活性化
     const btnAttack = document.getElementById('btn-cmd-attack');
     const btnGuard = document.getElementById('btn-cmd-guard');
     if (btnAttack) { btnAttack.disabled = false; btnAttack.style.opacity = "1.0"; }
@@ -962,7 +1002,7 @@
       btnSkill.style.opacity = (p.sp < 100) ? "0.4" : "1.0";
     }
 
-    // 2. アイテム: 1バトル1回のみ (使用済み または アイテム未セットの場合は非活性)
+    // 2. アイテム: 1バトル1回のみ
     const btnItem = document.getElementById('btn-cmd-item');
     if (btnItem) {
       const isItemUsable = (b.playerItem && !b.playerItemUsed);
@@ -974,7 +1014,6 @@
   function handleAction(act) {
     if (!activeBattle || activeBattle.isOver) return;
 
-    // バリデーションガード
     if (act === 'item') {
       if (!activeBattle.playerItem) {
         alert("⚠️ デッキに アイテムカードが セットされていません！");
@@ -1037,7 +1076,10 @@
 
   // --- イベントバインド ---
   document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded -> Binding controls v1.1.2...");
+    console.log("DOMContentLoaded -> Binding controls v1.1.3...");
+
+    // ⭐【データマイグレーション実行】過去保存図鑑カードを自動で最新のSSR1.6倍能力値へ更新
+    StorageManager.migrateCollectionData();
 
     document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
     document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
@@ -1122,7 +1164,7 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v1.1.2 Unlimited Attack & Rarity Balanced!");
+    console.log("Barcode Battler v1.1.3 Auto Migration Engine Active & Ready!");
   });
 
 })();
