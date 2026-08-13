@@ -1,10 +1,10 @@
 /**
- * Barcode Battler - Standalone Bundle JS (v1.2.0 Deck Badges, DEF Display, 20-Turn 3P, & New Damage Formula)
- * デッキセット中バッジ・DEF表示・3P 20ターン化・比例減衰ダメージ計算式(防御力高でも安定打撃)
+ * Barcode Battler - Standalone Bundle JS (v1.2.1 Absolute P2P HP Sync & High-Damage Balance)
+ * ホスト一括計算＋確定HP/SP完全同期通信(TURN_RESULT) & 5〜7ターン爽快撃破ダメージ計算式
  */
 
 (function() {
-  console.log("Barcode Battler bundle v1.2.0 initializing...");
+  console.log("Barcode Battler bundle v1.2.1 initializing...");
 
   // --- 1. BarcodeEngine ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
@@ -242,7 +242,7 @@
     }
   }
 
-  // --- 3. BattleEngine (20-Turn 3P Limit & New Proportional Damage Formula) ---
+  // --- 3. BattleEngine (High-Damage Formula: 5~7 Turns to Defeat) ---
   class BattleEngine {
     constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
       this.mode = mode;
@@ -255,10 +255,7 @@
       this.playerItemUsed = false;
       this.enemyItemUsed = false;
       this.turn = 1;
-      
-      // ⭐【修正】1P対戦は10ターン、3P対戦は20ターンで終了
       this.maxTurns = (mode === '3p') ? 20 : 10;
-      
       this.isOver = false;
       this.winner = null;
     }
@@ -305,8 +302,8 @@
 
       if (pAction === 'item' && this.playerItem && !this.playerItemUsed) {
         this.playerItemUsed = true;
-        this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + 300);
-        turnLog.actions.push({ actor: 'player', message: `💊 【${this.playerItem.name}】をつかった！ HPが 300 かいふく！` });
+        this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + 400);
+        turnLog.actions.push({ actor: 'player', message: `💊 【${this.playerItem.name}】をつかった！ HPが 400 かいふく！` });
       }
 
       if (this.player.isGuarding) {
@@ -348,33 +345,33 @@
     }
 
     /**
-     * ⭐【修正】与ダメージ計算式の全面改修 (防御力が高くても安定してダメージが通る比例減衰式)
+     * ⭐【修正】爽快高ダメージ計算式 (5〜7ターンで100%決着)
      */
     _execAction({ action, qte, self, target }, turnLog) {
       if (self.currentHp <= 0 || target.currentHp <= 0) return;
       if (action === 'guard' || action === 'item') return;
 
-      if (Math.random() < 0.08 && action !== 'qte') {
+      if (Math.random() < 0.05 && action !== 'qte') {
         turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `${self.name} の こうげき！ しかし MISS!` });
         return;
       }
 
-      // 新ダメージ計算式: 比例減衰式 + 最低15%攻撃力保障
-      const baseDamage = self.atk * (100 / (100 + target.def * 0.8));
-      const minGuaranteed = self.atk * 0.15; // 攻撃力の15%はどんな高防御にも貫通
+      // 高ダメージ新計算式 (基礎火力1.5倍)
+      const baseDamage = self.atk * 1.5 * (120 / (120 + target.def * 0.5));
+      const minGuaranteed = self.atk * 0.35; // 最低でも攻撃力の35%は絶対打撃
       let raw = Math.max(minGuaranteed, baseDamage);
 
       let mult = (self.element === '火' && target.element === '木') ? 1.5 : 1.0;
       if (self.element === '木' && target.element === '水') mult = 1.5;
       if (self.element === '水' && target.element === '火') mult = 1.5;
 
-      let rand = 0.9 + Math.random() * 0.2;
+      let rand = 0.92 + Math.random() * 0.16;
       let dmg = Math.max(1, Math.round(raw * mult * rand));
 
       if (action === 'skill') {
         if (self.sp >= 100) {
           self.sp = 0;
-          dmg = Math.round(dmg * 1.8);
+          dmg = Math.round(dmg * 1.85); // 必殺技は大ダメージ
           turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
         } else {
           action = 'attack';
@@ -382,7 +379,7 @@
       }
 
       if (action === 'attack') {
-        self.sp = Math.min(100, self.sp + 25);
+        self.sp = Math.min(100, self.sp + 30);
       }
 
       if (target.isGuarding) dmg = Math.max(1, Math.round(dmg * 0.5));
@@ -697,9 +694,6 @@
     }
   }
 
-  /**
-   * ⭐【修正】図鑑一覧でDEF表示 ＆ デッキセット中ネオンバッジ表示
-   */
   function renderCollection() {
     const grid = document.getElementById('collection-grid-container');
     if (!grid) return;
@@ -714,8 +708,6 @@
 
     col.forEach(c => {
       const div = document.createElement('div');
-      
-      // デッキセット判定
       let slotBadgeHtml = "";
       let isSet = false;
 
@@ -869,10 +861,13 @@
     if (codeDisp) codeDisp.textContent = code;
 
     network.createRoom(code, deck, () => {}, (err) => { alert(err); renderLobby(); });
+    
+    // ⭐【通信同期プロトコル修復】ホスト側メッセージ受信処理
     network.onMessageCallback = (data) => {
       if (data.type === 'JOIN_REQUEST') {
         startBattle(false, data.guestDeck);
       } else if (data.type === 'TURN_ACTION') {
+        // ゲストからコマンド受信
         oppTurnAction = data.action;
         checkAndExecuteOnlineTurn();
       }
@@ -906,13 +901,14 @@
       isOnlineMatch = false;
     });
 
+    // ⭐【通信同期プロトコル修復】ゲスト側メッセージ受信処理 (ホストからの確定TURN_RESULTを全受け)
     network.onMessageCallback = (data) => {
       if (data.type === 'JOIN_ACCEPT') {
         if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
         startBattle(false, data.hostDeck);
-      } else if (data.type === 'TURN_ACTION') {
-        oppTurnAction = data.action;
-        checkAndExecuteOnlineTurn();
+      } else if (data.type === 'TURN_RESULT') {
+        // ⭐ ホスト側で一括計算された最新確定ステータスをそのまま同期！
+        applyHostTurnResultToGuest(data);
       }
     };
   };
@@ -925,17 +921,43 @@
     });
   }
 
+  /**
+   * ⭐【絶対HP同期】ホスト一括計算＆結果送信
+   */
   function checkAndExecuteOnlineTurn() {
     if (!isOnlineMatch || !activeBattle || activeBattle.isOver) return;
 
-    if (myTurnAction && oppTurnAction) {
+    // ホスト端末のみが唯一の正解(Authority)としてターンを一括計算！
+    if (network.isHost && myTurnAction && oppTurnAction) {
+      // myTurnAction = ホストの行動, oppTurnAction = ゲストの行動
       const turnLog = activeBattle.processTurn(myTurnAction, false, oppTurnAction, false);
       
+      const hostActionDone = myTurnAction;
+      const guestActionDone = oppTurnAction;
+
       myTurnAction = null;
       oppTurnAction = null;
 
       renderBattle();
       appendBattleLog(turnLog);
+
+      // ホスト計算後の「確定ステータス」をゲストにまるごと通信送信！
+      // ホストにとって player=自分, enemy=ゲスト
+      // ゲストにとって player=ゲスト, enemy=ホスト
+      const resultPayload = {
+        type: 'TURN_RESULT',
+        turnLog: turnLog,
+        hostHp: activeBattle.player.currentHp,
+        hostMaxHp: activeBattle.player.maxHp,
+        hostSp: activeBattle.player.sp,
+        guestHp: activeBattle.enemy.currentHp,
+        guestMaxHp: activeBattle.enemy.maxHp,
+        guestSp: activeBattle.enemy.sp,
+        isOver: activeBattle.isOver,
+        winner: activeBattle.winner // 'player'(ホスト勝利) or 'enemy'(ゲスト勝利)
+      };
+
+      network.send(resultPayload);
 
       if (activeBattle.isOver) {
         setTimeout(() => {
@@ -944,7 +966,37 @@
           network.disconnect();
           switchScreen('SCR-05');
         }, 1000);
+      } else {
+        setBattleButtonsDisabled(false);
       }
+    }
+  }
+
+  /**
+   * ⭐【絶対HP同期】ゲスト側でホストからの確定ステータスを受信反映
+   */
+  function applyHostTurnResultToGuest(data) {
+    if (!activeBattle) return;
+
+    // ゲストにとって自分は player, 相手(ホスト)は enemy
+    activeBattle.player.currentHp = data.guestHp;
+    activeBattle.player.sp = data.guestSp;
+    activeBattle.enemy.currentHp = data.hostHp;
+    activeBattle.enemy.sp = data.hostSp;
+    activeBattle.isOver = data.isOver;
+
+    renderBattle();
+    appendBattleLog(data.turnLog);
+    setBattleButtonsDisabled(false);
+
+    if (data.isOver) {
+      const isGuestWin = (data.winner === 'enemy');
+      setTimeout(() => {
+        alert(isGuestWin ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
+        isOnlineMatch = false;
+        network.disconnect();
+        switchScreen('SCR-05');
+      }, 1000);
     }
   }
 
@@ -1071,8 +1123,13 @@
         logBox.scrollTop = logBox.scrollHeight;
       }
 
-      network.send({ type: 'TURN_ACTION', action: act });
-      checkAndExecuteOnlineTurn();
+      if (network.isHost) {
+        // ホストの場合
+        checkAndExecuteOnlineTurn();
+      } else {
+        // ゲストの場合: ホストへ行動送信
+        network.send({ type: 'TURN_ACTION', action: act });
+      }
 
     } else {
       // CPU対戦
@@ -1102,7 +1159,7 @@
 
   // --- イベントバインド ---
   document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded -> Binding controls v1.2.0...");
+    console.log("DOMContentLoaded -> Binding controls v1.2.1...");
 
     StorageManager.migrateCollectionData();
 
@@ -1193,7 +1250,7 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v1.2.0 Full Improvements Ready!");
+    console.log("Barcode Battler v1.2.1 P2P HP Sync & High-Damage Balance Ready!");
   });
 
 })();
