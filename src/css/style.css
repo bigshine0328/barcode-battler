@@ -451,7 +451,7 @@ h1.logo {
   line-height: 1.4;
 }
 
-/* QTE モーダル */
+/* QTE & 詳細 モーダル */
 .qte-modal {
   position: absolute;
   top: 0;
@@ -459,16 +459,22 @@ h1.logo {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.88);
-  display: none;
+  display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 100;
   padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .qte-modal.active {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .qte-bar-container {

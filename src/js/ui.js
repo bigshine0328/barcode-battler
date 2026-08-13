@@ -11,9 +11,15 @@ export class UIController {
   constructor() {
     this.currentScreen = 'SCR-01';
     this.activeBattle = null;
-    this.network = new NetworkManager();
     this.scannedTempCard = null;
     this.selectedCardForDetail = null;
+
+    try {
+      this.network = new NetworkManager();
+    } catch (e) {
+      console.error("NetworkManager init fallback:", e);
+      this.network = { isConnected: false, disconnect: () => {}, send: () => {} };
+    }
 
     // 対戦設定
     this.matchMode = '1p'; // '1p' | '3p'
@@ -40,12 +46,17 @@ export class UIController {
   }
 
   init() {
-    this.bindNavigationEvents();
-    this.bindScanEvents();
-    this.bindDeckEvents();
-    this.bindLobbyEvents();
-    this.bindBattleEvents();
-    this.renderHome();
+    try {
+      this.bindNavigationEvents();
+      this.bindScanEvents();
+      this.bindDeckEvents();
+      this.bindLobbyEvents();
+      this.bindBattleEvents();
+      this.renderHome();
+      console.log("UIController fully initialized!");
+    } catch (err) {
+      console.error("UIController init error:", err);
+    }
   }
 
   switchScreen(screenId) {
