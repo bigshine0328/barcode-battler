@@ -1,6 +1,6 @@
 /**
- * Storage Manager Module
- * LocalStorageを使用したキャラクター・デッキの保存・管理（最大100体保存、メモ更新機能）
+ * Storage Manager Module (Updated)
+ * LocalStorageを使用したキャラクター・チームデッキの保存・管理（最大100体保存、メモ更新、1P/3Pスロットセット機能）
  */
 
 const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
@@ -27,14 +27,14 @@ export class StorageManager {
   static saveToCollection(card) {
     const collection = this.getCollection();
     
-    // 既存チェック（同じバーコード・IDが存在すれば更新）
+    // 既存チェック（同じID・バーコードが存在すれば更新）
     const existingIndex = collection.findIndex(c => c.id === card.id);
     if (existingIndex >= 0) {
       collection[existingIndex] = card;
     } else {
-      // 100体制限チェック：超過した場合は古いカードを先頭から削除
+      // 100体制限チェック：超過した場合は古いカードを先頭から自動削除
       if (collection.length >= MAX_COLLECTION_SIZE) {
-        collection.shift(); // 一番古いものを自動解放
+        collection.shift();
       }
       collection.push(card);
     }
@@ -63,38 +63,49 @@ export class StorageManager {
   }
 
   /**
-   * 現在選択中のデッキを取得
+   * 現在選択中のチームデッキを取得
    */
   static getDeck() {
+    let deck = {
+      mainChar: null,
+      subChar1: null,
+      subChar2: null,
+      itemCard: null
+    };
+
     try {
       const data = localStorage.getItem(STORAGE_KEY_DECK);
-      if (data) return JSON.parse(data);
+      if (data) deck = JSON.parse(data);
     } catch (e) {
       console.error("Failed to load deck:", e);
     }
     
-    // デッキ未設定の場合はコレクション内の最初のキャラを自動選択、無ければ初期デフォルトキャラ生成
     const collection = this.getCollection();
-    const firstChar = collection.find(c => c.type === "character");
-    const firstItem = collection.find(c => c.type === "item");
+    const chars = collection.filter(c => c.type === 'character');
+    const items = collection.filter(c => c.type === 'item');
 
-    return {
-      mainChar: firstChar || null,
-      subChar1: null,
-      subChar2: null,
-      itemCard: firstItem || null
-    };
+    // 自動デフォルト割り当て
+    if (!deck.mainChar && chars.length > 0) deck.mainChar = chars[0];
+    if (!deck.subChar1 && chars.length > 1) deck.subChar1 = chars[1];
+    if (!deck.subChar2 && chars.length > 2) deck.subChar2 = chars[2];
+    if (!deck.itemCard && items.length > 0) deck.itemCard = items[0];
+
+    return deck;
   }
 
   /**
-   * デッキを保存
+   * 特定のスロットにカードをセット
+   * @param {string} slotType - 'mainChar' | 'subChar1' | 'subChar2' | 'itemCard'
+   * @param {object} card 
    */
-  static saveDeck(deckObj) {
+  static setDeckSlot(slotType, card) {
+    const deck = this.getDeck();
+    deck[slotType] = card;
     try {
-      localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deckObj));
+      localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
       return true;
     } catch (e) {
-      console.error("Failed to save deck:", e);
+      console.error("Failed to set deck slot:", e);
       return false;
     }
   }

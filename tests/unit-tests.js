@@ -54,7 +54,7 @@ export function runAllTests() {
   }
 
   // 6. バトルエンジン処理テスト
-  const bEngine = new BattleEngine(char1, null, charDiff, null);
+  const bEngine = new BattleEngine([char1], null, [charDiff], null, '1p');
   const turnResult = bEngine.processTurn('attack', false, 'attack', false);
   assert(turnResult !== null, "バトルエンジン: 1ターン目のコマンド処理が正常に実行されること");
   assert(bEngine.turn === 2, "バトルエンジン: ターン数が加算されること");

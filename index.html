@@ -20,14 +20,18 @@
         <div id="home-count-badge" class="counter-badge">しょじ 0/100</div>
       </header>
 
+      <div style="margin-top: 10px; font-size: 0.85rem; font-weight: 800; color: var(--secondary-cyan); text-align: center;">
+        ⚔️ げんざいの「しゅつげきメインキャラ」
+      </div>
+
       <div id="home-showcase" class="char-showcase">
         <div style="color: var(--text-muted);">バーコードを スキャンして<br>キャラを ゲットしよう！</div>
       </div>
 
       <button id="btn-nav-scan" class="btn btn-primary">📷 バーコードをすきゃん！</button>
       <div class="btn-group">
-        <button id="btn-nav-deck" class="btn btn-secondary">📖 ずかん・デッキ</button>
-        <button id="btn-nav-battle" class="btn btn-gold">⚔️ たいせん</button>
+        <button id="btn-nav-deck" class="btn btn-secondary">📖 ずかん・デッキへんせい</button>
+        <button id="btn-nav-battle" class="btn btn-gold">⚔️ たいせんロビー</button>
       </div>
     </section>
 
@@ -48,7 +52,7 @@
         <div class="scan-laser"></div>
       </div>
 
-      <button id="btn-start-camera" class="btn btn-secondary" style="margin-top: 10px; font-size: 0.95rem; min-height: 46px;">
+      <button id="btn-start-camera" class="btn btn-secondary" style="margin-top: 10px; font-size: 0.95rem; min-height: 44px;">
         🎥 カメラを き動する
       </button>
 
@@ -84,19 +88,54 @@
       <button class="btn btn-dark btn-back-home">🏠 ホームへ もどる</button>
     </section>
 
-    <!-- SCR-04: 図鑑・所持一覧画面 -->
+    <!-- SCR-04: 図鑑 & デッキ編成画面 -->
     <section id="SCR-04" class="screen">
       <header>
         <button class="btn-back-home" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
-        <h1 class="logo" style="font-size:1.1rem;">📖 キャラずかん</h1>
+        <h1 class="logo" style="font-size:1.1rem;">📖 ずかん・デッキ</h1>
       </header>
 
-      <div style="font-size: 0.8rem; color: var(--text-muted); margin: 8px 0;">
-        ※カードをタップするとメモを編集できます（最大100体保存）。
+      <!-- タブ切替 -->
+      <div style="display: flex; gap: 6px; margin: 10px 0;">
+        <button id="tab-btn-collection" class="tab-btn active">📖 所持ずかん</button>
+        <button id="tab-btn-deck" class="tab-btn">⚔️ デッキへんせい</button>
       </div>
 
-      <div id="collection-grid-container" class="collection-grid">
-        <!-- JSで一覧描画 -->
+      <!-- ずかんビュー -->
+      <div id="view-collection-tab" style="display: flex; flex-direction: column; flex: 1;">
+        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 6px;">
+          ※カードをタップすると【能力詳細・効果・デッキセット】ができます。
+        </div>
+        <div id="collection-grid-container" class="collection-grid">
+          <!-- JSで一覧描画 -->
+        </div>
+      </div>
+
+      <!-- デッキへんせいビュー -->
+      <div id="view-deck-tab" style="display: none; flex-direction: column; flex: 1; gap: 10px;">
+        <div style="font-size: 0.85rem; color: var(--accent-gold); font-weight: 800;">
+          現在のチーム編成（カードをタップで変更）
+        </div>
+
+        <div class="deck-slot-box" id="slot-main-char">
+          <div class="slot-label">【メインキャラ (出撃)】</div>
+          <div class="slot-content" id="slot-content-main">未セット (ずかんから選択)</div>
+        </div>
+
+        <div class="deck-slot-box" id="slot-sub-char1">
+          <div class="slot-label">【サブキャラ 1 (3P用)】</div>
+          <div class="slot-content" id="slot-content-sub1">未セット (ずかんから選択)</div>
+        </div>
+
+        <div class="deck-slot-box" id="slot-sub-char2">
+          <div class="slot-label">【サブキャラ 2 (3P用)】</div>
+          <div class="slot-content" id="slot-content-sub2">未セット (ずかんから選択)</div>
+        </div>
+
+        <div class="deck-slot-box" id="slot-item-card">
+          <div class="slot-label">【強化アイテムカード】</div>
+          <div class="slot-content" id="slot-content-item">未セット (ずかんから選択)</div>
+        </div>
       </div>
     </section>
 
@@ -107,39 +146,62 @@
         <h1 class="logo" style="font-size:1.1rem;">⚔️ 対戦ロビー</h1>
       </header>
 
-      <div id="lobby-select-view" style="margin-top: 20px;">
-        <button id="btn-create-room" class="btn btn-primary" style="min-height: 70px;">
+      <div id="lobby-select-view" style="margin-top: 10px;">
+
+        <!-- 1P (1体) / 3P (3体チーム) モード選択 -->
+        <div style="background: var(--surface-color); padding: 12px; border-radius: 16px; border: 1px solid #2e3558; margin-bottom: 12px;">
+          <div style="font-size: 0.85rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 8px;">
+            🎮 対戦ルールを選択
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-mode-1p" class="mode-btn active">1P対戦 (1体勝負)</button>
+            <button id="btn-mode-3p" class="mode-btn">3P対戦 (3体チーム戦)</button>
+          </div>
+        </div>
+
+        <button id="btn-create-room" class="btn btn-primary" style="min-height: 60px;">
           🏠 へやをつくる (コードはっこう)
         </button>
 
-        <div style="background: var(--surface-color); padding: 16px; border-radius: 16px; border: 1px solid #2e3558; margin-top: 20px;">
-          <div style="font-weight: 800; margin-bottom: 8px;">🔑 へやにはいる</div>
+        <div style="background: var(--surface-color); padding: 12px; border-radius: 16px; border: 1px solid #2e3558; margin-top: 12px;">
+          <div style="font-weight: 800; font-size: 0.9rem; margin-bottom: 6px;">🔑 へやにはいる</div>
           <input type="number" id="input-guest-code" class="memo-input" placeholder="4けたのコードを入力 (例: 7821)">
-          <button id="btn-join-room" class="btn btn-secondary">さんかする</button>
+          <button id="btn-join-room" class="btn btn-secondary" style="margin:0;">さんかする</button>
         </div>
 
-        <div style="margin-top: 24px; text-align: center;">
+        <div style="margin-top: 16px; text-align: center;">
           <button id="btn-cpu-battle" class="btn btn-gold">🤖 ひとりで CPU対戦テスト</button>
         </div>
       </div>
 
       <!-- ホスト待機表示 -->
-      <div id="lobby-host-wait-view" style="display: none; text-align: center; margin-top: 40px;">
-        <div style="font-size: 1rem; color: var(--text-muted);">友達に このコードを おしえよう！</div>
-        <div id="host-room-code" style="font-family: var(--font-arcade); font-size: 3.5rem; color: var(--accent-gold); margin: 20px 0; letter-spacing: 4px;">
+      <div id="lobby-host-wait-view" style="display: none; text-align: center; margin-top: 20px;">
+        <div style="font-size: 0.9rem; color: var(--text-muted);">友達に このコードを おしえよう！</div>
+        <div id="host-room-code" style="font-family: var(--font-arcade); font-size: 3rem; color: var(--accent-gold); margin: 16px 0; letter-spacing: 4px;">
           ----
         </div>
-        <div style="color: var(--secondary-cyan); font-weight: 800;">🌀 あいてのさんかを まっています...</div>
+        <div style="color: var(--secondary-cyan); font-weight: 800; font-size: 0.9rem;">
+          🌀 あいてのさんかを まっています...
+        </div>
+        <button id="btn-cancel-host" class="btn btn-dark" style="margin-top: 20px;">キャンセルして もどる</button>
       </div>
     </section>
 
     <!-- SCR-06: バトル画面 -->
     <section id="SCR-06" class="screen">
+      <header style="padding-bottom: 6px;">
+        <h1 class="logo" style="font-size: 1rem;">⚔️ バトル</h1>
+        <button id="btn-battle-escape" class="btn btn-dark" style="width: auto; min-height: 36px; padding: 4px 12px; font-size: 0.8rem; margin: 0;">
+          🏃 にげる
+        </button>
+      </header>
+
       <div class="battle-stage">
         <!-- 敵情報 -->
         <div class="fighter-bar">
-          <div style="display:flex; justify-between; align-items:center;">
-            <span id="e-name" style="font-weight: 800;">???</span>
+          <div style="display:flex; justify-content: space-between; align-items:center;">
+            <span id="e-name" style="font-weight: 800; font-size: 0.9rem;">???</span>
+            <span id="e-hp-num" style="font-size: 0.8rem; color: var(--secondary-cyan);">1000/1000</span>
           </div>
           <div class="hp-gauge-bg"><div id="e-hp-bar" class="hp-gauge-fill"></div></div>
           <div class="sp-gauge-bg"><div id="e-sp-bar" class="sp-gauge-fill"></div></div>
@@ -148,18 +210,19 @@
         <!-- バトルアリーナ -->
         <div class="battle-arena">
           <div class="arena-char">
-            <div id="p-sprite" class="mini-sprite" style="width:90px; height:90px;"></div>
+            <div id="p-sprite" class="mini-sprite" style="width:80px; height:80px;"></div>
           </div>
-          <div style="font-family: var(--font-arcade); font-size: 1.5rem; color: var(--primary-pink);">VS</div>
+          <div style="font-family: var(--font-arcade); font-size: 1.3rem; color: var(--primary-pink);">VS</div>
           <div class="arena-char">
-            <div id="e-sprite" class="mini-sprite" style="width:90px; height:90px;"></div>
+            <div id="e-sprite" class="mini-sprite" style="width:80px; height:80px;"></div>
           </div>
         </div>
 
         <!-- 自分情報 -->
         <div class="fighter-bar">
-          <div style="display:flex; justify-between; align-items:center;">
-            <span id="p-name" style="font-weight: 800;">???</span>
+          <div style="display:flex; justify-content: space-between; align-items:center;">
+            <span id="p-name" style="font-weight: 800; font-size: 0.9rem;">???</span>
+            <span id="p-hp-num" style="font-size: 0.8rem; color: var(--secondary-cyan);">1000/1000</span>
           </div>
           <div class="hp-gauge-bg"><div id="p-hp-bar" class="hp-gauge-fill"></div></div>
           <div class="sp-gauge-bg"><div id="p-sp-bar" class="sp-gauge-fill"></div></div>
@@ -170,28 +233,50 @@
           <div>⚔️ バトルが はじまった！</div>
         </div>
 
-        <!-- コマンドボタン -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <button id="btn-cmd-attack" class="btn btn-primary" style="margin:0; min-height:48px; font-size:0.95rem;">⚔️ こうげき</button>
-          <button id="btn-cmd-skill" class="btn btn-secondary" style="margin:0; min-height:48px; font-size:0.95rem;">✨ ひっさつ</button>
-          <button id="btn-cmd-guard" class="btn btn-dark" style="margin:0; min-height:48px; font-size:0.95rem;">🛡️ ガード</button>
-          <button id="btn-cmd-qte" class="btn btn-gold" style="margin:0; min-height:48px; font-size:0.95rem;">💥 ぎゃくてん</button>
+        <!-- コマンドボタン (5種) -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px;">
+          <button id="btn-cmd-attack" class="btn btn-primary" style="margin:0; min-height:44px; font-size:0.85rem;">⚔️ こうげき</button>
+          <button id="btn-cmd-skill" class="btn btn-secondary" style="margin:0; min-height:44px; font-size:0.85rem;">✨ ひっさつ</button>
+          <button id="btn-cmd-guard" class="btn btn-dark" style="margin:0; min-height:44px; font-size:0.85rem;">🛡️ ガード</button>
+          <button id="btn-cmd-item" class="btn btn-dark" style="margin:0; min-height:44px; font-size:0.85rem;">💊 アイテム</button>
+          <button id="btn-cmd-qte" class="btn btn-gold" style="margin:0; min-height:44px; font-size:0.85rem; grid-column: span 2;">💥 ぎゃくてん</button>
         </div>
       </div>
     </section>
 
     <!-- SCR-07: リザルト画面 -->
     <section id="SCR-07" class="screen" style="justify-content: center; text-align: center;">
-      <div id="result-title" style="font-size: 2.2rem; font-weight: 900; margin-bottom: 24px;">
+      <div id="result-title" style="font-size: 2.2rem; font-weight: 900; margin-bottom: 16px;">
         🎉 かち！
       </div>
+      <div id="result-detail-text" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6;">
+        <!-- JSで対戦結果ログ -->
+      </div>
       <button class="btn btn-primary btn-back-home">🏠 ホームへ もどる</button>
+      <button id="btn-result-lobby" class="btn btn-secondary" style="margin-top: 10px;">⚔️ たいせんロビーへ</button>
     </section>
+
+    <!-- 詳細確認・デッキ変更モーダル -->
+    <div id="detail-modal" class="qte-modal" style="justify-content: center;">
+      <div style="background: var(--surface-color); border: 2px solid var(--secondary-cyan); border-radius: 20px; padding: 20px; width: 90%; max-width: 360px; text-align: center;">
+        <div id="detail-card-content">
+          <!-- JSでカード詳細を読み込み -->
+        </div>
+
+        <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <button id="btn-set-main" class="btn btn-primary" style="margin:0; min-height:40px; font-size:0.85rem;">⚔️ メインキャラにセット</button>
+          <button id="btn-set-sub1" class="btn btn-secondary" style="margin:0; min-height:40px; font-size:0.85rem;">🛡️ サブ1にセット (3P用)</button>
+          <button id="btn-set-sub2" class="btn btn-secondary" style="margin:0; min-height:40px; font-size:0.85rem;">🛡️ サブ2にセット (3P用)</button>
+          <button id="btn-set-item" class="btn btn-gold" style="margin:0; min-height:40px; font-size:0.85rem;">💊 アイテムにセット</button>
+          <button id="btn-close-detail" class="btn btn-dark" style="margin:0; min-height:40px; font-size:0.85rem;">とじる</button>
+        </div>
+      </div>
+    </div>
 
     <!-- QTE モーダル -->
     <div id="qte-modal" class="qte-modal">
       <div style="font-size: 1.4rem; font-weight: 900; color: var(--accent-gold);">💥 一発逆転チャンス！</div>
-      <div style="color: #fff; margin-top: 8px;">きんいろの わくの中で タイミングよく おそう！</div>
+      <div style="color: #fff; margin-top: 8px; font-size: 0.9rem;">きんいろの わくの中で タイミングよく おそう！</div>
 
       <div class="qte-bar-container">
         <div class="qte-target-zone"></div>

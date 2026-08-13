@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Barcode Battler - Cyber Arcade Pop Theme Stylesheet
+   Barcode Battler - Cyber Arcade Pop Theme Stylesheet (Updated)
    ========================================================================== */
 
 :root {
@@ -58,7 +58,7 @@ body {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  padding: 16px;
+  padding: 14px;
   overflow-y: auto;
 }
 
@@ -71,12 +71,12 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 2px solid #2e3558;
 }
 
 h1.logo {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 900;
   color: var(--primary-pink);
   text-shadow: 0 0 10px rgba(255, 51, 102, 0.6);
@@ -85,11 +85,70 @@ h1.logo {
 
 .counter-badge {
   background: var(--surface-card);
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--secondary-cyan);
   border: 1px solid var(--secondary-cyan);
+}
+
+/* タブボタン */
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--surface-card);
+  border: 1px solid #3d4670;
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: var(--secondary-cyan);
+  color: #000;
+  border-color: var(--secondary-cyan);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+/* モード選択ボタン */
+.mode-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--surface-card);
+  border: 1px solid #3d4670;
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.mode-btn.active {
+  background: var(--accent-gold);
+  color: #000;
+  border-color: var(--accent-gold);
+}
+
+/* デッキスロット表示 */
+.deck-slot-box {
+  background: var(--surface-color);
+  border: 1px solid #2e3558;
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
+.slot-label {
+  font-size: 0.78rem;
+  color: var(--secondary-cyan);
+  font-weight: 800;
+}
+
+.slot-content {
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin-top: 4px;
 }
 
 /* 大型ボタン */
@@ -97,22 +156,28 @@ h1.logo {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  min-height: 56px;
-  padding: 12px 24px;
+  min-height: 52px;
+  padding: 10px 20px;
   border-radius: 16px;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 800;
   border: none;
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.2s ease;
   color: #fff;
   width: 100%;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 .btn:active {
   transform: scale(0.96);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-primary {
@@ -153,22 +218,22 @@ h1.logo {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin: 16px 0;
+  margin: 12px 0;
   background: var(--surface-color);
-  border-radius: 24px;
+  border-radius: 20px;
   border: 2px solid #2e3558;
   position: relative;
   overflow: hidden;
-  padding: 20px;
+  padding: 16px;
 }
 
 .sprite-container {
-  width: 140px;
-  height: 140px;
+  width: 120px;
+  height: 120px;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.5));
 }
 
@@ -178,18 +243,17 @@ h1.logo {
 }
 
 .char-name {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 800;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .element-tag {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
   font-weight: 800;
-
 }
 .element-火 { background: var(--element-fire); }
 .element-水 { background: var(--element-water); }
@@ -199,27 +263,21 @@ h1.logo {
   font-family: var(--font-arcade);
   color: var(--accent-gold);
   font-weight: 900;
-  margin-left: 8px;
+  margin-left: 6px;
 }
 
 /* スキャン画面 */
 .camera-box {
   width: 100%;
-  height: 280px;
+  height: 240px;
   background: #000;
-  border-radius: 20px;
+  border-radius: 18px;
   position: relative;
   overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
   border: 2px solid var(--secondary-cyan);
-}
-
-#interactive.viewport video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .scan-laser {
@@ -240,60 +298,61 @@ h1.logo {
 }
 
 .demo-barcode-section {
-  margin-top: 16px;
+  margin-top: 12px;
   background: var(--surface-color);
-  padding: 12px;
-  border-radius: 16px;
+  padding: 10px;
+  border-radius: 14px;
   text-align: center;
 }
 
 .demo-btn-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .demo-btn {
-  padding: 10px;
+  padding: 8px;
   background: var(--surface-card);
   border: 1px solid #3d4670;
-  border-radius: 10px;
+  border-radius: 8px;
   color: #fff;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 
 /* メモ入力 */
 .memo-input {
   width: 100%;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 10px;
+  border-radius: 10px;
   background: var(--surface-card);
   border: 1px solid #3d4670;
   color: #fff;
   font-family: var(--font-family);
-  margin: 12px 0;
+  margin: 10px 0;
 }
 
 /* 図鑑一覧グリッド */
 .collection-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
   overflow-y: auto;
   padding: 4px;
 }
 
 .card-item {
   background: var(--surface-color);
-  border-radius: 16px;
-  padding: 12px;
+  border-radius: 14px;
+  padding: 10px;
   border: 1px solid #2e3558;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
+  cursor: pointer;
 }
 
 .card-item.item-card {
@@ -301,8 +360,8 @@ h1.logo {
 }
 
 .card-item .mini-sprite {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
 }
 
 /* バトル画面 */
@@ -311,23 +370,23 @@ h1.logo {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 10px 0;
+  padding: 6px 0;
 }
 
 .fighter-bar {
   background: var(--surface-color);
-  padding: 12px;
-  border-radius: 16px;
+  padding: 10px;
+  border-radius: 14px;
   border: 1px solid #2e3558;
 }
 
 .hp-gauge-bg {
   width: 100%;
-  height: 16px;
+  height: 14px;
   background: #0d0f18;
-  border-radius: 8px;
+  border-radius: 7px;
   overflow: hidden;
-  margin-top: 6px;
+  margin-top: 4px;
   border: 1px solid #3d4670;
 }
 
@@ -340,9 +399,9 @@ h1.logo {
 
 .sp-gauge-bg {
   width: 100%;
-  height: 10px;
+  height: 8px;
   background: #0d0f18;
-  border-radius: 5px;
+  border-radius: 4px;
   overflow: hidden;
   margin-top: 4px;
 }
@@ -358,7 +417,7 @@ h1.logo {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 180px;
+  height: 140px;
 }
 
 .arena-char {
@@ -368,24 +427,25 @@ h1.logo {
 }
 
 .battle-log-box {
-  background: rgba(13, 15, 24, 0.8);
+  background: rgba(13, 15, 24, 0.85);
   border: 1px solid #2e3558;
-  border-radius: 12px;
-  padding: 10px;
-  font-size: 0.85rem;
-  height: 80px;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 0.8rem;
+  height: 75px;
   overflow-y: auto;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+  line-height: 1.4;
 }
 
-/* QTE ミニゲームモーダル */
+/* QTE モーダル */
 .qte-modal {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.88);
   display: none;
   flex-direction: column;
   justify-content: center;
@@ -400,13 +460,13 @@ h1.logo {
 
 .qte-bar-container {
   width: 100%;
-  height: 40px;
+  height: 36px;
   background: var(--surface-card);
-  border-radius: 20px;
+  border-radius: 18px;
   position: relative;
   overflow: hidden;
   border: 2px solid var(--accent-gold);
-  margin: 30px 0;
+  margin: 24px 0;
 }
 
 .qte-target-zone {
