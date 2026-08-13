@@ -1,12 +1,12 @@
 /**
- * Barcode Battler - Standalone Bundle JS (v1.1.3 Data Migration Engine)
- * 過去に図鑑に保存した全キャラクターのパラメータを自動再計算・SSR1.6倍補正へ自動マイグレーション
+ * Barcode Battler - Standalone Bundle JS (v1.2.0 Deck Badges, DEF Display, 20-Turn 3P, & New Damage Formula)
+ * デッキセット中バッジ・DEF表示・3P 20ターン化・比例減衰ダメージ計算式(防御力高でも安定打撃)
  */
 
 (function() {
-  console.log("Barcode Battler bundle v1.1.3 initializing with migration...");
+  console.log("Barcode Battler bundle v1.2.0 initializing...");
 
-  // --- 1. BarcodeEngine (Balanced Rarity & Stat Multipliers) ---
+  // --- 1. BarcodeEngine ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
   const BASE_NAMES = ["ドラゴン", "ゴーレム", "ナイト", "フェニックス", "タイガー", "スライム", "ベア", "ロボ", "ウルフ", "ライオン", "イエティ", "グリフォン"];
   const SUFFIXES = ["バトラー", "キング", "マスター", "ヒーロー", "ビースト", "ガード", "ファイター", "ロード", "カイザー", "エンペラー"];
@@ -68,7 +68,7 @@
         };
       }
 
-      // レアリティ判定の最適化 (SSR: 3%, SR: 12%, R: 35%, N: 50%)
+      // レアリティ判定 (SSR: 3%, SR: 12%, R: 35%, N: 50%)
       const rarityScore = (hash % 100);
       let rarity = "N";
       let rarityMultiplier = 1.0;
@@ -127,7 +127,7 @@
     }
   }
 
-  // --- 2. StorageManager (With Auto Data Migration Engine) ---
+  // --- 2. StorageManager ---
   const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
   const STORAGE_KEY_DECK = "barcode_battler_deck";
   const MIGRATION_VERSION_KEY = "barcode_battler_migrated_v1.1.3";
@@ -140,28 +140,21 @@
       } catch (e) { return []; }
     }
 
-    /**
-     * ⭐【データマイグレーション】既存の保存済みカードを最新の計算式(SSR 1.6倍)で自動再計算・更新
-     */
     static migrateCollectionData() {
       const isMigrated = localStorage.getItem(MIGRATION_VERSION_KEY);
       if (isMigrated === "true") return;
 
-      console.log("Migrating existing collection cards to v1.1.3 stat multipliers...");
       const collection = this.getCollection();
       if (collection.length === 0) {
         localStorage.setItem(MIGRATION_VERSION_KEY, "true");
         return;
       }
 
-      let updatedCount = 0;
       const updatedCollection = collection.map(card => {
         if (card.type === 'character' && card.barcode) {
-          // メモとIDと作成日時を保持したまま、最新のバランス計算式で再生成
           const freshCard = BarcodeEngine.generateFromBarcode(card.barcode, card.memo || "");
-          freshCard.id = card.id; // ID維持
+          freshCard.id = card.id;
           freshCard.createdAt = card.createdAt || new Date().toISOString();
-          updatedCount++;
           return freshCard;
         }
         return card;
@@ -171,17 +164,12 @@
         localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
         localStorage.setItem(MIGRATION_VERSION_KEY, "true");
 
-        // デッキのカードも同期更新
         const deck = this.getDeck();
         if (deck.mainChar) deck.mainChar = updatedCollection.find(c => c.id === deck.mainChar.id) || deck.mainChar;
         if (deck.subChar1) deck.subChar1 = updatedCollection.find(c => c.id === deck.subChar1.id) || deck.subChar1;
         if (deck.subChar2) deck.subChar2 = updatedCollection.find(c => c.id === deck.subChar2.id) || deck.subChar2;
         localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
-
-        console.log(`Successfully migrated ${updatedCount} character cards!`);
-      } catch (e) {
-        console.error("Migration error:", e);
-      }
+      } catch (e) {}
     }
 
     static saveToCollection(card) {
@@ -254,7 +242,7 @@
     }
   }
 
-  // --- 3. BattleEngine ---
+  // --- 3. BattleEngine (20-Turn 3P Limit & New Proportional Damage Formula) ---
   class BattleEngine {
     constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
       this.mode = mode;
@@ -267,7 +255,10 @@
       this.playerItemUsed = false;
       this.enemyItemUsed = false;
       this.turn = 1;
-      this.maxTurns = 10;
+      
+      // ⭐【修正】1P対戦は10ターン、3P対戦は20ターンで終了
+      this.maxTurns = (mode === '3p') ? 20 : 10;
+      
       this.isOver = false;
       this.winner = null;
     }
@@ -349,13 +340,16 @@
         if (this.turn > this.maxTurns) {
           this.isOver = true;
           this.winner = (this.player.currentHp >= this.enemy.currentHp) ? 'player' : 'enemy';
-          turnLog.actions.push({ actor: 'system', message: "10ターン けいか！ 勝敗判定！" });
+          turnLog.actions.push({ actor: 'system', message: `${this.maxTurns}ターン けいか！ 勝敗判定！` });
         }
       }
 
       return turnLog;
     }
 
+    /**
+     * ⭐【修正】与ダメージ計算式の全面改修 (防御力が高くても安定してダメージが通る比例減衰式)
+     */
     _execAction({ action, qte, self, target }, turnLog) {
       if (self.currentHp <= 0 || target.currentHp <= 0) return;
       if (action === 'guard' || action === 'item') return;
@@ -365,8 +359,15 @@
         return;
       }
 
-      let raw = Math.max(1, self.atk - target.def);
+      // 新ダメージ計算式: 比例減衰式 + 最低15%攻撃力保障
+      const baseDamage = self.atk * (100 / (100 + target.def * 0.8));
+      const minGuaranteed = self.atk * 0.15; // 攻撃力の15%はどんな高防御にも貫通
+      let raw = Math.max(minGuaranteed, baseDamage);
+
       let mult = (self.element === '火' && target.element === '木') ? 1.5 : 1.0;
+      if (self.element === '木' && target.element === '水') mult = 1.5;
+      if (self.element === '水' && target.element === '火') mult = 1.5;
+
       let rand = 0.9 + Math.random() * 0.2;
       let dmg = Math.max(1, Math.round(raw * mult * rand));
 
@@ -646,7 +647,7 @@
       if (scannedCard.type === 'character') {
         resultBox.innerHTML = `
           <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
-            ✨ ${scannedCard.rarity} ゲット！ (能力倍率適用)
+            ✨ ${scannedCard.rarity} ゲット！
           </div>
           <div class="sprite-container" style="color: var(--element-${scannedCard.element})">
             ${scannedCard.spriteSvg}
@@ -696,10 +697,14 @@
     }
   }
 
+  /**
+   * ⭐【修正】図鑑一覧でDEF表示 ＆ デッキセット中ネオンバッジ表示
+   */
   function renderCollection() {
     const grid = document.getElementById('collection-grid-container');
     if (!grid) return;
     const col = StorageManager.getCollection();
+    const deck = StorageManager.getDeck();
     grid.innerHTML = "";
 
     if (col.length === 0) {
@@ -709,11 +714,34 @@
 
     col.forEach(c => {
       const div = document.createElement('div');
-      div.className = `card-item ${c.type === 'item' ? 'item-card' : ''}`;
+      
+      // デッキセット判定
+      let slotBadgeHtml = "";
+      let isSet = false;
+
+      if (deck.mainChar && deck.mainChar.id === c.id) {
+        slotBadgeHtml = `<span class="slot-badge badge-main">⚔️ メイン</span>`;
+        isSet = true;
+      } else if (deck.subChar1 && deck.subChar1.id === c.id) {
+        slotBadgeHtml = `<span class="slot-badge badge-sub1">🛡️ サブ1</span>`;
+        isSet = true;
+      } else if (deck.subChar2 && deck.subChar2.id === c.id) {
+        slotBadgeHtml = `<span class="slot-badge badge-sub2">🛡️ サブ2</span>`;
+        isSet = true;
+      } else if (deck.itemCard && deck.itemCard.id === c.id) {
+        slotBadgeHtml = `<span class="slot-badge badge-item">💊 アイテム</span>`;
+        isSet = true;
+      }
+
+      div.className = `card-item ${c.type === 'item' ? 'item-card' : ''} ${isSet ? 'is-deck-set' : ''}`;
+      
       div.innerHTML = `
+        ${slotBadgeHtml}
         <div class="mini-sprite" style="color: var(--element-${c.element || '火'})">${c.spriteSvg || '🎁'}</div>
         <div style="font-weight: 800; font-size: 0.8rem; margin-top: 4px;">${c.name}</div>
-        <div style="font-size: 0.7rem; color: var(--text-muted);">${c.type === 'character' ? `[${c.rarity}] HP:${c.hp} ATK:${c.atk}` : c.desc}</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">
+          ${c.type === 'character' ? `[${c.rarity}] HP:${c.hp}<br>A:${c.atk} D:${c.def}` : c.desc}
+        </div>
       `;
 
       div.onclick = function() {
@@ -785,9 +813,9 @@
     const s2 = document.getElementById('slot-content-sub2');
     const item = document.getElementById('slot-content-item');
 
-    if (m) m.textContent = deck.mainChar ? `${deck.mainChar.name} (HP:${deck.mainChar.hp} ATK:${deck.mainChar.atk})` : "未セット";
-    if (s1) s1.textContent = deck.subChar1 ? `${deck.subChar1.name} (HP:${deck.subChar1.hp} ATK:${deck.subChar1.atk})` : "未セット";
-    if (s2) s2.textContent = deck.subChar2 ? `${deck.subChar2.name} (HP:${deck.subChar2.hp} ATK:${deck.subChar2.atk})` : "未セット";
+    if (m) m.textContent = deck.mainChar ? `${deck.mainChar.name} (HP:${deck.mainChar.hp} ATK:${deck.mainChar.atk} DEF:${deck.mainChar.def})` : "未セット";
+    if (s1) s1.textContent = deck.subChar1 ? `${deck.subChar1.name} (HP:${deck.subChar1.hp} ATK:${deck.subChar1.atk} DEF:${deck.subChar1.def})` : "未セット";
+    if (s2) s2.textContent = deck.subChar2 ? `${deck.subChar2.name} (HP:${deck.subChar2.hp} ATK:${deck.subChar2.atk} DEF:${deck.subChar2.def})` : "未セット";
     if (item) item.textContent = deck.itemCard ? `${deck.itemCard.name} (${deck.itemCard.desc})` : "未セット";
   }
 
@@ -961,7 +989,7 @@
 
     // ログリセット
     const logBox = document.getElementById('battle-log');
-    if (logBox) logBox.innerHTML = `<div>⚔️ ${isOnlineMatch ? '対戦相手と' : 'CPUとの'} バトルが はじまった！ (${matchMode === '3p' ? '3Pチーム戦' : '1P勝負'})</div>`;
+    if (logBox) logBox.innerHTML = `<div>⚔️ ${isOnlineMatch ? '対戦相手と' : 'CPUとの'} バトルが はじまった！ (${matchMode === '3p' ? '3Pチーム戦 [20ターン]' : '1P勝負 [10ターン]'})</div>`;
 
     renderBattle();
     switchScreen('SCR-06');
@@ -989,20 +1017,18 @@
     document.getElementById('e-sprite').innerHTML = e.spriteSvg;
     document.getElementById('e-sprite').style.color = `var(--element-${e.element})`;
 
-    // 「こうげき」と「ガード」は毎ターン活性化
+    // コマンドボタン制御
     const btnAttack = document.getElementById('btn-cmd-attack');
     const btnGuard = document.getElementById('btn-cmd-guard');
     if (btnAttack) { btnAttack.disabled = false; btnAttack.style.opacity = "1.0"; }
     if (btnGuard) { btnGuard.disabled = false; btnGuard.style.opacity = "1.0"; }
 
-    // 1. ひっさつ: SPが100%未満の場合は非活性
     const btnSkill = document.getElementById('btn-cmd-skill');
     if (btnSkill) {
       btnSkill.disabled = (p.sp < 100);
       btnSkill.style.opacity = (p.sp < 100) ? "0.4" : "1.0";
     }
 
-    // 2. アイテム: 1バトル1回のみ
     const btnItem = document.getElementById('btn-cmd-item');
     if (btnItem) {
       const isItemUsable = (b.playerItem && !b.playerItemUsed);
@@ -1076,9 +1102,8 @@
 
   // --- イベントバインド ---
   document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded -> Binding controls v1.1.3...");
+    console.log("DOMContentLoaded -> Binding controls v1.2.0...");
 
-    // ⭐【データマイグレーション実行】過去保存図鑑カードを自動で最新のSSR1.6倍能力値へ更新
     StorageManager.migrateCollectionData();
 
     document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
@@ -1125,6 +1150,7 @@
         alert(`【${selectedCardForDetail.name}】を メインにセットしました！`);
         document.getElementById('detail-modal')?.classList.remove('active');
         renderDeckSlots();
+        renderCollection();
         renderHome();
       }
     });
@@ -1133,6 +1159,7 @@
         alert(`【${selectedCardForDetail.name}】を サブ1にセットしました！`);
         document.getElementById('detail-modal')?.classList.remove('active');
         renderDeckSlots();
+        renderCollection();
       }
     });
     document.getElementById('btn-set-sub2')?.addEventListener('click', () => {
@@ -1140,6 +1167,7 @@
         alert(`【${selectedCardForDetail.name}】を サブ2にセットしました！`);
         document.getElementById('detail-modal')?.classList.remove('active');
         renderDeckSlots();
+        renderCollection();
       }
     });
     document.getElementById('btn-set-item')?.addEventListener('click', () => {
@@ -1147,6 +1175,7 @@
         alert(`【${selectedCardForDetail.name}】を アイテムにセットしました！`);
         document.getElementById('detail-modal')?.classList.remove('active');
         renderDeckSlots();
+        renderCollection();
       }
     });
 
@@ -1164,7 +1193,7 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v1.1.3 Auto Migration Engine Active & Ready!");
+    console.log("Barcode Battler v1.2.0 Full Improvements Ready!");
   });
 
 })();

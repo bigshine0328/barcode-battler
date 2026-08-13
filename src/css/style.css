@@ -125,6 +125,45 @@ h1.logo {
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
 }
 
+.card-item {
+  background: var(--surface-card);
+  border: 1px solid #3d4670;
+  border-radius: 12px;
+  padding: 8px;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.card-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--secondary-cyan);
+}
+
+.card-item.is-deck-set {
+  border: 2px solid var(--accent-gold);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+.slot-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 10px;
+  color: #000;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  z-index: 2;
+}
+
+.badge-main { background: var(--secondary-cyan); color: #000; }
+.badge-sub1 { background: #b066ff; color: #fff; }
+.badge-sub2 { background: var(--primary-pink); color: #fff; }
+.badge-item { background: var(--accent-gold); color: #000; }
+
 /* モード選択ボタン */
 .mode-btn {
   flex: 1;
