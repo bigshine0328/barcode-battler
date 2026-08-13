@@ -1,11 +1,11 @@
 /**
- * Barcode Battler - Official Release JS (v2.1.0 Items 3-Uses, Item Rarity Variations, & Unified Image Sync)
- * アイテム1バトル3回使用化、アイテム4段階レアリティ＆数値幅調整、全画面でのキャラ画像完全一致統一
+ * Barcode Battler - Official Release JS (v2.2.0 History Popstate, Delete Card, & Collection Subtabs)
+ * ブラウザ「戻る」ボタンフック・終了確認、カード削除機能、図鑑キャラ/アイテム表示切替タブ
  */
 
 (function() {
   "use strict";
-  console.log("Barcode Battler v2.1.0 initializing...");
+  console.log("Barcode Battler v2.2.0 initializing...");
 
   // --- 1. Monster Visual System ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
@@ -38,9 +38,6 @@
     "all_buff": `<svg viewBox="0 0 100 100"><path d="M20 75 L30 30 L50 55 L70 30 L80 75 Z" fill="#ffea00"/><circle cx="30" cy="25" r="5" fill="#ff0055"/><circle cx="50" cy="20" r="6" fill="#00e5ff"/><circle cx="70" cy="25" r="5" fill="#b066ff"/></svg>`
   };
 
-  /**
-   * ⭐【ヘルパー】キャラクターのSVG画像を名前・種族から確実に一貫取得
-   */
   function getCharacterSpriteSvg(card) {
     if (!card) return SPECIES_SVGS["ドラゴン"];
     if (card.spriteSvg && card.spriteSvg.includes("<svg")) {
@@ -83,7 +80,6 @@
       const isItemCard = (hash % 5 === 0);
 
       if (isItemCard) {
-        // ⭐【改善2】アイテムレアリティ＆数値幅システム（SSRは3%の激レア＆超強大数値！）
         const rarityScore = (hash % 100);
         let rarity = "N";
         let mult = 1.0;
@@ -123,7 +119,6 @@
         };
       }
 
-      // キャラクター生成 (レアリティ判定 SSR: 3%, SR: 12%, R: 35%, N: 50%)
       const rarityScore = (hash % 100);
       let rarity = "N";
       let rarityMultiplier = 1.0;
@@ -229,6 +224,34 @@
       } catch (e) {}
     }
 
+    // ⭐【改善3】カード削除機能（デッキセット中なら自動解除）
+    static deleteFromCollection(cardId) {
+      let collection = this.getCollection();
+      const target = collection.find(c => c.id === cardId);
+      if (!target) return false;
+
+      collection = collection.filter(c => c.id !== cardId);
+      try {
+        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+      } catch (e) {}
+
+      // デッキにセットされていたら解除
+      const deck = this.getDeck();
+      let deckChanged = false;
+      if (deck.mainChar && deck.mainChar.id === cardId) { deck.mainChar = null; deckChanged = true; }
+      if (deck.subChar1 && deck.subChar1.id === cardId) { deck.subChar1 = null; deckChanged = true; }
+      if (deck.subChar2 && deck.subChar2.id === cardId) { deck.subChar2 = null; deckChanged = true; }
+      if (deck.itemCard && deck.itemCard.id === cardId) { deck.itemCard = null; deckChanged = true; }
+
+      if (deckChanged) {
+        try {
+          localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
+        } catch (e) {}
+      }
+
+      return true;
+    }
+
     static updateMemo(cardId, newMemo) {
       const collection = this.getCollection();
       const target = collection.find(c => c.id === cardId);
@@ -286,7 +309,7 @@
     }
   }
 
-  // --- 3. BattleEngine (⭐ アイテム最大3回使用システム) ---
+  // --- 3. BattleEngine ---
   class BattleEngine {
     constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
       this.mode = mode;
@@ -297,7 +320,6 @@
       this.playerItem = playerItem;
       this.enemyItem = enemyItem;
       
-      // ⭐【改善1】1バトルでアイテムを最大3回まで使用可能！
       this.playerItemUsesLeft = playerItem ? 3 : 0;
       this.enemyItemUsesLeft = enemyItem ? 3 : 0;
 
@@ -326,7 +348,7 @@
         def: def,
         spd: spd,
         skill: c?.skill || { name: "ギガブレイク", desc: "大ダメージ" },
-        spriteSvg: spriteSvg, // ⭐ 画像完全一致保証
+        spriteSvg: spriteSvg,
         sp: 0,
         isGuarding: false,
         isPlayer: isPlayer
@@ -350,7 +372,6 @@
       this.player.isGuarding = (pAction === 'guard');
       this.enemy.isGuarding = (eAction === 'guard');
 
-      // ⭐【アイテム最大3回使用ロジック】
       if (pAction === 'item' && this.playerItem && this.playerItemUsesLeft > 0) {
         this.playerItemUsesLeft--;
         const item = this.playerItem;
@@ -607,7 +628,8 @@
     }
   }
 
-  // --- 5. App State & Camera & Global Handlers ---
+  // --- 5. App State & Router & Camera & Handlers ---
+  let currentScreen = 'SCR-01';
   let activeBattle = null;
   let scannedCard = null;
   let selectedCardForDetail = null;
@@ -615,6 +637,7 @@
   let isOnlineMatch = false;
   let myTurnAction = null;
   let oppTurnAction = null;
+  let collectionSubTab = 'all'; // ⭐【改善4】図鑑サブタブ ('all' | 'char' | 'item')
   let network = new NetworkManager();
 
   let mediaStream = null;
@@ -627,9 +650,20 @@
     } catch (e) {}
   }
 
-  function switchScreen(screenId) {
+  /**
+   * ⭐【改善1・2】画面切替 ＆ History API 連携（ブラウザの「戻る」制御）
+   */
+  function switchScreen(screenId, isFromPopstate = false) {
     if (screenId !== 'SCR-02') {
       stopCamera();
+    }
+
+    currentScreen = screenId;
+
+    if (!isFromPopstate) {
+      try {
+        history.pushState({ screen: screenId }, "", "");
+      } catch (e) {}
     }
 
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -645,6 +679,26 @@
   }
 
   window.appSwitchScreen = switchScreen;
+
+  /**
+   * ⭐【改善1・2】ブラウザの「戻る」ボタン監視（popstate イベント）
+   */
+  window.addEventListener('popstate', (event) => {
+    if (currentScreen === 'SCR-01') {
+      // ホーム画面で戻るボタンが押された場合：アプリ終了確認ダイアログ
+      const exitConfirm = confirm("⚡ バーコードバトラーを しゅうりょうしますか？");
+      if (!exitConfirm) {
+        // いいえの場合：ホーム画面の履歴を再プッシュして留まる
+        try {
+          history.pushState({ screen: 'SCR-01' }, "", "");
+        } catch (e) {}
+      }
+    } else {
+      // ホーム画面以外の場合：アプリ内の「← もどる」と同じ挙動（直前またはSCR-01へ移動）
+      const prevScreen = (event.state && event.state.screen) ? event.state.screen : 'SCR-01';
+      switchScreen(prevScreen, true);
+    }
+  });
 
   async function startCamera() {
     const video = document.getElementById('scan-video');
@@ -754,9 +808,6 @@
     switchScreen('SCR-03');
   }
 
-  /**
-   * ⭐【画像一致保証】ホーム画面で図鑑と全く同じ画像を描画
-   */
   function renderHome() {
     const col = StorageManager.getCollection();
     const badge = document.getElementById('home-count-badge');
@@ -780,17 +831,27 @@
   }
 
   /**
-   * ⭐【画像一致保証】図鑑画面で全カードに正確な画像を割り当て
+   * ⭐【改善4】図鑑画面での「キャラ」と「アイテム」のサブタブフィルタリング描画
    */
   function renderCollection() {
     const grid = document.getElementById('collection-grid-container');
     if (!grid) return;
-    const col = StorageManager.getCollection();
+    const rawCol = StorageManager.getCollection();
     const deck = StorageManager.getDeck();
     grid.innerHTML = "";
 
+    // サブタブフィルター
+    let col = rawCol;
+    if (collectionSubTab === 'char') {
+      col = rawCol.filter(c => c && c.type === 'character');
+    } else if (collectionSubTab === 'item') {
+      col = rawCol.filter(c => c && c.type === 'item');
+    }
+
     if (col.length === 0) {
-      grid.innerHTML = `<div style="grid-column: 1/3; text-align: center; color: var(--text-muted); padding: 40px 0;">カードがありません。スキャンしよう！</div>`;
+      grid.innerHTML = `<div style="grid-column: 1/3; text-align: center; color: var(--text-muted); padding: 40px 0;">
+        ${collectionSubTab === 'char' ? 'キャラカードが ありません。' : collectionSubTab === 'item' ? 'アイテムカードが ありません。' : 'カードが ありません。スキャンしよう！'}
+      </div>`;
       return;
     }
 
@@ -836,6 +897,26 @@
 
     renderDeckSlots();
   }
+
+  /**
+   * ⭐【改善4】図鑑サブタブ切り替えハンドラー
+   */
+  window.appSelectSubTab = function(subType) {
+    collectionSubTab = subType;
+    const btnAll = document.getElementById('sub-tab-all');
+    const btnChar = document.getElementById('sub-tab-char');
+    const btnItem = document.getElementById('sub-tab-item');
+
+    btnAll?.classList.remove('active');
+    btnChar?.classList.remove('active');
+    btnItem?.classList.remove('active');
+
+    if (subType === 'char') btnChar?.classList.add('active');
+    else if (subType === 'item') btnItem?.classList.add('active');
+    else btnAll?.classList.add('active');
+
+    renderCollection();
+  };
 
   function openDetailModal(card) {
     if (!card) return;
@@ -1125,9 +1206,6 @@
     switchScreen('SCR-06');
   }
 
-  /**
-   * ⭐【画面UIレンダリング】画像完全一致 ＆ アイテム残り使用回数リアルタイム表示
-   */
   function renderBattle() {
     if (!activeBattle) return;
     const b = activeBattle;
@@ -1175,7 +1253,6 @@
       btnSkill.style.opacity = (p.sp < 100) ? "0.4" : "1.0";
     }
 
-    // ⭐【改善1】アイテムボタン残り使用回数の表示（最大3回まで！）
     const btnItem = document.getElementById('btn-cmd-item');
     if (btnItem) {
       const uses = b.playerItemUsesLeft;
@@ -1252,12 +1329,17 @@
   }
 
   function initApp() {
-    console.log("Initializing Barcode Battler v2.1.0 Official Edition...");
+    console.log("Initializing Barcode Battler v2.2.0 Official Edition...");
     try {
       StorageManager.migrateCollectionData();
     } catch (e) {
       console.error("Data migration error:", e);
     }
+
+    // 初期履歴のプッシュ
+    try {
+      history.replaceState({ screen: 'SCR-01' }, "", "");
+    } catch (e) {}
 
     document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
     document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
@@ -1295,6 +1377,20 @@
         alert("メモを こうしんしました！");
         renderCollection();
         openDetailModal(selectedCardForDetail);
+      }
+    });
+
+    // ⭐【改善3】図鑑からのカード削除ボタンハンドラー (確認ダイアログ付き)
+    document.getElementById('btn-delete-card')?.addEventListener('click', () => {
+      if (!selectedCardForDetail) return;
+      const cardName = selectedCardForDetail.name;
+      const delConfirm = confirm(`⚠️ ほんとうに【${cardName}】を ずかんから さくじょしますか？\n（※セット中の場合は デッキからも かいじょされます）`);
+      if (delConfirm) {
+        StorageManager.deleteFromCollection(selectedCardForDetail.id);
+        alert(`【${cardName}】を さくじょしました！`);
+        document.getElementById('detail-modal')?.classList.remove('active');
+        renderCollection();
+        renderHome();
       }
     });
 
@@ -1346,7 +1442,7 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v2.1.0 Ready!");
+    console.log("Barcode Battler v2.2.0 Ready!");
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {

@@ -6,11 +6,11 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>バーコードバトラー (v2.1.0 正式版)</title>
+  <title>バーコードバトラー (v2.2.0 正式版)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="src/css/style.css?v=2.1.0">
+  <link rel="stylesheet" href="src/css/style.css?v=2.2.0">
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -22,7 +22,7 @@
       <header>
         <div>
           <h1 class="logo">⚡ バーコードバトラー</h1>
-          <span class="version-tag">v2.1.0 正式版</span>
+          <span class="version-tag">v2.2.0 正式版</span>
         </div>
         <div id="home-count-badge" class="counter-badge">しょじ 0/100</div>
       </header>
@@ -100,16 +100,23 @@
         <h1 class="logo" style="font-size:1.1rem;">📖 ずかん・デッキ</h1>
       </header>
 
-      <!-- タブ切替 -->
-      <div style="display: flex; gap: 6px; margin: 8px 0;">
+      <!-- メインタブ切替 -->
+      <div style="display: flex; gap: 6px; margin: 8px 0 4px 0;">
         <button id="tab-btn-collection" class="tab-btn active" onclick="if(window.appSelectTab) window.appSelectTab('col');">📖 所持ずかん</button>
         <button id="tab-btn-deck" class="tab-btn" onclick="if(window.appSelectTab) window.appSelectTab('deck');">⚔️ デッキへんせい</button>
       </div>
 
       <!-- ずかんビュー -->
       <div id="view-collection-tab" style="display: flex; flex-direction: column; flex: 1;">
-        <div style="font-size: 0.78rem; color: var(--accent-gold); font-weight: 800; margin-bottom: 4px;">
-          👇 カードをタップすると【能力確認・メモ編集・セット】ができます！
+        <!-- ⭐【改善4】キャラ / アイテム サブタブ表示切替 -->
+        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+          <button id="sub-tab-all" class="sub-tab-btn active" onclick="if(window.appSelectSubTab) window.appSelectSubTab('all');">すべて</button>
+          <button id="sub-tab-char" class="sub-tab-btn" onclick="if(window.appSelectSubTab) window.appSelectSubTab('char');">👾 キャラクター</button>
+          <button id="sub-tab-item" class="sub-tab-btn" onclick="if(window.appSelectSubTab) window.appSelectSubTab('item');">🎁 アイテム</button>
+        </div>
+
+        <div style="font-size: 0.76rem; color: var(--accent-gold); font-weight: 800; margin-bottom: 4px;">
+          👇 カードをタップすると【能力確認・メモ編集・セット・削除】ができます！
         </div>
         <div id="collection-grid-container" class="collection-grid"></div>
       </div>
@@ -260,6 +267,8 @@
           <button id="btn-set-sub1" class="btn btn-secondary" style="margin:0; min-height:36px; font-size:0.8rem;">🛡️ サブ1にセット (3P用)</button>
           <button id="btn-set-sub2" class="btn btn-secondary" style="margin:0; min-height:36px; font-size:0.8rem;">🛡️ サブ2にセット (3P用)</button>
           <button id="btn-set-item" class="btn btn-gold" style="margin:0; min-height:36px; font-size:0.8rem;">💊 アイテムにセット</button>
+          <!-- ⭐【改善3】カード削除ボタン -->
+          <button id="btn-delete-card" class="btn btn-danger" style="margin:0; min-height:36px; font-size:0.8rem;">🗑️ このカードを さくじょ</button>
           <button id="btn-close-detail" class="btn btn-dark" onclick="document.getElementById('detail-modal').classList.remove('active');" style="margin:0; min-height:36px; font-size:0.8rem;">とじる</button>
         </div>
       </div>
@@ -267,12 +276,12 @@
 
     <!-- 全画面共通フッター (バージョン表示) -->
     <div style="position: absolute; bottom: 4px; right: 10px; font-size: 0.68rem; color: rgba(255,255,255,0.4); font-family: var(--font-arcade); pointer-events: none; z-index: 10;">
-      VER 2.1.0 Official Edition (Build 20260813.210)
+      VER 2.2.0 Official Edition (Build 20260814.220)
     </div>
 
   </div>
 
-  <!-- スクリプト統合読み込み (キャッシュクリア v2.1.0) -->
-  <script src="src/js/bundle.js?v=2.1.0"></script>
+  <!-- スクリプト統合読み込み (キャッシュクリア v2.2.0) -->
+  <script src="src/js/bundle.js?v=2.2.0"></script>
 </body>
 </html>
