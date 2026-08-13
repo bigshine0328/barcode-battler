@@ -18,6 +18,19 @@ export class UIController {
     this.qtePointerPos = 0;
     this.qteSpeed = 2.5;
     this.qteDirection = 1;
+
+    // カメラ関連プロパティ
+    this.mediaStream = null;
+    this.scanIntervalId = null;
+    this.barcodeDetector = null;
+
+    if ('BarcodeDetector' in window) {
+      try {
+        this.barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'qr_code'] });
+      } catch (e) {
+        console.log("BarcodeDetector initialized with default settings", e);
+      }
+    }
   }
 
   init() {
@@ -29,6 +42,11 @@ export class UIController {
   }
 
   switchScreen(screenId) {
+    // 画面遷移時にカメラを安全に停止
+    if (this.currentScreen === 'SCR-02' && screenId !== 'SCR-02') {
+      this.stopCamera();
+    }
+
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(screenId);
     if (target) {
@@ -37,6 +55,7 @@ export class UIController {
     }
 
     if (screenId === 'SCR-01') this.renderHome();
+    else if (screenId === 'SCR-02') this.startCamera();
     else if (screenId === 'SCR-04') this.renderCollection();
     else if (screenId === 'SCR-05') this.renderLobby();
   }
@@ -75,12 +94,94 @@ export class UIController {
     }
   }
 
-  // --- SCR-02 & SCR-03: スキャン & 結果 ---
+  // --- SCR-02: カメラ起動 & スキャン処理 ---
+  async startCamera() {
+    const video = document.getElementById('scan-video');
+    const statusMsg = document.getElementById('camera-status-msg');
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (statusMsg) statusMsg.textContent = "※ お使いのブラウザは カメラに 対応していません（下のボタンをお使いください）";
+      return;
+    }
+
+    try {
+      if (statusMsg) statusMsg.textContent = "カメラを き動しています...";
+      
+      // リアカメラ優先
+      const constraints = {
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      };
+
+      this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (video) {
+        video.srcObject = this.mediaStream;
+        await video.play();
+      }
+
+      if (statusMsg) statusMsg.textContent = "バーコードを わくの中に あわせよう！";
+
+      // スキャンループの開始
+      this.startScanLoop();
+
+    } catch (err) {
+      console.error("Camera access error:", err);
+      if (statusMsg) {
+        statusMsg.textContent = "⚠️ カメラのきょかが ありません。きょかするか 下のボタンをお使いください。";
+      }
+    }
+  }
+
+  stopCamera() {
+    if (this.scanIntervalId) {
+      clearInterval(this.scanIntervalId);
+      this.scanIntervalId = null;
+    }
+
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream = null;
+    }
+
+    const video = document.getElementById('scan-video');
+    if (video) video.srcObject = null;
+  }
+
+  startScanLoop() {
+    const video = document.getElementById('scan-video');
+    if (!video) return;
+
+    this.scanIntervalId = setInterval(async () => {
+      if (!video.videoWidth || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+      if (this.barcodeDetector) {
+        try {
+          const barcodes = await this.barcodeDetector.detect(video);
+          if (barcodes && barcodes.length > 0) {
+            const detectedCode = barcodes[0].rawValue;
+            this.stopCamera();
+            this.processScanResult(detectedCode);
+          }
+        } catch (e) {
+          // Detector error fallback
+        }
+      }
+    }, 300);
+  }
+
   bindScanEvents() {
+    // 手動カメラ起動ボタン
+    document.getElementById('btn-start-camera')?.addEventListener('click', () => this.startCamera());
+    document.getElementById('btn-stop-camera-back')?.addEventListener('click', () => {
+      this.stopCamera();
+      this.switchScreen('SCR-01');
+    });
+
     // デモバーコードボタン
     document.querySelectorAll('.btn-demo-barcode').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const code = e.target.getAttribute('data-code');
+        this.stopCamera();
         this.processScanResult(code);
       });
     });
@@ -89,6 +190,7 @@ export class UIController {
     document.getElementById('btn-manual-scan')?.addEventListener('click', () => {
       const input = document.getElementById('input-manual-barcode');
       if (input && input.value) {
+        this.stopCamera();
         this.processScanResult(input.value);
       }
     });

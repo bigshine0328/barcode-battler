@@ -34,23 +34,26 @@
     <!-- SCR-02: スキャン画面 -->
     <section id="SCR-02" class="screen">
       <header>
-        <button class="btn-back-home" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
+        <button id="btn-stop-camera-back" class="btn-back-home" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
         <h1 class="logo" style="font-size:1.1rem;">📷 バーコードスキャン</h1>
       </header>
 
-      <div style="text-align: center; margin: 12px 0 6px 0; font-size: 0.9rem; color: var(--secondary-cyan);">
+      <div id="camera-status-msg" style="text-align: center; margin: 10px 0 6px 0; font-size: 0.9rem; color: var(--secondary-cyan);">
         バーコードを わくの中に あわせよう！
       </div>
 
       <div class="camera-box">
+        <video id="scan-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+        <canvas id="scan-canvas" style="display: none;"></canvas>
         <div class="scan-laser"></div>
-        <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-          📷 カメラプレビューエリア<br>(下にテスト用ボタンがあります)
-        </div>
       </div>
 
+      <button id="btn-start-camera" class="btn btn-secondary" style="margin-top: 10px; font-size: 0.95rem; min-height: 46px;">
+        🎥 カメラを き動する
+      </button>
+
       <div class="demo-barcode-section">
-        <div style="font-size: 0.85rem; font-weight: 800;">🧪 テスト用バーコード（1タップでテスト生成）</div>
+        <div style="font-size: 0.85rem; font-weight: 800;">🧪 テスト用バーコード（カメラがない環境用）</div>
         <div class="demo-btn-grid">
           <button class="demo-btn btn-demo-barcode" data-code="4901234567890">🍫 おかしの箱 (火)</button>
           <button class="demo-btn btn-demo-barcode" data-code="4909876543210">🧃 ジュースの缶 (水)</button>
