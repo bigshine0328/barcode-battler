@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>バーコードバトラー (プロトタイプ版)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/css/style.css">
+</head>
+<body>
+
+  <div id="app-container">
+
+    <!-- SCR-01: ホーム画面 -->
+    <section id="SCR-01" class="screen active">
+      <header>
+        <h1 class="logo">⚡ バーコードバトラー</h1>
+        <div id="home-count-badge" class="counter-badge">しょじ 0/100</div>
+      </header>
+
+      <div id="home-showcase" class="char-showcase">
+        <div style="color: var(--text-muted);">バーコードを スキャンして<br>キャラを ゲットしよう！</div>
+      </div>
+
+      <button id="btn-nav-scan" class="btn btn-primary">📷 バーコードをすきゃん！</button>
+      <div class="btn-group">
+        <button id="btn-nav-deck" class="btn btn-secondary">📖 ずかん・デッキ</button>
+        <button id="btn-nav-battle" class="btn btn-gold">⚔️ たいせん</button>
+      </div>
+    </section>
+
+    <!-- SCR-02: スキャン画面 -->
+    <section id="SCR-02" class="screen">
+      <header>
+        <button class="btn-back-home" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
+        <h1 class="logo" style="font-size:1.1rem;">📷 バーコードスキャン</h1>
+      </header>
+
+      <div style="text-align: center; margin: 12px 0 6px 0; font-size: 0.9rem; color: var(--secondary-cyan);">
+        バーコードを わくの中に あわせよう！
+      </div>
+
+      <div class="camera-box">
+        <div class="scan-laser"></div>
+        <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+          📷 カメラプレビューエリア<br>(下にテスト用ボタンがあります)
+        </div>
+      </div>
+
+      <div class="demo-barcode-section">
+        <div style="font-size: 0.85rem; font-weight: 800;">🧪 テスト用バーコード（1タップでテスト生成）</div>
+        <div class="demo-btn-grid">
+          <button class="demo-btn btn-demo-barcode" data-code="4901234567890">🍫 おかしの箱 (火)</button>
+          <button class="demo-btn btn-demo-barcode" data-code="4909876543210">🧃 ジュースの缶 (水)</button>
+          <button class="demo-btn btn-demo-barcode" data-code="4901111222233">✏️ ノート (木)</button>
+          <button class="demo-btn btn-demo-barcode" data-code="4908888777766">🎁 レアアイテム</button>
+        </div>
+
+        <div style="margin-top: 10px; display: flex; gap: 6px;">
+          <input type="text" id="input-manual-barcode" class="memo-input" placeholder="JANコードを直接入力 (例: 4901234...)" style="margin:0; font-size:0.85rem;">
+          <button id="btn-manual-scan" class="btn btn-secondary" style="width: auto; min-height:44px; margin:0; font-size:0.9rem;">けってい</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCR-03: スキャン結果画面 -->
+    <section id="SCR-03" class="screen">
+      <header>
+        <h1 class="logo">✨ スキャンせいか</h1>
+      </header>
+
+      <div id="scan-result-card" class="char-showcase">
+        <!-- JSで動的描画 -->
+      </div>
+
+      <input type="text" id="scanned-memo-input" class="memo-input" placeholder="📝 商品名やメモを入力（例: ポテトチップス）">
+
+      <button id="btn-save-scanned" class="btn btn-primary">📖 ずかんに ほぞんする</button>
+      <button class="btn btn-dark btn-back-home">🏠 ホームへ もどる</button>
+    </section>
+
+    <!-- SCR-04: 図鑑・所持一覧画面 -->
+    <section id="SCR-04" class="screen">
+      <header>
+        <button class="btn-back-home" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
+        <h1 class="logo" style="font-size:1.1rem;">📖 キャラずかん</h1>
+      </header>
+
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin: 8px 0;">
+        ※カードをタップするとメモを編集できます（最大100体保存）。
+      </div>
+
+      <div id="collection-grid-container" class="collection-grid">
+        <!-- JSで一覧描画 -->
+      </div>
+    </section>
+
+    <!-- SCR-05: 対戦ロビー画面 -->
+    <section id="SCR-05" class="screen">
+      <header>
+        <button class="btn-back-home" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
+        <h1 class="logo" style="font-size:1.1rem;">⚔️ 対戦ロビー</h1>
+      </header>
+
+      <div id="lobby-select-view" style="margin-top: 20px;">
+        <button id="btn-create-room" class="btn btn-primary" style="min-height: 70px;">
+          🏠 へやをつくる (コードはっこう)
+        </button>
+
+        <div style="background: var(--surface-color); padding: 16px; border-radius: 16px; border: 1px solid #2e3558; margin-top: 20px;">
+          <div style="font-weight: 800; margin-bottom: 8px;">🔑 へやにはいる</div>
+          <input type="number" id="input-guest-code" class="memo-input" placeholder="4けたのコードを入力 (例: 7821)">
+          <button id="btn-join-room" class="btn btn-secondary">さんかする</button>
+        </div>
+
+        <div style="margin-top: 24px; text-align: center;">
+          <button id="btn-cpu-battle" class="btn btn-gold">🤖 ひとりで CPU対戦テスト</button>
+        </div>
+      </div>
+
+      <!-- ホスト待機表示 -->
+      <div id="lobby-host-wait-view" style="display: none; text-align: center; margin-top: 40px;">
+        <div style="font-size: 1rem; color: var(--text-muted);">友達に このコードを おしえよう！</div>
+        <div id="host-room-code" style="font-family: var(--font-arcade); font-size: 3.5rem; color: var(--accent-gold); margin: 20px 0; letter-spacing: 4px;">
+          ----
+        </div>
+        <div style="color: var(--secondary-cyan); font-weight: 800;">🌀 あいてのさんかを まっています...</div>
+      </div>
+    </section>
+
+    <!-- SCR-06: バトル画面 -->
+    <section id="SCR-06" class="screen">
+      <div class="battle-stage">
+        <!-- 敵情報 -->
+        <div class="fighter-bar">
+          <div style="display:flex; justify-between; align-items:center;">
+            <span id="e-name" style="font-weight: 800;">???</span>
+          </div>
+          <div class="hp-gauge-bg"><div id="e-hp-bar" class="hp-gauge-fill"></div></div>
+          <div class="sp-gauge-bg"><div id="e-sp-bar" class="sp-gauge-fill"></div></div>
+        </div>
+
+        <!-- バトルアリーナ -->
+        <div class="battle-arena">
+          <div class="arena-char">
+            <div id="p-sprite" class="mini-sprite" style="width:90px; height:90px;"></div>
+          </div>
+          <div style="font-family: var(--font-arcade); font-size: 1.5rem; color: var(--primary-pink);">VS</div>
+          <div class="arena-char">
+            <div id="e-sprite" class="mini-sprite" style="width:90px; height:90px;"></div>
+          </div>
+        </div>
+
+        <!-- 自分情報 -->
+        <div class="fighter-bar">
+          <div style="display:flex; justify-between; align-items:center;">
+            <span id="p-name" style="font-weight: 800;">???</span>
+          </div>
+          <div class="hp-gauge-bg"><div id="p-hp-bar" class="hp-gauge-fill"></div></div>
+          <div class="sp-gauge-bg"><div id="p-sp-bar" class="sp-gauge-fill"></div></div>
+        </div>
+
+        <!-- バトルログ -->
+        <div id="battle-log" class="battle-log-box">
+          <div>⚔️ バトルが はじまった！</div>
+        </div>
+
+        <!-- コマンドボタン -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <button id="btn-cmd-attack" class="btn btn-primary" style="margin:0; min-height:48px; font-size:0.95rem;">⚔️ こうげき</button>
+          <button id="btn-cmd-skill" class="btn btn-secondary" style="margin:0; min-height:48px; font-size:0.95rem;">✨ ひっさつ</button>
+          <button id="btn-cmd-guard" class="btn btn-dark" style="margin:0; min-height:48px; font-size:0.95rem;">🛡️ ガード</button>
+          <button id="btn-cmd-qte" class="btn btn-gold" style="margin:0; min-height:48px; font-size:0.95rem;">💥 ぎゃくてん</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCR-07: リザルト画面 -->
+    <section id="SCR-07" class="screen" style="justify-content: center; text-align: center;">
+      <div id="result-title" style="font-size: 2.2rem; font-weight: 900; margin-bottom: 24px;">
+        🎉 かち！
+      </div>
+      <button class="btn btn-primary btn-back-home">🏠 ホームへ もどる</button>
+    </section>
+
+    <!-- QTE モーダル -->
+    <div id="qte-modal" class="qte-modal">
+      <div style="font-size: 1.4rem; font-weight: 900; color: var(--accent-gold);">💥 一発逆転チャンス！</div>
+      <div style="color: #fff; margin-top: 8px;">きんいろの わくの中で タイミングよく おそう！</div>
+
+      <div class="qte-bar-container">
+        <div class="qte-target-zone"></div>
+        <div id="qte-pointer" class="qte-pointer"></div>
+      </div>
+
+      <button id="btn-qte-stop" class="btn btn-gold" style="max-width: 260px;">🛑 ストップ！</button>
+    </div>
+
+  </div>
+
+  <script type="module" src="src/js/app.js"></script>
+</body>
+</html>

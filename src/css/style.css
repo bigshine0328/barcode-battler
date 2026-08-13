@@ -1,0 +1,430 @@
+/* ==========================================================================
+   Barcode Battler - Cyber Arcade Pop Theme Stylesheet
+   ========================================================================== */
+
+:root {
+  --bg-color: #121420;
+  --surface-color: #1e2238;
+  --surface-card: #282d4a;
+  --primary-pink: #ff3366;
+  --secondary-cyan: #00e5ff;
+  --accent-gold: #ffd700;
+  --element-fire: #ff4500;
+  --element-water: #1e90ff;
+  --element-wood: #32cd32;
+  --text-main: #ffffff;
+  --text-muted: #a0a8c0;
+  --font-family: 'M PLUS Rounded 1c', sans-serif;
+  --font-arcade: 'Outfit', 'Press Start 2P', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#app-container {
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  max-height: 900px;
+  background: radial-gradient(circle at top, #1a1e36 0%, #0d0f18 100%);
+  border-left: 2px solid #2e3558;
+  border-right: 2px solid #2e3558;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.15);
+  overflow: hidden;
+}
+
+/* 画面切替 */
+.screen {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* ヘッダー */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #2e3558;
+}
+
+h1.logo {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--primary-pink);
+  text-shadow: 0 0 10px rgba(255, 51, 102, 0.6);
+  letter-spacing: 1px;
+}
+
+.counter-badge {
+  background: var(--surface-card);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--secondary-cyan);
+  border: 1px solid var(--secondary-cyan);
+}
+
+/* 大型ボタン */
+.btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 56px;
+  padding: 12px 24px;
+  border-radius: 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  color: #fff;
+  width: 100%;
+  margin-bottom: 12px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ff3366, #ff6b8b);
+  box-shadow: 0 6px 20px rgba(255, 51, 102, 0.4);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #00e5ff, #0088ff);
+  box-shadow: 0 6px 20px rgba(0, 229, 255, 0.4);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  color: #000;
+  text-shadow: none;
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+}
+
+.btn-dark {
+  background: var(--surface-card);
+  border: 1px solid #3d4670;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-group .btn {
+  flex: 1;
+}
+
+/* キャラクター展示カード */
+.char-showcase {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 16px 0;
+  background: var(--surface-color);
+  border-radius: 24px;
+  border: 2px solid #2e3558;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.sprite-container {
+  width: 140px;
+  height: 140px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.5));
+}
+
+.sprite-container svg {
+  width: 100%;
+  height: 100%;
+}
+
+.char-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.element-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 800;
+
+}
+.element-火 { background: var(--element-fire); }
+.element-水 { background: var(--element-water); }
+.element-木 { background: var(--element-wood); }
+
+.rarity-tag {
+  font-family: var(--font-arcade);
+  color: var(--accent-gold);
+  font-weight: 900;
+  margin-left: 8px;
+}
+
+/* スキャン画面 */
+.camera-box {
+  width: 100%;
+  height: 280px;
+  background: #000;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid var(--secondary-cyan);
+}
+
+#interactive.viewport video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scan-laser {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--primary-pink);
+  box-shadow: 0 0 15px var(--primary-pink);
+  animation: scanAnim 2s infinite ease-in-out;
+}
+
+@keyframes scanAnim {
+  0% { top: 10%; }
+  50% { top: 90%; }
+  100% { top: 10%; }
+}
+
+.demo-barcode-section {
+  margin-top: 16px;
+  background: var(--surface-color);
+  padding: 12px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.demo-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.demo-btn {
+  padding: 10px;
+  background: var(--surface-card);
+  border: 1px solid #3d4670;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* メモ入力 */
+.memo-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-card);
+  border: 1px solid #3d4670;
+  color: #fff;
+  font-family: var(--font-family);
+  margin: 12px 0;
+}
+
+/* 図鑑一覧グリッド */
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.card-item {
+  background: var(--surface-color);
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px solid #2e3558;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.card-item.item-card {
+  border-color: var(--accent-gold);
+}
+
+.card-item .mini-sprite {
+  width: 60px;
+  height: 60px;
+}
+
+/* バトル画面 */
+.battle-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.fighter-bar {
+  background: var(--surface-color);
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid #2e3558;
+}
+
+.hp-gauge-bg {
+  width: 100%;
+  height: 16px;
+  background: #0d0f18;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 6px;
+  border: 1px solid #3d4670;
+}
+
+.hp-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00e5ff, #32cd32);
+  width: 100%;
+  transition: width 0.4s ease;
+}
+
+.sp-gauge-bg {
+  width: 100%;
+  height: 10px;
+  background: #0d0f18;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.sp-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd700, #ff8c00);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.battle-arena {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 180px;
+}
+
+.arena-char {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.battle-log-box {
+  background: rgba(13, 15, 24, 0.8);
+  border: 1px solid #2e3558;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 0.85rem;
+  height: 80px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+/* QTE ミニゲームモーダル */
+.qte-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.qte-modal.active {
+  display: flex;
+}
+
+.qte-bar-container {
+  width: 100%;
+  height: 40px;
+  background: var(--surface-card);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--accent-gold);
+  margin: 30px 0;
+}
+
+.qte-target-zone {
+  position: absolute;
+  top: 0;
+  left: 40%;
+  width: 20%;
+  height: 100%;
+  background: var(--accent-gold);
+  box-shadow: 0 0 15px var(--accent-gold);
+}
+
+.qte-pointer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 100%;
+  background: #fff;
+  box-shadow: 0 0 10px #fff;
+}
