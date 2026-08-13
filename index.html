@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>バーコードバトラー (プロトタイプ版)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="src/css/style.css">
+  <link rel="stylesheet" href="src/css/style.css?v=1.0.8">
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -19,7 +22,7 @@
       <header>
         <div>
           <h1 class="logo">⚡ バーコードバトラー</h1>
-          <span class="version-tag">v1.0.7</span>
+          <span class="version-tag">v1.0.8</span>
         </div>
         <div id="home-count-badge" class="counter-badge">しょじ 0/100</div>
       </header>
@@ -99,14 +102,14 @@
 
       <!-- タブ切替 -->
       <div style="display: flex; gap: 6px; margin: 8px 0;">
-        <button id="tab-btn-collection" class="tab-btn active">📖 所持ずかん</button>
-        <button id="tab-btn-deck" class="tab-btn">⚔️ デッキへんせい</button>
+        <button id="tab-btn-collection" class="tab-btn active" onclick="if(window.appSelectTab) window.appSelectTab('col');">📖 所持ずかん</button>
+        <button id="tab-btn-deck" class="tab-btn" onclick="if(window.appSelectTab) window.appSelectTab('deck');">⚔️ デッキへんせい</button>
       </div>
 
       <!-- ずかんビュー -->
       <div id="view-collection-tab" style="display: flex; flex-direction: column; flex: 1;">
-        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px;">
-          ※カードをタップすると【能力・メモ編集・デッキセット】ができます。
+        <div style="font-size: 0.78rem; color: var(--accent-gold); font-weight: 800; margin-bottom: 4px;">
+          👇 カードをタップすると【能力確認・メモ編集・セット】ができます！
         </div>
         <div id="collection-grid-container" class="collection-grid"></div>
       </div>
@@ -153,23 +156,23 @@
             🎮 対戦ルールを選択
           </div>
           <div style="display: flex; gap: 6px;">
-            <button id="btn-mode-1p" class="mode-btn active">1P対戦 (1体勝負)</button>
-            <button id="btn-mode-3p" class="mode-btn">3P対戦 (3体チーム戦)</button>
+            <button id="btn-mode-1p" class="mode-btn active" onclick="if(window.appSetMode) window.appSetMode('1p');">1P対戦 (1体勝負)</button>
+            <button id="btn-mode-3p" class="mode-btn" onclick="if(window.appSetMode) window.appSetMode('3p');">3P対戦 (3体チーム戦)</button>
           </div>
         </div>
 
-        <button id="btn-create-room" class="btn btn-primary" style="min-height: 54px; margin-bottom: 10px;">
+        <button id="btn-create-room" class="btn btn-primary" onclick="if(window.appCreateRoom) window.appCreateRoom();" style="min-height: 54px; margin-bottom: 10px;">
           🏠 へやをつくる (コードはっこう)
         </button>
 
         <div style="background: var(--surface-color); padding: 10px; border-radius: 14px; border: 1px solid #2e3558;">
           <div style="font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">🔑 へやにはいる</div>
           <input type="number" id="input-guest-code" class="memo-input" placeholder="4けたのコードを入力 (例: 7821)">
-          <button id="btn-join-room" class="btn btn-secondary" style="margin:0;">さんかする</button>
+          <button id="btn-join-room" class="btn btn-secondary" onclick="if(window.appJoinRoom) window.appJoinRoom();" style="margin:0;">さんかする</button>
         </div>
 
         <div style="margin-top: 16px; text-align: center;">
-          <button id="btn-cpu-battle" class="btn btn-gold">🤖 ひとりで CPU対戦テスト</button>
+          <button id="btn-cpu-battle" class="btn btn-gold" onclick="if(window.appStartCpuBattle) window.appStartCpuBattle();">🤖 ひとりで CPU対戦テスト</button>
         </div>
       </div>
 
@@ -182,7 +185,7 @@
         <div style="color: var(--secondary-cyan); font-weight: 800; font-size: 0.85rem;">
           🌀 あいてのさんかを まっています...
         </div>
-        <button id="btn-cancel-host" class="btn btn-dark" style="margin-top: 16px;">キャンセルして もどる</button>
+        <button id="btn-cancel-host" class="btn btn-dark" onclick="if(window.appCancelHost) window.appCancelHost();" style="margin-top: 16px;">キャンセルして もどる</button>
       </div>
     </section>
 
@@ -257,18 +260,19 @@
           <button id="btn-set-sub1" class="btn btn-secondary" style="margin:0; min-height:36px; font-size:0.8rem;">🛡️ サブ1にセット (3P用)</button>
           <button id="btn-set-sub2" class="btn btn-secondary" style="margin:0; min-height:36px; font-size:0.8rem;">🛡️ サブ2にセット (3P用)</button>
           <button id="btn-set-item" class="btn btn-gold" style="margin:0; min-height:36px; font-size:0.8rem;">💊 アイテムにセット</button>
-          <button id="btn-close-detail" class="btn btn-dark" style="margin:0; min-height:36px; font-size:0.8rem;">とじる</button>
+          <button id="btn-close-detail" class="btn btn-dark" onclick="document.getElementById('detail-modal').classList.remove('active');" style="margin:0; min-height:36px; font-size:0.8rem;">とじる</button>
         </div>
       </div>
     </div>
 
     <!-- 全画面共通フッター (バージョン表示) -->
     <div style="position: absolute; bottom: 4px; right: 10px; font-size: 0.68rem; color: rgba(255,255,255,0.3); font-family: var(--font-arcade); pointer-events: none; z-index: 10;">
-      VER 1.0.7 (Build 20260813.05)
+      VER 1.0.8 (Build 20260813.06)
     </div>
 
   </div>
 
-  <script src="src/js/bundle.js"></script>
+  <!-- スクリプト統合読み込み (キャッシュクリアパラメータ付き) -->
+  <script src="src/js/bundle.js?v=1.0.8"></script>
 </body>
 </html>
