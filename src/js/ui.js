@@ -411,7 +411,6 @@ export class UIController {
 
   // --- SCR-05: 対戦ロビー ---
   bindLobbyEvents() {
-    // 1P / 3P モード選択
     const btn1p = document.getElementById('btn-mode-1p');
     const btn3p = document.getElementById('btn-mode-3p');
 
@@ -429,7 +428,9 @@ export class UIController {
 
     document.getElementById('btn-create-room')?.addEventListener('click', () => {
       const roomCode = NetworkManager.generateRoomCode();
-      this.network.createRoom(roomCode);
+      const deck = StorageManager.getDeck();
+
+      this.network.createRoom(roomCode, deck);
       
       const codeDisplay = document.getElementById('host-room-code');
       if (codeDisplay) codeDisplay.textContent = roomCode;
@@ -439,7 +440,9 @@ export class UIController {
 
       this.network.onMessageCallback = (data) => {
         if (data.type === 'JOIN_REQUEST') {
-          this.startBattle(true);
+          // ゲストから相手のデッキデータを受信して対戦開始
+          const opponentDeck = data.guestDeck || {};
+          this.startOnlineBattle(true, opponentDeck);
         }
       };
     });
@@ -452,9 +455,18 @@ export class UIController {
 
     document.getElementById('btn-join-room')?.addEventListener('click', () => {
       const input = document.getElementById('input-guest-code');
+      const deck = StorageManager.getDeck();
+
       if (input && input.value.length === 4) {
-        this.network.joinRoom(input.value);
-        this.startBattle(false);
+        this.network.joinRoom(input.value, deck);
+
+        this.network.onMessageCallback = (data) => {
+          if (data.type === 'JOIN_ACCEPT') {
+            // ホストから相手のデッキデータを受信して対戦開始
+            const opponentDeck = data.hostDeck || {};
+            this.startOnlineBattle(false, opponentDeck);
+          }
+        };
       } else {
         alert("4けたの ルームコードを 正しく入力してください (例: 7821)");
       }
@@ -474,15 +486,19 @@ export class UIController {
   startCpuBattle() {
     const deck = StorageManager.getDeck();
     
-    // プレイヤーチーム構成
-    let playerTeam = [deck.mainChar || BarcodeEngine.generateFromBarcode("4901234567890")];
+    // キャラクターのみを確実に抽出する安全補正
+    const defaultChar1 = BarcodeEngine.generateFromBarcode("4901234567890");
+    const defaultChar2 = BarcodeEngine.generateFromBarcode("4909876543210");
+
+    let playerMain = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : defaultChar1;
+    let playerTeam = [playerMain];
+
     if (this.matchMode === '3p') {
-      playerTeam.push(deck.subChar1 || BarcodeEngine.generateFromBarcode("4901111111111"));
-      playerTeam.push(deck.subChar2 || BarcodeEngine.generateFromBarcode("4902222222222"));
+      playerTeam.push((deck.subChar1 && deck.subChar1.type === 'character') ? deck.subChar1 : BarcodeEngine.generateFromBarcode("4901111111111"));
+      playerTeam.push((deck.subChar2 && deck.subChar2.type === 'character') ? deck.subChar2 : BarcodeEngine.generateFromBarcode("4902222222222"));
     }
 
-    // CPU敵チーム構成
-    let enemyTeam = [BarcodeEngine.generateFromBarcode("4909876543210")];
+    let enemyTeam = [defaultChar2];
     if (this.matchMode === '3p') {
       enemyTeam.push(BarcodeEngine.generateFromBarcode("4903333333333"));
       enemyTeam.push(BarcodeEngine.generateFromBarcode("4904444444444"));
@@ -495,27 +511,31 @@ export class UIController {
 
     this.renderBattleScreen();
     this.switchScreen('SCR-06');
-  }
+  startOnlineBattle(isHost, opponentDeck) {
+    const myDeck = StorageManager.getDeck();
+    const defaultChar1 = BarcodeEngine.generateFromBarcode("4901234567890");
+    const defaultChar2 = BarcodeEngine.generateFromBarcode("4909876543210");
 
-  startBattle(isHost) {
-    const deck = StorageManager.getDeck();
+    let playerMain = (myDeck.mainChar && myDeck.mainChar.type === 'character') ? myDeck.mainChar : defaultChar1;
+    let playerTeam = [playerMain];
 
-    let playerTeam = [deck.mainChar || BarcodeEngine.generateFromBarcode("4901234567890")];
     if (this.matchMode === '3p') {
-      playerTeam.push(deck.subChar1 || BarcodeEngine.generateFromBarcode("4901111111111"));
-      playerTeam.push(deck.subChar2 || BarcodeEngine.generateFromBarcode("4902222222222"));
+      playerTeam.push((myDeck.subChar1 && myDeck.subChar1.type === 'character') ? myDeck.subChar1 : BarcodeEngine.generateFromBarcode("4901111111111"));
+      playerTeam.push((myDeck.subChar2 && myDeck.subChar2.type === 'character') ? myDeck.subChar2 : BarcodeEngine.generateFromBarcode("4902222222222"));
     }
 
-    let enemyTeam = [BarcodeEngine.generateFromBarcode(isHost ? "4908888888888" : "4901111222233")];
+    let enemyMain = (opponentDeck.mainChar && opponentDeck.mainChar.type === 'character') ? opponentDeck.mainChar : defaultChar2;
+    let enemyTeam = [enemyMain];
+
     if (this.matchMode === '3p') {
-      enemyTeam.push(BarcodeEngine.generateFromBarcode("4905555555555"));
-      enemyTeam.push(BarcodeEngine.generateFromBarcode("4906666666666"));
+      enemyTeam.push((opponentDeck.subChar1 && opponentDeck.subChar1.type === 'character') ? opponentDeck.subChar1 : BarcodeEngine.generateFromBarcode("4905555555555"));
+      enemyTeam.push((opponentDeck.subChar2 && opponentDeck.subChar2.type === 'character') ? opponentDeck.subChar2 : BarcodeEngine.generateFromBarcode("4906666666666"));
     }
 
-    this.activeBattle = new BattleEngine(playerTeam, deck.itemCard, enemyTeam, null, this.matchMode);
+    this.activeBattle = new BattleEngine(playerTeam, myDeck.itemCard, enemyTeam, opponentDeck.itemCard, this.matchMode);
 
     const logBox = document.getElementById('battle-log');
-    if (logBox) logBox.innerHTML = `<div>⚔️ プレイヤー対戦が はじまった！</div>`;
+    if (logBox) logBox.innerHTML = `<div>⚔️ 【ルーム ${this.network.roomCode || 'オンライン'}】 対戦が はじまった！</div>`;
 
     this.renderBattleScreen();
     this.switchScreen('SCR-06');

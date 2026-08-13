@@ -1,6 +1,5 @@
 /**
- * Storage Manager Module (Updated)
- * LocalStorageを使用したキャラクター・チームデッキの保存・管理（最大100体保存、メモ更新、1P/3Pスロットセット機能）
+ * Storage Manager Module (Bug Fix & Strict Character Filtering)
  */
 
 const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
@@ -8,9 +7,6 @@ const STORAGE_KEY_DECK = "barcode_battler_deck";
 const MAX_COLLECTION_SIZE = 100;
 
 export class StorageManager {
-  /**
-   * 所持カード一覧を取得
-   */
   static getCollection() {
     try {
       const data = localStorage.getItem(STORAGE_KEY_COLLECTION);
@@ -21,18 +17,12 @@ export class StorageManager {
     }
   }
 
-  /**
-   * キャラクター/アイテムをコレクションに保存（最大100体制限）
-   */
   static saveToCollection(card) {
     const collection = this.getCollection();
-    
-    // 既存チェック（同じID・バーコードが存在すれば更新）
     const existingIndex = collection.findIndex(c => c.id === card.id);
     if (existingIndex >= 0) {
       collection[existingIndex] = card;
     } else {
-      // 100体制限チェック：超過した場合は古いカードを先頭から自動削除
       if (collection.length >= MAX_COLLECTION_SIZE) {
         collection.shift();
       }
@@ -48,9 +38,6 @@ export class StorageManager {
     }
   }
 
-  /**
-   * メモの更新
-   */
   static updateMemo(cardId, newMemo) {
     const collection = this.getCollection();
     const target = collection.find(c => c.id === cardId);
@@ -63,7 +50,7 @@ export class StorageManager {
   }
 
   /**
-   * 現在選択中のチームデッキを取得
+   * 現在選択中のチームデッキを取得（キャラクター枠には絶対にアイテムカードを混ぜない厳密フィルタ）
    */
   static getDeck() {
     let deck = {
@@ -79,27 +66,41 @@ export class StorageManager {
     } catch (e) {
       console.error("Failed to load deck:", e);
     }
-    
-    const collection = this.getCollection();
-    const chars = collection.filter(c => c.type === 'character');
-    const items = collection.filter(c => c.type === 'item');
 
-    // 自動デフォルト割り当て
-    if (!deck.mainChar && chars.length > 0) deck.mainChar = chars[0];
-    if (!deck.subChar1 && chars.length > 1) deck.subChar1 = chars[1];
-    if (!deck.subChar2 && chars.length > 2) deck.subChar2 = chars[2];
-    if (!deck.itemCard && items.length > 0) deck.itemCard = items[0];
+    const collection = this.getCollection();
+    
+    // 厳密にキャラクターのみを抽出 (type === 'character' かつ hpが存在するもの)
+    const validChars = collection.filter(c => c.type === 'character' && typeof c.hp === 'number');
+    const validItems = collection.filter(c => c.type === 'item');
+
+    // 不正なカード（アイテムカードがキャラ枠に入っている等）が入っていた場合はクリア
+    if (deck.mainChar && deck.mainChar.type !== 'character') deck.mainChar = null;
+    if (deck.subChar1 && deck.subChar1.type !== 'character') deck.subChar1 = null;
+    if (deck.subChar2 && deck.subChar2.type !== 'character') deck.subChar2 = null;
+    if (deck.itemCard && deck.itemCard.type !== 'item') deck.itemCard = null;
+
+    // フォールバック割り当て
+    if (!deck.mainChar && validChars.length > 0) deck.mainChar = validChars[0];
+    if (!deck.subChar1 && validChars.length > 1) deck.subChar1 = validChars[1];
+    if (!deck.subChar2 && validChars.length > 2) deck.subChar2 = validChars[2];
+    if (!deck.itemCard && validItems.length > 0) deck.itemCard = validItems[0];
 
     return deck;
   }
 
-  /**
-   * 特定のスロットにカードをセット
-   * @param {string} slotType - 'mainChar' | 'subChar1' | 'subChar2' | 'itemCard'
-   * @param {object} card 
-   */
   static setDeckSlot(slotType, card) {
     const deck = this.getDeck();
+    
+    // バリデーション: キャラ枠にアイテムを入れない
+    if ((slotType === 'mainChar' || slotType === 'subChar1' || slotType === 'subChar2') && card.type !== 'character') {
+      alert("⚠️ キャラクター枠には アイテムカードを セットできません！");
+      return false;
+    }
+    if (slotType === 'itemCard' && card.type !== 'item') {
+      alert("⚠️ アイテム枠には キャラクターを セットできません！");
+      return false;
+    }
+
     deck[slotType] = card;
     try {
       localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
@@ -110,9 +111,6 @@ export class StorageManager {
     }
   }
 
-  /**
-   * コレクションカードの削除
-   */
   static removeCard(cardId) {
     let collection = this.getCollection();
     collection = collection.filter(c => c.id !== cardId);

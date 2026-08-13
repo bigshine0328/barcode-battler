@@ -1,34 +1,14 @@
 /**
- * Battle Engine Module (Updated)
- * ターン制コマンドバトル、ダメージ乱数、MISS判定、SPゲージ、QTE、1P/3Pチーム交代、アイテムコマンドを担当
+ * Battle Engine Module (Defensive Programming & NaN Prevention)
  */
 
 export class BattleEngine {
   constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
     this.mode = mode; // '1p' | '3p'
 
-    // チームリストの準備
-    this.playerTeam = playerTeam.map(c => ({
-      ...c,
-      currentHp: c.hp,
-      maxHp: c.hp,
-      sp: 0,
-      isGuarding: false,
-      qteUsed: false,
-      itemUsed: false,
-      isPlayer: true
-    }));
-
-    this.enemyTeam = enemyTeam.map(c => ({
-      ...c,
-      currentHp: c.hp,
-      maxHp: c.hp,
-      sp: 0,
-      isGuarding: false,
-      qteUsed: false,
-      itemUsed: false,
-      isPlayer: false
-    }));
+    // 安全防衛: 入力データを検証・補正してNaNを防ぐ
+    this.playerTeam = (Array.isArray(playerTeam) ? playerTeam : [playerTeam]).map(c => this._normalizeCharacter(c, true));
+    this.enemyTeam = (Array.isArray(enemyTeam) ? enemyTeam : [enemyTeam]).map(c => this._normalizeCharacter(c, false));
 
     this.playerIndex = 0;
     this.enemyIndex = 0;
@@ -39,16 +19,46 @@ export class BattleEngine {
     this.turn = 1;
     this.maxTurns = 10;
     this.isOver = false;
-    this.winner = null; // 'player' | 'enemy' | 'draw'
+    this.winner = null;
     this.logHistory = [];
+  }
+
+  /**
+   * キャラクターオブジェクトの属性・数値を正規化し、NaN/undefinedの発生を完全に防ぐ
+   */
+  _normalizeCharacter(charObj, isPlayer) {
+    const fallbackName = isPlayer ? "爆炎ドラゴン" : "アクアタイガー";
+    const hpVal = Math.max(100, Number(charObj?.hp) || 1200);
+    const atkVal = Math.max(10, Number(charObj?.atk) || 180);
+    const defVal = Math.max(0, Number(charObj?.def) || 80);
+    const spdVal = Math.max(5, Number(charObj?.spd) || 50);
+
+    return {
+      id: charObj?.id || `char_${Math.random()}`,
+      barcode: charObj?.barcode || "4901234567890",
+      type: "character",
+      name: charObj?.name || fallbackName,
+      element: charObj?.element || "火",
+      rarity: charObj?.rarity || "R",
+      hp: hpVal,
+      maxHp: hpVal,
+      currentHp: hpVal,
+      atk: atkVal,
+      def: defVal,
+      spd: spdVal,
+      skill: charObj?.skill || { name: "ギガブレイク", desc: "大ダメージをあたえる" },
+      spriteSvg: charObj?.spriteSvg || `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="currentColor"/></svg>`,
+      sp: 0,
+      isGuarding: false,
+      qteUsed: false,
+      itemUsed: false,
+      isPlayer: isPlayer
+    };
   }
 
   get player() { return this.playerTeam[this.playerIndex]; }
   get enemy() { return this.enemyTeam[this.enemyIndex]; }
 
-  /**
-   * 属性相性計算 (火 > 木 > 水 > 火)
-   */
   static getElementMultiplier(attackerElement, defenderElement) {
     if (attackerElement === "火" && defenderElement === "木") return 1.5;
     if (attackerElement === "木" && defenderElement === "水") return 1.5;
@@ -56,24 +66,14 @@ export class BattleEngine {
     return 1.0;
   }
 
-  /**
-   * 行動順判定値を算出 (SPD * 乱数 0.85 ~ 1.15)
-   */
   static calculateTurnPriority(spd) {
     const randomRatio = 0.85 + Math.random() * 0.30;
-    return spd * randomRatio;
+    return (Number(spd) || 50) * randomRatio;
   }
 
-  /**
-   * 1ターン分のコマンド処理を実行
-   * @param {string} playerAction - 'attack' | 'skill' | 'guard' | 'item' | 'qte'
-   * @param {boolean} playerQteSuccess 
-   * @param {string} enemyAction 
-   */
   processTurn(playerAction, playerQteSuccess = false, enemyAction = null, enemyQteSuccess = false) {
     if (this.isOver) return null;
 
-    // CPUの思考ルーチン（敵アクション未指定の場合）
     if (!enemyAction) {
       const options = ['attack', 'attack', 'guard'];
       if (this.enemy.sp >= 100) options.push('skill');
@@ -85,7 +85,6 @@ export class BattleEngine {
       actions: []
     };
 
-    // 1. ガード & アイテムの即時処理
     this.player.isGuarding = (playerAction === 'guard');
     this.enemy.isGuarding = (enemyAction === 'guard');
 
@@ -100,14 +99,13 @@ export class BattleEngine {
 
     if (this.player.isGuarding) {
       this.player.sp = Math.min(100, this.player.sp + 30);
-      turnLog.actions.push({ actor: 'player', message: `🛡️ ${this.player.name} は ガードの しせいを とった！ (被ダメ半減 & SP +30%)` });
+      turnLog.actions.push({ actor: 'player', message: `🛡️ ${this.player.name} は ガード！ (被ダメ半減 & SP +30%)` });
     }
     if (this.enemy.isGuarding) {
       this.enemy.sp = Math.min(100, this.enemy.sp + 30);
-      turnLog.actions.push({ actor: 'enemy', message: `🛡️ ${this.enemy.name} は ガードの しせいを とった！ (被ダメ半減 & SP +30%)` });
+      turnLog.actions.push({ actor: 'enemy', message: `🛡️ ${this.enemy.name} は ガード！ (被ダメ半減 & SP +30%)` });
     }
 
-    // 2. 行動順判定
     const playerPriority = BattleEngine.calculateTurnPriority(this.player.spd);
     const enemyPriority = BattleEngine.calculateTurnPriority(this.enemy.spd);
 
@@ -119,17 +117,13 @@ export class BattleEngine {
       enemy: { action: enemyAction, qte: enemyQteSuccess, self: this.enemy, target: this.player }
     };
 
-    // 先攻行動
     this._executeAction(actionMap[firstActor], turnLog);
 
-    // 勝敗・倒れた時のチーム交代チェック
     if (!this._checkCheckmate(turnLog)) {
-      // 後攻行動
       this._executeAction(actionMap[secondActor], turnLog);
       this._checkCheckmate(turnLog);
     }
 
-    // 3. ターン経過判定
     if (!this.isOver) {
       this.turn++;
       if (this.turn > this.maxTurns) {
@@ -142,7 +136,7 @@ export class BattleEngine {
           turnLog.actions.push({ actor: 'system', message: "10ターン けいか！ 残りHP率が おおい あなたの しょうり！" });
         } else if (enemyHpRatio > playerHpRatio) {
           this.winner = 'enemy';
-          turnLog.actions.push({ actor: 'system', message: "10ターン け发！ 残りHP率が おおい あいての しょうり..." });
+          turnLog.actions.push({ actor: 'system', message: "10ターン けいか！ 残りHP率が おおい あいての しょうり..." });
         } else {
           this.winner = 'draw';
           turnLog.actions.push({ actor: 'system', message: "10ターン けいか！ ひきわけ！" });
@@ -156,19 +150,20 @@ export class BattleEngine {
 
   _useItem(target, item, turnLog, isPlayer) {
     let msg = "";
+    const val = Number(item.value) || 100;
     if (item.effectType === "heal") {
-      const healAmt = Math.min(item.value, target.maxHp - target.currentHp);
+      const healAmt = Math.min(val, target.maxHp - target.currentHp);
       target.currentHp += healAmt;
       msg = `💊 【${item.name}】を つかった！ HPが ${healAmt} かいふく！`;
     } else if (item.effectType === "buff_atk") {
-      target.atk += item.value;
-      msg = `💊 【${item.name}】を つかった！ ATKが +${item.value} アップ！`;
+      target.atk += val;
+      msg = `💊 【${item.name}】を つかった！ ATKが +${val} アップ！`;
     } else if (item.effectType === "buff_def") {
-      target.def += item.value;
-      msg = `💊 【${item.name}】を つかった！ DEFが +${item.value} アップ！`;
+      target.def += val;
+      msg = `💊 【${item.name}】を つかった！ DEFが +${val} アップ！`;
     } else if (item.effectType === "buff_spd") {
-      target.spd += item.value;
-      msg = `💊 【${item.name}】を つかった！ SPDが +${item.value} アップ！`;
+      target.spd += val;
+      msg = `💊 【${item.name}】を つかった！ SPDが +${val} アップ！`;
     }
 
     turnLog.actions.push({ actor: isPlayer ? 'player' : 'enemy', message: `${target.name} は ${msg}` });
@@ -178,7 +173,6 @@ export class BattleEngine {
     if (self.currentHp <= 0 || target.currentHp <= 0) return;
     if (action === 'guard' || action === 'item') return;
 
-    // 命中判定 (8%の確率で MISS)
     const isMiss = (Math.random() < 0.08);
     if (isMiss && action !== 'qte') {
       turnLog.actions.push({
@@ -188,46 +182,48 @@ export class BattleEngine {
       return;
     }
 
-    let rawDamage = Math.max(1, self.atk - target.def);
+    const selfAtk = Number(self.atk) || 150;
+    const targetDef = Number(target.def) || 50;
+
+    let rawDamage = Math.max(1, selfAtk - targetDef);
     const elemMult = BattleEngine.getElementMultiplier(self.element, target.element);
-    const randMult = 0.90 + Math.random() * 0.20; // 0.90 ~ 1.10
+    const randMult = 0.90 + Math.random() * 0.20;
 
     let finalDamage = 0;
     let actionDesc = "";
 
     if (action === 'attack') {
-      finalDamage = Math.round(rawDamage * elemMult * randMult);
+      finalDamage = Math.max(1, Math.round(rawDamage * elemMult * randMult));
       actionDesc = `${self.name} の こうげき！`;
       self.sp = Math.min(100, self.sp + 25);
     } else if (action === 'skill') {
       if (self.sp >= 100) {
         self.sp = 0;
-        finalDamage = Math.round(rawDamage * 1.8 * elemMult * randMult);
-        actionDesc = `✨ ${self.name} の ひっさつ【${self.skill.name}】！`;
+        finalDamage = Math.max(1, Math.round(rawDamage * 1.8 * elemMult * randMult));
+        actionDesc = `✨ ${self.name} の ひっさつ【${self.skill?.name || "ギガブレイク"}】！`;
       } else {
-        finalDamage = Math.round(rawDamage * elemMult * randMult);
+        finalDamage = Math.max(1, Math.round(rawDamage * elemMult * randMult));
         actionDesc = `${self.name} の こうげき！`;
       }
     } else if (action === 'qte') {
       self.qteUsed = true;
       if (qte) {
-        finalDamage = Math.round(rawDamage * 2.5 * elemMult * randMult);
+        finalDamage = Math.max(1, Math.round(rawDamage * 2.5 * elemMult * randMult));
         actionDesc = `💥 【ぎゃくてん】 タイミング成功！ 2.5倍大打撃！`;
       } else {
-        finalDamage = Math.round(rawDamage * 0.5 * randMult);
+        finalDamage = Math.max(1, Math.round(rawDamage * 0.5 * randMult));
         actionDesc = `💥 【ぎゃくてん】 タイミング失敗... (小ダメージ)`;
       }
     }
 
-    // ガード判定 (50%カット)
     if (target.isGuarding) {
       finalDamage = Math.max(1, Math.round(finalDamage * 0.5));
       actionDesc += ` (ガード中・半減)`;
     }
 
-    // ダメージ適用
+    // ダメージ減算
     target.currentHp = Math.max(0, target.currentHp - finalDamage);
-    target.sp = Math.min(100, target.sp + 15); // 被ダメ時SP加算
+    target.sp = Math.min(100, target.sp + 15);
 
     turnLog.actions.push({
       actor: self.isPlayer ? 'player' : 'enemy',

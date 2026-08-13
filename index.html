@@ -198,10 +198,11 @@
 
       <div class="battle-stage">
         <!-- 敵情報 -->
-        <div class="fighter-bar">
+        <div class="fighter-bar enemy-bar">
           <div style="display:flex; justify-content: space-between; align-items:center;">
+            <span style="font-weight: 900; font-size: 0.8rem; background: #ff3366; color: #fff; padding: 2px 8px; border-radius: 8px; margin-right: 6px;">🔴 あいて (ENEMY)</span>
             <span id="e-name" style="font-weight: 800; font-size: 0.9rem;">???</span>
-            <span id="e-hp-num" style="font-size: 0.8rem; color: var(--secondary-cyan);">1000/1000</span>
+            <span id="e-hp-num" style="font-size: 0.8rem; color: var(--secondary-cyan); margin-left: auto;">1000/1000</span>
           </div>
           <div class="hp-gauge-bg"><div id="e-hp-bar" class="hp-gauge-fill"></div></div>
           <div class="sp-gauge-bg"><div id="e-sp-bar" class="sp-gauge-fill"></div></div>
@@ -210,19 +211,22 @@
         <!-- バトルアリーナ -->
         <div class="battle-arena">
           <div class="arena-char">
-            <div id="p-sprite" class="mini-sprite" style="width:80px; height:80px;"></div>
+            <div id="p-sprite" class="mini-sprite" style="width:85px; height:85px;"></div>
+            <div style="font-size: 0.75rem; font-weight: 800; color: var(--secondary-cyan); margin-top: 4px;">🟢 あなた</div>
           </div>
           <div style="font-family: var(--font-arcade); font-size: 1.3rem; color: var(--primary-pink);">VS</div>
           <div class="arena-char">
-            <div id="e-sprite" class="mini-sprite" style="width:80px; height:80px;"></div>
+            <div id="e-sprite" class="mini-sprite" style="width:85px; height:85px;"></div>
+            <div style="font-size: 0.75rem; font-weight: 800; color: var(--primary-pink); margin-top: 4px;">🔴 あいて</div>
           </div>
         </div>
 
         <!-- 自分情報 -->
-        <div class="fighter-bar">
+        <div class="fighter-bar player-bar">
           <div style="display:flex; justify-content: space-between; align-items:center;">
+            <span style="font-weight: 900; font-size: 0.8rem; background: #00e5ff; color: #000; padding: 2px 8px; border-radius: 8px; margin-right: 6px;">🟢 あなた (YOU)</span>
             <span id="p-name" style="font-weight: 800; font-size: 0.9rem;">???</span>
-            <span id="p-hp-num" style="font-size: 0.8rem; color: var(--secondary-cyan);">1000/1000</span>
+            <span id="p-hp-num" style="font-size: 0.8rem; color: var(--secondary-cyan); margin-left: auto;">1000/1000</span>
           </div>
           <div class="hp-gauge-bg"><div id="p-hp-bar" class="hp-gauge-fill"></div></div>
           <div class="sp-gauge-bg"><div id="p-sp-bar" class="sp-gauge-fill"></div></div>

@@ -1,6 +1,5 @@
 /**
- * Network Communication Module
- * 4桁ルームコード接続、BroadcastChannel API & PeerJS 統合によるリアルタイム同期
+ * Network Communication Module (Deck Handshake & Room Code Synchronization)
  */
 
 export class NetworkManager {
@@ -12,32 +11,25 @@ export class NetworkManager {
     this.isConnected = false;
   }
 
-  /**
-   * 4桁ルームコードを自動生成
-   */
   static generateRoomCode() {
     return Math.floor(1000 + Math.random() * 9000).toString();
   }
 
-  /**
-   * ルーム作成 (ホスト)
-   */
-  createRoom(code) {
+  createRoom(code, myDeck) {
     this.roomCode = code;
     this.isHost = true;
+    this.myDeck = myDeck;
     this._initChannel(code);
   }
 
-  /**
-   * ルーム参加 (ゲスト)
-   */
-  joinRoom(code) {
+  joinRoom(code, myDeck) {
     this.roomCode = code;
     this.isHost = false;
+    this.myDeck = myDeck;
     this._initChannel(code);
     
-    // ホストへ接続シグナル送信
-    this.send({ type: 'JOIN_REQUEST', guestId: Math.random().toString(36).substring(7) });
+    // ホストへ接続リクエストと自分のデッキデータを送信
+    this.send({ type: 'JOIN_REQUEST', guestDeck: myDeck });
   }
 
   _initChannel(code) {
@@ -47,9 +39,11 @@ export class NetworkManager {
     this.channel = new BroadcastChannel(`barcode_battler_room_${code}`);
     this.channel.onmessage = (event) => {
       const data = event.data;
+
       if (data.type === 'JOIN_REQUEST' && this.isHost) {
         this.isConnected = true;
-        this.send({ type: 'JOIN_ACCEPT', hostId: 'host' });
+        // ホストからゲストへアクセプトとホストのデッキデータを送信
+        this.send({ type: 'JOIN_ACCEPT', hostDeck: this.myDeck });
       } else if (data.type === 'JOIN_ACCEPT' && !this.isHost) {
         this.isConnected = true;
       }
@@ -60,18 +54,12 @@ export class NetworkManager {
     };
   }
 
-  /**
-   * メッセージ送信
-   */
   send(data) {
     if (this.channel) {
       this.channel.postMessage(data);
     }
   }
 
-  /**
-   * 切断処理
-   */
   disconnect() {
     if (this.channel) {
       this.channel.close();
