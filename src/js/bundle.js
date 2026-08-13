@@ -1,10 +1,10 @@
 /**
- * Barcode Battler - Standalone Bundle JS (v1.0.8 Cache-Buster & Global Handler)
- * 確実なグローバルハンドラー展開・毎戦異なるランダムCPU敵・能力メモ編集モーダル完全保証
+ * Barcode Battler - Standalone Bundle JS (v1.0.9 Real-Time Battle Sync Engine)
+ * 双方向リアルタイムターン同期・毎戦異なるランダムCPU敵・全機能完全動作
  */
 
 (function() {
-  console.log("Barcode Battler bundle v1.0.8 initializing...");
+  console.log("Barcode Battler bundle v1.0.9 online turn-sync initializing...");
 
   // --- 1. BarcodeEngine ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
@@ -469,6 +469,9 @@
   let scannedCard = null;
   let selectedCardForDetail = null;
   let matchMode = '1p';
+  let isOnlineMatch = false;
+  let myTurnAction = null;
+  let oppTurnAction = null;
   let network = new NetworkManager();
 
   function switchScreen(screenId) {
@@ -526,7 +529,6 @@
         <div style="font-size: 0.7rem; color: var(--text-muted);">${c.type === 'character' ? `HP:${c.hp} ATK:${c.atk}` : c.desc}</div>
       `;
 
-      // ⭐【修正】カードタップで確実に詳細モーダルを開くグローバルハンドラー
       div.onclick = function() {
         window.appOpenDetailModal(c);
       };
@@ -607,7 +609,6 @@
     document.getElementById('lobby-host-wait-view').style.display = 'none';
   }
 
-  // --- タブ＆モード切り替え & ロビーハンドラー ---
   window.appSelectTab = function(type) {
     const tabCol = document.getElementById('tab-btn-collection');
     const tabDeck = document.getElementById('tab-btn-deck');
@@ -645,6 +646,7 @@
   window.appCreateRoom = function() {
     const code = NetworkManager.generateRoomCode();
     const deck = StorageManager.getDeck();
+    isOnlineMatch = true;
     document.getElementById('lobby-select-view').style.display = 'none';
     document.getElementById('lobby-host-wait-view').style.display = 'block';
 
@@ -655,12 +657,16 @@
     network.onMessageCallback = (data) => {
       if (data.type === 'JOIN_REQUEST') {
         startBattle(false, data.guestDeck);
+      } else if (data.type === 'TURN_ACTION') {
+        oppTurnAction = data.action;
+        checkAndExecuteOnlineTurn();
       }
     };
   };
 
   window.appCancelHost = function() {
     network.disconnect();
+    isOnlineMatch = false;
     renderLobby();
   };
 
@@ -677,21 +683,61 @@
     const btnJoin = document.getElementById('btn-join-room');
     if (btnJoin) { btnJoin.disabled = true; btnJoin.textContent = "🌀 せつぞく中..."; }
 
+    isOnlineMatch = true;
+
     network.joinRoom(codeStr, deck, () => {}, (errMsg) => {
       if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
       alert(`❌ ${errMsg}`);
+      isOnlineMatch = false;
     });
 
     network.onMessageCallback = (data) => {
       if (data.type === 'JOIN_ACCEPT') {
         if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
         startBattle(false, data.hostDeck);
+      } else if (data.type === 'TURN_ACTION') {
+        oppTurnAction = data.action;
+        checkAndExecuteOnlineTurn();
       }
     };
   };
 
-  // --- バトル開始 (毎戦ランダムCPU敵生成 & ログクリア) ---
+  // --- オンラインターン動機構築 ---
+  function setBattleButtonsDisabled(disabled) {
+    const ids = ['btn-cmd-attack', 'btn-cmd-skill', 'btn-cmd-guard', 'btn-cmd-item'];
+    ids.forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.disabled = disabled;
+    });
+  }
+
+  function checkAndExecuteOnlineTurn() {
+    if (!isOnlineMatch || !activeBattle || activeBattle.isOver) return;
+
+    if (myTurnAction && oppTurnAction) {
+      // 双方のコマンドが受信完了！ 一括ターン同期実行
+      const turnLog = activeBattle.processTurn(myTurnAction, false, oppTurnAction, false);
+      
+      myTurnAction = null;
+      oppTurnAction = null;
+
+      renderBattle();
+      appendBattleLog(turnLog);
+      setBattleButtonsDisabled(false);
+
+      if (activeBattle.isOver) {
+        setTimeout(() => {
+          alert(activeBattle.winner === 'player' ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
+          isOnlineMatch = false;
+          network.disconnect();
+          switchScreen('SCR-05');
+        }, 1000);
+      }
+    }
+  }
+
   window.appStartCpuBattle = function() {
+    isOnlineMatch = false;
     startBattle(true, null);
   };
 
@@ -709,7 +755,7 @@
 
     let enemyTeam = [];
     if (isCpu) {
-      // ⭐【修正】毎回ランダムなバーコードから多様なCPU敵キャラクターを動的生成！
+      // 毎回違うランダムCPU敵キャラクターを動的生成
       enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
       if (matchMode === '3p') {
         enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
@@ -727,10 +773,13 @@
     }
 
     activeBattle = new BattleEngine(playerTeam, deck.itemCard, enemyTeam, oppDeck?.itemCard || null, matchMode);
-    
+    myTurnAction = null;
+    oppTurnAction = null;
+    setBattleButtonsDisabled(false);
+
     // ログリセット
     const logBox = document.getElementById('battle-log');
-    if (logBox) logBox.innerHTML = `<div>⚔️ バトルが はじまった！ (${matchMode === '3p' ? '3Pチーム戦' : '1P勝負'})</div>`;
+    if (logBox) logBox.innerHTML = `<div>⚔️ ${isOnlineMatch ? '対戦相手と' : 'CPUとの'} バトルが はじまった！ (${matchMode === '3p' ? '3Pチーム戦' : '1P勝負'})</div>`;
 
     renderBattle();
     switchScreen('SCR-06');
@@ -758,30 +807,56 @@
 
   function handleAction(act) {
     if (!activeBattle || activeBattle.isOver) return;
-    const turnLog = activeBattle.processTurn(act);
-    renderBattle();
 
+    if (isOnlineMatch) {
+      // ⭐【オンライン同期】自分がコマンドを選択
+      myTurnAction = act;
+      setBattleButtonsDisabled(true);
+
+      const logBox = document.getElementById('battle-log');
+      if (logBox) {
+        const div = document.createElement('div');
+        div.style.color = "var(--secondary-cyan)";
+        div.textContent = "🌀 あいての コマンド選択を まっています...";
+        logBox.appendChild(div);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+
+      // 相手にコマンド送信
+      network.send({ type: 'TURN_ACTION', action: act });
+
+      // 双方のコマンドが揃っているか確認
+      checkAndExecuteOnlineTurn();
+
+    } else {
+      // CPU対戦
+      const turnLog = activeBattle.processTurn(act);
+      renderBattle();
+      appendBattleLog(turnLog);
+
+      if (activeBattle.isOver) {
+        setTimeout(() => {
+          alert(activeBattle.winner === 'player' ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
+          switchScreen('SCR-05');
+        }, 800);
+      }
+    }
+  }
+
+  function appendBattleLog(turnLog) {
     const logBox = document.getElementById('battle-log');
-    if (logBox && turnLog) {
-      turnLog.actions.forEach(a => {
-        const d = document.createElement('div');
-        d.textContent = a.message;
-        logBox.appendChild(d);
-      });
-      logBox.scrollTop = logBox.scrollHeight;
-    }
-
-    if (activeBattle.isOver) {
-      setTimeout(() => {
-        alert(activeBattle.winner === 'player' ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
-        switchScreen('SCR-05');
-      }, 800);
-    }
+    if (!logBox || !turnLog) return;
+    turnLog.actions.forEach(a => {
+      const d = document.createElement('div');
+      d.textContent = a.message;
+      logBox.appendChild(d);
+    });
+    logBox.scrollTop = logBox.scrollHeight;
   }
 
   // --- イベントバインド ---
   document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded -> Binding controls v1.0.8...");
+    console.log("DOMContentLoaded -> Binding controls v1.0.9...");
 
     document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
     document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
@@ -791,7 +866,6 @@
       b.addEventListener('click', () => switchScreen('SCR-01'));
     });
 
-    // モーダル閉じる & メモ編集 & デッキセット
     document.getElementById('btn-edit-memo')?.addEventListener('click', () => {
       if (!selectedCardForDetail) return;
       const newMemo = prompt("このカードのメモをへんしゅう (例: おかしの箱):", selectedCardForDetail.memo || "");
@@ -834,7 +908,6 @@
       }
     });
 
-    // デモバーコード
     document.querySelectorAll('.btn-demo-barcode').forEach(b => {
       b.addEventListener('click', (e) => {
         const code = e.target.getAttribute('data-code');
@@ -851,7 +924,7 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v1.0.8 Cache-Free & Standalone Ready!");
+    console.log("Barcode Battler v1.0.9 Online Battle Sync Ready!");
   });
 
 })();
