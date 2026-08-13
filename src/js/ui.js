@@ -1,6 +1,5 @@
 /**
- * UI Controller Module (Comprehensive Refactor)
- * 全画面（SCR-01〜SCR-07）、カード詳細ダイアログ、デッキ組み換え、1P/3Pモード選択、バトルアイテム、逃げる機能
+ * UI Controller Module (WebRTC P2P Sync, Strict Match Validation & Immediate Damage Rendering)
  */
 
 import { BarcodeEngine } from './barcode-engine.js';
@@ -18,6 +17,9 @@ export class UIController {
 
     // 対戦設定
     this.matchMode = '1p'; // '1p' | '3p'
+    this.isOnlineMatch = false;
+    this.mySelectedAction = null;
+    this.oppSelectedAction = null;
 
     // QTE制御
     this.qteAnimationId = null;
@@ -33,9 +35,7 @@ export class UIController {
     if ('BarcodeDetector' in window) {
       try {
         this.barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'qr_code'] });
-      } catch (e) {
-        console.log("BarcodeDetector ready", e);
-      }
+      } catch (e) {}
     }
   }
 
@@ -84,7 +84,7 @@ export class UIController {
 
     const showcase = document.getElementById('home-showcase');
     const deck = StorageManager.getDeck();
-    const mainChar = deck.mainChar || collection.find(c => c.type === 'character');
+    const mainChar = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : collection.find(c => c.type === 'character');
 
     if (mainChar && showcase) {
       showcase.innerHTML = `
@@ -117,7 +117,6 @@ export class UIController {
 
     try {
       if (statusMsg) statusMsg.textContent = "カメラを き動しています...";
-      
       const constraints = {
         video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false
@@ -133,7 +132,7 @@ export class UIController {
       this.startScanLoop();
 
     } catch (err) {
-      console.error("Camera access error:", err);
+      console.error("Camera error:", err);
       if (statusMsg) statusMsg.textContent = "⚠️ カメラのきょかが ありません。下のテストボタンをご利用ください。";
     }
   }
@@ -246,9 +245,8 @@ export class UIController {
     this.switchScreen('SCR-03');
   }
 
-  // --- SCR-04: 図鑑・デッキ編成・詳細モーダル ---
+  // --- SCR-04: 図鑑・デッキ編成・詳細 ---
   bindDeckEvents() {
-    // タブ切替
     const tabCol = document.getElementById('tab-btn-collection');
     const tabDeck = document.getElementById('tab-btn-deck');
     const viewCol = document.getElementById('view-collection-tab');
@@ -270,12 +268,10 @@ export class UIController {
       this.renderDeckSlots();
     });
 
-    // モーダル閉じる
     document.getElementById('btn-close-detail')?.addEventListener('click', () => {
       document.getElementById('detail-modal')?.classList.remove('active');
     });
 
-    // スロットセットボタン
     document.getElementById('btn-set-main')?.addEventListener('click', () => this.assignSelectedToSlot('mainChar'));
     document.getElementById('btn-set-sub1')?.addEventListener('click', () => this.assignSelectedToSlot('subChar1'));
     document.getElementById('btn-set-sub2')?.addEventListener('click', () => this.assignSelectedToSlot('subChar2'));
@@ -387,12 +383,14 @@ export class UIController {
 
   assignSelectedToSlot(slotType) {
     if (!this.selectedCardForDetail) return;
-    StorageManager.setDeckSlot(slotType, this.selectedCardForDetail);
+    const success = StorageManager.setDeckSlot(slotType, this.selectedCardForDetail);
     
-    document.getElementById('detail-modal')?.classList.remove('active');
-    alert(`【${this.selectedCardForDetail.name}】を セットしました！`);
-    this.renderDeckSlots();
-    this.renderHome();
+    if (success !== false) {
+      document.getElementById('detail-modal')?.classList.remove('active');
+      alert(`【${this.selectedCardForDetail.name}】を セットしました！`);
+      this.renderDeckSlots();
+      this.renderHome();
+    }
   }
 
   renderDeckSlots() {
@@ -409,7 +407,7 @@ export class UIController {
     if (item) item.textContent = deck.itemCard ? `${deck.itemCard.name} (${deck.itemCard.desc})` : "未セット";
   }
 
-  // --- SCR-05: 対戦ロビー ---
+  // --- SCR-05: 対戦ロビー (厳密バリデーション & P2Pマッチング) ---
   bindLobbyEvents() {
     const btn1p = document.getElementById('btn-mode-1p');
     const btn3p = document.getElementById('btn-mode-3p');
@@ -426,53 +424,99 @@ export class UIController {
       btn1p?.classList.remove('active');
     });
 
+    // ホスト: ルーム作成
     document.getElementById('btn-create-room')?.addEventListener('click', () => {
       const roomCode = NetworkManager.generateRoomCode();
       const deck = StorageManager.getDeck();
 
-      this.network.createRoom(roomCode, deck);
-      
-      const codeDisplay = document.getElementById('host-room-code');
-      if (codeDisplay) codeDisplay.textContent = roomCode;
-
       document.getElementById('lobby-select-view').style.display = 'none';
       document.getElementById('lobby-host-wait-view').style.display = 'block';
 
+      const codeDisplay = document.getElementById('host-room-code');
+      if (codeDisplay) codeDisplay.textContent = roomCode;
+
+      this.isOnlineMatch = true;
+
+      this.network.createRoom(
+        roomCode,
+        deck,
+        (peerId) => {
+          console.log("Host room created:", peerId);
+        },
+        (errMsg) => {
+          alert(errMsg);
+          this.renderLobby();
+        }
+      );
+
       this.network.onMessageCallback = (data) => {
         if (data.type === 'JOIN_REQUEST') {
-          // ゲストから相手のデッキデータを受信して対戦開始
-          const opponentDeck = data.guestDeck || {};
-          this.startOnlineBattle(true, opponentDeck);
+          const oppDeck = data.guestDeck || {};
+          this.startOnlineBattle(true, oppDeck);
+        } else if (data.type === 'COMMAND') {
+          this.oppSelectedAction = data.action;
+          this.checkAndProcessTurn();
         }
       };
     });
 
     document.getElementById('btn-cancel-host')?.addEventListener('click', () => {
       this.network.disconnect();
-      document.getElementById('lobby-select-view').style.display = 'block';
-      document.getElementById('lobby-host-wait-view').style.display = 'none';
+      this.renderLobby();
     });
 
+    // ゲスト: ルーム参加 (でたらめなコードのバリデーションブロック)
     document.getElementById('btn-join-room')?.addEventListener('click', () => {
       const input = document.getElementById('input-guest-code');
+      const codeStr = input ? input.value.trim() : "";
       const deck = StorageManager.getDeck();
 
-      if (input && input.value.length === 4) {
-        this.network.joinRoom(input.value, deck);
-
-        this.network.onMessageCallback = (data) => {
-          if (data.type === 'JOIN_ACCEPT') {
-            // ホストから相手のデッキデータを受信して対戦開始
-            const opponentDeck = data.hostDeck || {};
-            this.startOnlineBattle(false, opponentDeck);
-          }
-        };
-      } else {
-        alert("4けたの ルームコードを 正しく入力してください (例: 7821)");
+      if (!codeStr || codeStr.length !== 4) {
+        alert("⚠️ 4けたの ルームコードを 正しく入力してください (例: 7821)");
+        return;
       }
+
+      const btnJoin = document.getElementById('btn-join-room');
+      if (btnJoin) {
+        btnJoin.disabled = true;
+        btnJoin.textContent = "🌀 せつぞく確認中...";
+      }
+
+      this.isOnlineMatch = true;
+
+      this.network.joinRoom(
+        codeStr,
+        deck,
+        () => {
+          console.log("Guest connected to host P2P!");
+        },
+        (errMsg) => {
+          if (btnJoin) {
+            btnJoin.disabled = false;
+            btnJoin.textContent = "さんかする";
+          }
+          alert(`❌ ${errMsg}`);
+          this.network.disconnect();
+        }
+      );
+
+      this.network.onMessageCallback = (data) => {
+        if (data.type === 'JOIN_ACCEPT') {
+          if (btnJoin) {
+            btnJoin.disabled = false;
+            btnJoin.textContent = "さんかする";
+          }
+          const oppDeck = data.hostDeck || {};
+          this.startOnlineBattle(false, oppDeck);
+        } else if (data.type === 'COMMAND') {
+          this.oppSelectedAction = data.action;
+          this.checkAndProcessTurn();
+        }
+      };
     });
 
     document.getElementById('btn-cpu-battle')?.addEventListener('click', () => {
+      this.isOnlineMatch = false;
       this.startCpuBattle();
     });
   }
@@ -482,11 +526,10 @@ export class UIController {
     document.getElementById('lobby-host-wait-view').style.display = 'none';
   }
 
-  // --- SCR-06: バトル & アイテム & 逃げる ---
+  // --- SCR-06: バトル & ダメージ画面反映の徹底保証 ---
   startCpuBattle() {
     const deck = StorageManager.getDeck();
     
-    // キャラクターのみを確実に抽出する安全補正
     const defaultChar1 = BarcodeEngine.generateFromBarcode("4901234567890");
     const defaultChar2 = BarcodeEngine.generateFromBarcode("4909876543210");
 
@@ -511,6 +554,8 @@ export class UIController {
 
     this.renderBattleScreen();
     this.switchScreen('SCR-06');
+  }
+
   startOnlineBattle(isHost, opponentDeck) {
     const myDeck = StorageManager.getDeck();
     const defaultChar1 = BarcodeEngine.generateFromBarcode("4901234567890");
@@ -535,7 +580,7 @@ export class UIController {
     this.activeBattle = new BattleEngine(playerTeam, myDeck.itemCard, enemyTeam, opponentDeck.itemCard, this.matchMode);
 
     const logBox = document.getElementById('battle-log');
-    if (logBox) logBox.innerHTML = `<div>⚔️ 【ルーム ${this.network.roomCode || 'オンライン'}】 対戦が はじまった！</div>`;
+    if (logBox) logBox.innerHTML = `<div>⚔️ 【ルーム ${this.network.roomCode}】 P2Pオンライン対戦が はじまった！</div>`;
 
     this.renderBattleScreen();
     this.switchScreen('SCR-06');
@@ -550,60 +595,113 @@ export class UIController {
 
     document.getElementById('btn-qte-stop')?.addEventListener('click', () => this.resolveQte());
 
-    // 🏃 にげる ボタン
     document.getElementById('btn-battle-escape')?.addEventListener('click', () => {
       if (confirm("ほんとうに 対戦から にげますか？（まけ扱いになります）")) {
+        this.network.disconnect();
         this.switchScreen('SCR-05');
       }
     });
 
-    // リザルトからロビーへ
     document.getElementById('btn-result-lobby')?.addEventListener('click', () => {
       this.switchScreen('SCR-05');
     });
   }
 
+  /**
+   * バトル画面の数値・ゲージ描画（即時＆防衛適用）
+   */
   renderBattleScreen() {
     if (!this.activeBattle) return;
     const b = this.activeBattle;
 
+    const playerObj = b.player;
+    const enemyObj = b.enemy;
+
     // 自分
-    document.getElementById('p-name').textContent = b.player.name;
-    document.getElementById('p-hp-num').textContent = `${b.player.currentHp}/${b.player.maxHp}`;
-    document.getElementById('p-hp-bar').style.width = `${Math.max(0, (b.player.currentHp / b.player.maxHp) * 100)}%`;
-    document.getElementById('p-sp-bar').style.width = `${b.player.sp}%`;
-    document.getElementById('p-sprite').innerHTML = b.player.spriteSvg;
-    document.getElementById('p-sprite').style.color = `var(--element-${b.player.element})`;
+    const pHpCurr = Math.max(0, Number(playerObj.currentHp) || 0);
+    const pHpMax = Math.max(1, Number(playerObj.maxHp) || 1200);
+    
+    document.getElementById('p-name').textContent = playerObj.name || "あなた";
+    document.getElementById('p-hp-num').textContent = `${pHpCurr}/${pHpMax}`;
+    document.getElementById('p-hp-bar').style.width = `${Math.min(100, (pHpCurr / pHpMax) * 100)}%`;
+    document.getElementById('p-sp-bar').style.width = `${playerObj.sp || 0}%`;
+    document.getElementById('p-sprite').innerHTML = playerObj.spriteSvg;
+    document.getElementById('p-sprite').style.color = `var(--element-${playerObj.element || '火'})`;
 
     // 敵
-    document.getElementById('e-name').textContent = b.enemy.name;
-    document.getElementById('e-hp-num').textContent = `${b.enemy.currentHp}/${b.enemy.maxHp}`;
-    document.getElementById('e-hp-bar').style.width = `${Math.max(0, (b.enemy.currentHp / b.enemy.maxHp) * 100)}%`;
-    document.getElementById('e-sp-bar').style.width = `${b.enemy.sp}%`;
-    document.getElementById('e-sprite').innerHTML = b.enemy.spriteSvg;
-    document.getElementById('e-sprite').style.color = `var(--element-${b.enemy.element})`;
+    const eHpCurr = Math.max(0, Number(enemyObj.currentHp) || 0);
+    const eHpMax = Math.max(1, Number(enemyObj.maxHp) || 1200);
+
+    document.getElementById('e-name').textContent = enemyObj.name || "あいて";
+    document.getElementById('e-hp-num').textContent = `${eHpCurr}/${eHpMax}`;
+    document.getElementById('e-hp-bar').style.width = `${Math.min(100, (eHpCurr / eHpMax) * 100)}%`;
+    document.getElementById('e-sp-bar').style.width = `${enemyObj.sp || 0}%`;
+    document.getElementById('e-sprite').innerHTML = enemyObj.spriteSvg;
+    document.getElementById('e-sprite').style.color = `var(--element-${enemyObj.element || '火'})`;
 
     // コマンドボタン状態
     const btnSkill = document.getElementById('btn-cmd-skill');
-    if (btnSkill) btnSkill.disabled = (b.player.sp < 100);
+    if (btnSkill) btnSkill.disabled = (playerObj.sp < 100);
 
     const btnItem = document.getElementById('btn-cmd-item');
-    if (btnItem) btnItem.disabled = (!b.playerItem || b.player.itemUsed);
+    if (btnItem) btnItem.disabled = (!b.playerItem || playerObj.itemUsed);
 
     const btnQte = document.getElementById('btn-cmd-qte');
-    if (btnQte) btnQte.disabled = b.player.qteUsed;
+    if (btnQte) btnQte.disabled = playerObj.qteUsed;
   }
 
   handlePlayerAction(action, qteResult = false) {
     if (!this.activeBattle || this.activeBattle.isOver) return;
 
-    const turnLog = this.activeBattle.processTurn(action, qteResult, null, false);
-    
-    this.renderBattleScreen();
-    this.appendBattleLog(turnLog);
+    if (this.isOnlineMatch) {
+      // オンライン対戦時：自分のアクションを送信
+      this.mySelectedAction = { action, qteResult };
+      this.network.send({ type: 'COMMAND', action: action, qte: qteResult });
+      
+      const logBox = document.getElementById('battle-log');
+      if (logBox) {
+        const div = document.createElement('div');
+        div.style.color = "var(--secondary-cyan)";
+        div.textContent = "🌀 あいての コマンド選択を まっています...";
+        logBox.appendChild(div);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
 
-    if (this.activeBattle.isOver) {
-      setTimeout(() => this.showResult(this.activeBattle.winner), 1200);
+      this.checkAndProcessTurn();
+    } else {
+      // CPU対戦：即時処理
+      const turnLog = this.activeBattle.processTurn(action, qteResult, null, false);
+      
+      // 即時画面反映
+      this.renderBattleScreen();
+      this.appendBattleLog(turnLog);
+
+      if (this.activeBattle.isOver) {
+        setTimeout(() => this.showResult(this.activeBattle.winner), 1200);
+      }
+    }
+  }
+
+  checkAndProcessTurn() {
+    if (!this.isOnlineMatch) return;
+
+    if (this.mySelectedAction && this.oppSelectedAction) {
+      const turnLog = this.activeBattle.processTurn(
+        this.mySelectedAction.action,
+        this.mySelectedAction.qteResult,
+        this.oppSelectedAction,
+        false
+      );
+
+      this.mySelectedAction = null;
+      this.oppSelectedAction = null;
+
+      this.renderBattleScreen();
+      this.appendBattleLog(turnLog);
+
+      if (this.activeBattle.isOver) {
+        setTimeout(() => this.showResult(this.activeBattle.winner), 1200);
+      }
     }
   }
 
