@@ -1,18 +1,17 @@
 /**
- * Barcode Battler - Official Release JS (v2.0.0 Official Edition)
- * 全12系統の本格かっこいいモンスターSVG & 全8種専用アイテムSVG & 3~5ターン超爽快バトル計算式
+ * Barcode Battler - Official Release JS (v2.1.0 Items 3-Uses, Item Rarity Variations, & Unified Image Sync)
+ * アイテム1バトル3回使用化、アイテム4段階レアリティ＆数値幅調整、全画面でのキャラ画像完全一致統一
  */
 
 (function() {
   "use strict";
-  console.log("Barcode Battler v2.0.0 Official Edition initializing...");
+  console.log("Barcode Battler v2.1.0 initializing...");
 
-  // --- 1. Monster Visual System (12 Unique Monster Species SVGs) ---
+  // --- 1. Monster Visual System ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
   const BASE_NAMES = ["ドラゴン", "ゴーレム", "ナイト", "フェニックス", "タイガー", "スライム", "ベア", "ロボ", "ウルフ", "ライオン", "イエティ", "グリフォン"];
   const SUFFIXES = ["バトラー", "キング", "マスター", "ヒーロー", "ビースト", "ガード", "ファイター", "ロード", "カイザー", "エンペラー"];
 
-  // 小中学生に大人気のクール＆グラフィカルな12系統SVG
   const SPECIES_SVGS = {
     "ドラゴン": `<svg viewBox="0 0 100 100"><path d="M50 10 Q65 25 80 15 Q75 35 90 40 Q70 55 75 80 Q50 70 25 80 Q30 55 10 40 Q25 35 20 15 Q35 25 50 10 Z" fill="currentColor"/><path d="M35 30 L45 25 L40 40 Z" fill="#fff"/><path d="M65 30 L55 25 L60 40 Z" fill="#fff"/><circle cx="38" cy="35" r="4" fill="#ff0055"/><circle cx="62" cy="35" r="4" fill="#ff0055"/></svg>`,
     "ゴーレム": `<svg viewBox="0 0 100 100"><rect x="20" y="15" width="60" height="45" rx="8" fill="currentColor"/><rect x="10" y="25" width="18" height="50" rx="6" fill="currentColor"/><rect x="72" y="25" width="18" height="50" rx="6" fill="currentColor"/><rect x="25" y="60" width="20" height="35" rx="5" fill="currentColor"/><rect x="55" y="60" width="20" height="35" rx="5" fill="currentColor"/><rect x="30" y="28" width="40" height="12" fill="#000"/><circle cx="40" cy="34" r="4" fill="#00e5ff"/><circle cx="60" cy="34" r="4" fill="#00e5ff"/></svg>`,
@@ -28,7 +27,6 @@
     "グリフォン": `<svg viewBox="0 0 100 100"><path d="M50 10 L70 30 L95 25 L80 55 L90 88 L50 75 L10 88 L20 55 L5 25 L30 30 Z" fill="currentColor"/><path d="M50 30 L65 50 L35 50 Z" fill="#fff"/><circle cx="40" cy="32" r="4" fill="#ff0055"/><circle cx="60" cy="32" r="4" fill="#ff0055"/></svg>`
   };
 
-  // --- 2. Item Visual System (8 Distinct Item SVGs) ---
   const ITEM_SVGS = {
     "heal": `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="25" ry="30" fill="#00e5ff"/><rect x="42" y="15" width="16" height="15" rx="4" fill="#fff"/><path d="M50 40 L50 70 M35 55 L65 55" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>`,
     "buff_atk": `<svg viewBox="0 0 100 100"><path d="M50 10 L65 40 L55 40 L55 85 L45 85 L45 40 L35 40 Z" fill="#ff3366"/><path d="M30 65 L50 85 L70 65" stroke="#ffea00" stroke-width="6" fill="none"/></svg>`,
@@ -39,6 +37,23 @@
     "heal_def": `<svg viewBox="0 0 100 100"><path d="M50 15 L80 30 L80 60 Q80 85 50 92 Q20 85 20 60 L20 30 Z" fill="#00e5ff"/><path d="M50 35 C50 35 35 25 35 42 C35 52 50 65 50 65 C50 65 65 52 65 42 C65 25 50 35 50 35 Z" fill="#ff3366"/></svg>`,
     "all_buff": `<svg viewBox="0 0 100 100"><path d="M20 75 L30 30 L50 55 L70 30 L80 75 Z" fill="#ffea00"/><circle cx="30" cy="25" r="5" fill="#ff0055"/><circle cx="50" cy="20" r="6" fill="#00e5ff"/><circle cx="70" cy="25" r="5" fill="#b066ff"/></svg>`
   };
+
+  /**
+   * ⭐【ヘルパー】キャラクターのSVG画像を名前・種族から確実に一貫取得
+   */
+  function getCharacterSpriteSvg(card) {
+    if (!card) return SPECIES_SVGS["ドラゴン"];
+    if (card.spriteSvg && card.spriteSvg.includes("<svg")) {
+      return card.spriteSvg;
+    }
+    const nameStr = card.name || card.species || "";
+    for (let baseName of BASE_NAMES) {
+      if (nameStr.includes(baseName)) {
+        return SPECIES_SVGS[baseName];
+      }
+    }
+    return SPECIES_SVGS["ドラゴン"];
+  }
 
   class BarcodeEngine {
     static hashBarcode(codeStr) {
@@ -68,35 +83,47 @@
       const isItemCard = (hash % 5 === 0);
 
       if (isItemCard) {
-        const itemTypes = [
-          { name: "えりくさー", type: "heal", value: 500, desc: "HPを 500 大かいふく！" },
-          { name: "はかいのつるぎ", type: "buff_atk", value: 100, desc: "攻撃力(ATK)を +100 アップ！" },
-          { name: "いあつのたて", type: "buff_def", value: 80, desc: "防御力(DEF)を +80 アップ！" },
-          { name: "ひかりのたびびと", type: "buff_spd", value: 60, desc: "素早さ(SPD)を +60 アップ！" },
-          { name: "びくとりーのたま", type: "charge_sp", value: 100, desc: "ひっさつゲージ(SP)を 即座に 100% ためる！" },
-          { name: "まほうのばくだん", type: "bomb", value: 350, desc: "相手に 350 の固定ダメージを与える！" },
-          { name: "ふ死鳥の水", type: "heal_def", value: 300, desc: "HPを 300 かいふく & DEFを +40 アップ！" },
-          { name: "おうかんの輝き", type: "all_buff", value: 40, desc: "ATK・DEF・SPDを すべて +40 アップ！" }
+        // ⭐【改善2】アイテムレアリティ＆数値幅システム（SSRは3%の激レア＆超強大数値！）
+        const rarityScore = (hash % 100);
+        let rarity = "N";
+        let mult = 1.0;
+
+        if (rarityScore < 3) { rarity = "SSR"; mult = 2.5; }
+        else if (rarityScore < 15) { rarity = "SR"; mult = 1.7; }
+        else if (rarityScore < 50) { rarity = "R"; mult = 1.25; }
+        else { rarity = "N"; mult = 1.0; }
+
+        const baseItemTypes = [
+          { name: "えりくさー", type: "heal", baseVal: 300, getDesc: (v) => `HPを ${v} かいふく！` },
+          { name: "はかいのつるぎ", type: "buff_atk", baseVal: 60, getDesc: (v) => `ATKを +${v} アップ！` },
+          { name: "いあつのたて", type: "buff_def", baseVal: 50, getDesc: (v) => `DEFを +${v} アップ！` },
+          { name: "ひかりのたびびと", type: "buff_spd", baseVal: 40, getDesc: (v) => `SPDを +${v} アップ！` },
+          { name: "びくとりーのたま", type: "charge_sp", baseVal: 100, getDesc: () => `SPを 即座に 100% ためる！` },
+          { name: "まほうのばくだん", type: "bomb", baseVal: 200, getDesc: (v) => `相手に ${v} の固定ダメージ！` },
+          { name: "ふ死鳥の水", type: "heal_def", baseVal: 200, getDesc: (v) => `HPを ${v} かいふく & DEFアップ！` },
+          { name: "おうかんの輝き", type: "all_buff", baseVal: 30, getDesc: (v) => `ATK/DEF/SPD を +${v} アップ！` }
         ];
-        const item = itemTypes[hash % itemTypes.length];
-        const itemSvg = ITEM_SVGS[item.type] || ITEM_SVGS["heal"];
+
+        const itemBase = baseItemTypes[hash % baseItemTypes.length];
+        const finalValue = Math.round(itemBase.baseVal * mult);
+        const itemSvg = ITEM_SVGS[itemBase.type] || ITEM_SVGS["heal"];
 
         return {
           id: `item_${cleaned}_${hash}`,
           barcode: cleaned,
           type: "item",
-          name: item.name,
-          effectType: item.type,
-          value: item.value,
-          desc: item.desc,
-          rarity: "R",
-          spriteSvg: itemSvg, // ⭐ 専用個別のSVGグラフィック
+          name: `${rarity === 'SSR' ? '✨ [SSR] ' : rarity === 'SR' ? '🌟 [SR] ' : ''}${itemBase.name}`,
+          effectType: itemBase.type,
+          value: finalValue,
+          desc: itemBase.getDesc(finalValue),
+          rarity: rarity,
+          spriteSvg: itemSvg,
           memo: customMemo || "バーコードアイテム",
           createdAt: new Date().toISOString()
         };
       }
 
-      // レアリティ判定 (SSR: 3%, SR: 12%, R: 35%, N: 50%)
+      // キャラクター生成 (レアリティ判定 SSR: 3%, SR: 12%, R: 35%, N: 50%)
       const rarityScore = (hash % 100);
       let rarity = "N";
       let rarityMultiplier = 1.0;
@@ -132,10 +159,8 @@
       const bIdx = (hash + 1) % BASE_NAMES.length;
       const sIdx = (hash + 2) % SUFFIXES.length;
 
-      const baseSpeciesName = BASE_NAMES[bIdx]; // 例: "ドラゴン"
+      const baseSpeciesName = BASE_NAMES[bIdx];
       const name = `${PREFIXES[pIdx]}${baseSpeciesName}${SUFFIXES[sIdx]}`;
-
-      // ⭐ ベース名が同じなら必ず同じ系統グラフィックが紐づく！
       const spriteSvg = SPECIES_SVGS[baseSpeciesName] || SPECIES_SVGS["ドラゴン"];
 
       return {
@@ -261,7 +286,7 @@
     }
   }
 
-  // --- 3. BattleEngine (Ultra High-Damage Formula: 3~5 Turns Resolution) ---
+  // --- 3. BattleEngine (⭐ アイテム最大3回使用システム) ---
   class BattleEngine {
     constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
       this.mode = mode;
@@ -271,8 +296,11 @@
       this.enemyIndex = 0;
       this.playerItem = playerItem;
       this.enemyItem = enemyItem;
-      this.playerItemUsed = false;
-      this.enemyItemUsed = false;
+      
+      // ⭐【改善1】1バトルでアイテムを最大3回まで使用可能！
+      this.playerItemUsesLeft = playerItem ? 3 : 0;
+      this.enemyItemUsesLeft = enemyItem ? 3 : 0;
+
       this.turn = 1;
       this.maxTurns = (mode === '3p') ? 20 : 10;
       this.isOver = false;
@@ -284,6 +312,8 @@
       const atk = Math.max(10, Number(c?.atk) || 180);
       const def = Math.max(0, Number(c?.def) || 80);
       const spd = Math.max(5, Number(c?.spd) || 50);
+      const spriteSvg = getCharacterSpriteSvg(c);
+
       return {
         id: c?.id || `char_${Math.random()}`,
         name: c?.name || (isPlayer ? "爆炎ドラゴン" : "アクアタイガー"),
@@ -296,7 +326,7 @@
         def: def,
         spd: spd,
         skill: c?.skill || { name: "ギガブレイク", desc: "大ダメージ" },
-        spriteSvg: c?.spriteSvg || SPECIES_SVGS["ドラゴン"],
+        spriteSvg: spriteSvg, // ⭐ 画像完全一致保証
         sp: 0,
         isGuarding: false,
         isPlayer: isPlayer
@@ -311,6 +341,7 @@
       if (!eAction) {
         const opts = ['attack', 'attack', 'guard'];
         if (this.enemy.sp >= 100) opts.push('skill');
+        if (this.enemyItemUsesLeft > 0 && Math.random() < 0.25) opts.push('item');
         eAction = opts[Math.floor(Math.random() * opts.length)];
       }
 
@@ -319,39 +350,40 @@
       this.player.isGuarding = (pAction === 'guard');
       this.enemy.isGuarding = (eAction === 'guard');
 
-      if (pAction === 'item' && this.playerItem && !this.playerItemUsed) {
-        this.playerItemUsed = true;
+      // ⭐【アイテム最大3回使用ロジック】
+      if (pAction === 'item' && this.playerItem && this.playerItemUsesLeft > 0) {
+        this.playerItemUsesLeft--;
         const item = this.playerItem;
         const type = item.effectType || "heal";
+        const val = item.value || 300;
 
         if (type === 'heal') {
-          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + (item.value || 500));
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ HPが ${item.value || 500} かいふく！` });
+          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + val);
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> HP ${val} かいふく！` });
         } else if (type === 'buff_atk') {
-          this.player.atk += (item.value || 100);
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ ATKが +${item.value || 100} アップ！` });
+          this.player.atk += val;
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> ATK +${val}！` });
         } else if (type === 'buff_def') {
-          this.player.def += (item.value || 80);
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ DEFが +${item.value || 80} アップ！` });
+          this.player.def += val;
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> DEF +${val}！` });
         } else if (type === 'buff_spd') {
-          this.player.spd += (item.value || 60);
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ SPDが +${item.value || 60} アップ！` });
+          this.player.spd += val;
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> SPD +${val}！` });
         } else if (type === 'charge_sp') {
           this.player.sp = 100;
-          turnLog.actions.push({ actor: 'player', message: `✨ 【${item.name}】をつかった！ SPが 100% になった！ (ひっさつ技発動可能)` });
+          turnLog.actions.push({ actor: 'player', message: `✨ 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> SP 100% 充填！` });
         } else if (type === 'bomb') {
-          const bombDmg = item.value || 350;
-          this.enemy.currentHp = Math.max(0, this.enemy.currentHp - bombDmg);
-          turnLog.actions.push({ actor: 'player', message: `💥 【${item.name}】が 爆発！ 相手に ${bombDmg} の直撃ダメージ！` });
+          this.enemy.currentHp = Math.max(0, this.enemy.currentHp - val);
+          turnLog.actions.push({ actor: 'player', message: `💥 【${item.name}】爆発！ (のこり${this.playerItemUsesLeft}回) -> 相手に ${val} ダメージ！` });
         } else if (type === 'heal_def') {
-          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + 300);
+          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + val);
           this.player.def += 40;
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ HPが 300 かいふく & DEFが +40 アップ！` });
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> HP ${val} 回復 & DEF +40！` });
         } else if (type === 'all_buff') {
-          this.player.atk += 40;
-          this.player.def += 40;
-          this.player.spd += 40;
-          turnLog.actions.push({ actor: 'player', message: `👑 【${item.name}】のパワー！ ATK/DEF/SPD が すべて +40 アップ！` });
+          this.player.atk += val;
+          this.player.def += val;
+          this.player.spd += val;
+          turnLog.actions.push({ actor: 'player', message: `👑 【${item.name}】全能力アップ！ (のこり${this.playerItemUsesLeft}回) -> 全能力 +${val}！` });
         }
       }
 
@@ -393,9 +425,6 @@
       return turnLog;
     }
 
-    /**
-     * ⭐【新高威力計算式】3〜5ターンで爽快決着（通常攻撃450〜650 / 必殺技900〜1300）
-     */
     _execAction({ action, qte, self, target }, turnLog) {
       if (self.currentHp <= 0 || target.currentHp <= 0) return;
       if (action === 'guard' || action === 'item') return;
@@ -405,9 +434,8 @@
         return;
       }
 
-      // 超爽快火力 (基礎攻撃力 2.5倍)
       const baseDamage = self.atk * 2.5 * (100 / (100 + target.def * 0.35));
-      const minGuaranteed = self.atk * 0.50; // 最低でも攻撃力の半数は確実打撃
+      const minGuaranteed = self.atk * 0.50;
       let raw = Math.max(minGuaranteed, baseDamage);
 
       let mult = (self.element === '火' && target.element === '木') ? 1.5 : 1.0;
@@ -420,7 +448,7 @@
       if (action === 'skill') {
         if (self.sp >= 100) {
           self.sp = 0;
-          dmg = Math.round(dmg * 1.85); // 必殺技は一発KO級の900〜1300ダメ！
+          dmg = Math.round(dmg * 1.85);
           turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
         } else {
           action = 'attack';
@@ -691,12 +719,13 @@
     const resultBox = document.getElementById('scan-result-card');
     if (resultBox) {
       if (scannedCard.type === 'character') {
+        const svg = getCharacterSpriteSvg(scannedCard);
         resultBox.innerHTML = `
           <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
             ✨ ${scannedCard.rarity} ゲット！
           </div>
           <div class="sprite-container" style="color: var(--element-${scannedCard.element})">
-            ${scannedCard.spriteSvg}
+            ${svg}
           </div>
           <div class="char-name">${scannedCard.name}</div>
           <div><span class="element-tag element-${scannedCard.element}">${scannedCard.element}</span> <span class="rarity-tag">${scannedCard.rarity}</span></div>
@@ -708,9 +737,9 @@
       } else {
         resultBox.innerHTML = `
           <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
-            🎁 きょうかアイテム ゲット！
+            🎁 きょうかアイテム ゲット！ (${scannedCard.rarity})
           </div>
-          <div class="sprite-container" style="width:70px; height:70px; margin: 4px auto;">
+          <div style="width:70px; height:70px; margin: 4px auto;">
             ${scannedCard.spriteSvg}
           </div>
           <div class="char-name" style="color: var(--accent-gold);">${scannedCard.name}</div>
@@ -725,6 +754,9 @@
     switchScreen('SCR-03');
   }
 
+  /**
+   * ⭐【画像一致保証】ホーム画面で図鑑と全く同じ画像を描画
+   */
   function renderHome() {
     const col = StorageManager.getCollection();
     const badge = document.getElementById('home-count-badge');
@@ -735,8 +767,9 @@
     const mainChar = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : col.find(c => c && c.type === 'character');
 
     if (mainChar && showcase) {
+      const svg = getCharacterSpriteSvg(mainChar);
       showcase.innerHTML = `
-        <div class="sprite-container" style="color: var(--element-${mainChar.element})">${mainChar.spriteSvg}</div>
+        <div class="sprite-container" style="color: var(--element-${mainChar.element})">${svg}</div>
         <div class="char-name">${mainChar.name}</div>
         <div><span class="element-tag element-${mainChar.element}">${mainChar.element}</span> <span class="rarity-tag">${mainChar.rarity}</span></div>
         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">HP: ${mainChar.hp} / ATK: ${mainChar.atk} / DEF: ${mainChar.def} / SPD: ${mainChar.spd}</div>
@@ -746,6 +779,9 @@
     }
   }
 
+  /**
+   * ⭐【画像一致保証】図鑑画面で全カードに正確な画像を割り当て
+   */
   function renderCollection() {
     const grid = document.getElementById('collection-grid-container');
     if (!grid) return;
@@ -780,9 +816,11 @@
 
       div.className = `card-item ${c.type === 'item' ? 'item-card' : ''} ${isSet ? 'is-deck-set' : ''}`;
       
+      const sprite = (c.type === 'character') ? getCharacterSpriteSvg(c) : (c.spriteSvg || '🎁');
+
       div.innerHTML = `
         ${slotBadgeHtml}
-        <div class="mini-sprite" style="color: var(--element-${c.element || '火'})">${c.spriteSvg || '🎁'}</div>
+        <div class="mini-sprite" style="color: var(--element-${c.element || '火'})">${sprite}</div>
         <div style="font-weight: 800; font-size: 0.8rem; margin-top: 4px;">${c.name}</div>
         <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">
           ${c.type === 'character' ? `[${c.rarity}] HP:${c.hp}<br>A:${c.atk} D:${c.def}` : c.desc}
@@ -816,9 +854,10 @@
       if (btnSub2) btnSub2.style.display = 'block';
       if (btnItem) btnItem.style.display = 'none';
 
+      const svg = getCharacterSpriteSvg(card);
       content.innerHTML = `
         <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【キャラ能力詳細】</div>
-        <div class="sprite-container" style="color: var(--element-${card.element}); margin: 0 auto 6px auto; width: 70px; height: 70px;">${card.spriteSvg}</div>
+        <div class="sprite-container" style="color: var(--element-${card.element}); margin: 0 auto 6px auto; width: 70px; height: 70px;">${svg}</div>
         <div style="font-size: 1.05rem; font-weight: 800;">${card.name}</div>
         <div style="margin: 4px 0;"><span class="element-tag element-${card.element}">${card.element}</span> <span class="rarity-tag">${card.rarity}</span></div>
         <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: var(--surface-card); padding: 8px; border-radius: 8px; line-height: 1.4;">
@@ -839,7 +878,7 @@
       content.innerHTML = `
         <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【アイテム効果詳細】</div>
         <div style="width: 70px; height: 70px; margin: 4px auto;">${card.spriteSvg || '🎁'}</div>
-        <div style="font-size: 1.05rem; font-weight: 800; color: var(--accent-gold);">${card.name}</div>
+        <div style="font-size: 1.05rem; font-weight: 800; color: var(--accent-gold);">${card.name} (${card.rarity})</div>
         <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: var(--surface-card); padding: 8px; border-radius: 8px; margin-top: 6px; line-height: 1.4;">
           💊 効果: ${card.desc}<br>
           📝 メモ: ${card.memo || "メモなし"}
@@ -1086,6 +1125,9 @@
     switchScreen('SCR-06');
   }
 
+  /**
+   * ⭐【画面UIレンダリング】画像完全一致 ＆ アイテム残り使用回数リアルタイム表示
+   */
   function renderBattle() {
     if (!activeBattle) return;
     const b = activeBattle;
@@ -1103,7 +1145,7 @@
     if (pHpBar) pHpBar.style.width = `${Math.max(0, (p.currentHp / p.maxHp) * 100)}%`;
     if (pSpBar) pSpBar.style.width = `${p.sp}%`;
     if (pSprite) {
-      pSprite.innerHTML = p.spriteSvg;
+      pSprite.innerHTML = getCharacterSpriteSvg(p);
       pSprite.style.color = `var(--element-${p.element})`;
     }
 
@@ -1118,7 +1160,7 @@
     if (eHpBar) eHpBar.style.width = `${Math.max(0, (e.currentHp / e.maxHp) * 100)}%`;
     if (eSpBar) eSpBar.style.width = `${e.sp}%`;
     if (eSprite) {
-      eSprite.innerHTML = e.spriteSvg;
+      eSprite.innerHTML = getCharacterSpriteSvg(e);
       eSprite.style.color = `var(--element-${e.element})`;
     }
 
@@ -1133,11 +1175,14 @@
       btnSkill.style.opacity = (p.sp < 100) ? "0.4" : "1.0";
     }
 
+    // ⭐【改善1】アイテムボタン残り使用回数の表示（最大3回まで！）
     const btnItem = document.getElementById('btn-cmd-item');
     if (btnItem) {
-      const isItemUsable = (b.playerItem && !b.playerItemUsed);
+      const uses = b.playerItemUsesLeft;
+      const isItemUsable = (b.playerItem && uses > 0);
       btnItem.disabled = !isItemUsable;
       btnItem.style.opacity = isItemUsable ? "1.0" : "0.4";
+      btnItem.textContent = isItemUsable ? `💊 アイテム (${uses}/3)` : `💊 アイテム (終了)`;
     }
   }
 
@@ -1149,8 +1194,8 @@
         alert("⚠️ デッキに アイテムカードが セットされていません！");
         return;
       }
-      if (activeBattle.playerItemUsed) {
-        alert("⚠️ アイテムは 1バトルに 1回しか つかえません！");
+      if (activeBattle.playerItemUsesLeft <= 0) {
+        alert("⚠️ アイテムは 1バトルに 3回までしか つかえません！");
         return;
       }
     }
@@ -1207,7 +1252,7 @@
   }
 
   function initApp() {
-    console.log("Initializing Barcode Battler v2.0.0 Official Edition...");
+    console.log("Initializing Barcode Battler v2.1.0 Official Edition...");
     try {
       StorageManager.migrateCollectionData();
     } catch (e) {
@@ -1301,7 +1346,7 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v2.0.0 Official Edition Ready!");
+    console.log("Barcode Battler v2.1.0 Ready!");
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
