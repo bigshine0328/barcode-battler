@@ -1,12 +1,12 @@
 /**
- * Barcode Battler - Standalone Bundle JS (v1.1.1 Full Restore)
- * カメラ起動機能完全復元・アイテム1回制限・ひっさつSP100%制限・P2P対戦完全同期
+ * Barcode Battler - Standalone Bundle JS (v1.1.2 Attack Unlocked & Rarity Stat Balance)
+ * 「こうげき」毎ターン無制限化・SSR出現率3%厳選＆レアリティ別ステータス倍率（SSR: 1.6倍）適用
  */
 
 (function() {
-  console.log("Barcode Battler bundle v1.1.1 initializing...");
+  console.log("Barcode Battler bundle v1.1.2 initializing...");
 
-  // --- 1. BarcodeEngine ---
+  // --- 1. BarcodeEngine (Balanced Rarity & Stat Multipliers) ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
   const BASE_NAMES = ["ドラゴン", "ゴーレム", "ナイト", "フェニックス", "タイガー", "スライム", "ベア", "ロボ", "ウルフ", "ライオン", "イエティ", "グリフォン"];
   const SUFFIXES = ["バトラー", "キング", "マスター", "ヒーロー", "ビースト", "ガード", "ファイター", "ロード", "カイザー", "エンペラー"];
@@ -68,19 +68,39 @@
         };
       }
 
-      const hp = 1000 + ((digits[9] || 7) * 100) + ((digits[10] || 8) * 10);
-      const atk = 100 + ((digits[7] || 5) * 20) + (digits[8] || 6);
-      const def = 50 + ((digits[5] || 3) * 10) + (digits[6] || 4);
-      const spd = 10 + ((digits[3] || 1) * 5) + (digits[4] || 2);
+      // レアリティ判定の最適化 (SSR: 3%, SR: 12%, R: 35%, N: 50%)
+      const rarityScore = (hash % 100);
+      let rarity = "N";
+      let rarityMultiplier = 1.0; // パラメータ倍率
+
+      if (rarityScore < 3) {
+        rarity = "SSR";
+        rarityMultiplier = 1.60; // SSRは基礎能力1.60倍！
+      } else if (rarityScore < 15) {
+        rarity = "SR";
+        rarityMultiplier = 1.35; // SRは1.35倍
+      } else if (rarityScore < 50) {
+        rarity = "R";
+        rarityMultiplier = 1.15; // Rは1.15倍
+      } else {
+        rarity = "N";
+        rarityMultiplier = 1.00; // Nは1.00倍
+      }
+
+      // 基礎ステータス計算
+      const baseHp = 900 + ((digits[9] || 7) * 80) + ((digits[10] || 8) * 10);
+      const baseAtk = 90 + ((digits[7] || 5) * 15) + (digits[8] || 6);
+      const baseDef = 40 + ((digits[5] || 3) * 8) + (digits[6] || 4);
+      const baseSpd = 10 + ((digits[3] || 1) * 4) + (digits[4] || 2);
+
+      // レアリティ倍率の適用
+      const hp = Math.round(baseHp * rarityMultiplier);
+      const atk = Math.round(baseAtk * rarityMultiplier);
+      const def = Math.round(baseDef * rarityMultiplier);
+      const spd = Math.round(baseSpd * rarityMultiplier);
 
       const elements = ["火", "水", "木"];
       const element = elements[(digits[12] || 0) % 3];
-
-      const rarityVal = (digits[0] || 4) * (digits[1] || 9) * (digits[2] || 0);
-      let rarity = "N";
-      if (rarityVal >= 250) rarity = "SSR";
-      else if (rarityVal >= 120) rarity = "SR";
-      else if (rarityVal >= 40) rarity = "R";
 
       const pIdx = hash % PREFIXES.length;
       const bIdx = (hash + 1) % BASE_NAMES.length;
@@ -191,7 +211,7 @@
     }
   }
 
-  // --- 3. BattleEngine (Item 1-Use Limit & Skill SP-Requirement) ---
+  // --- 3. BattleEngine ---
   class BattleEngine {
     constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
       this.mode = mode;
@@ -201,7 +221,7 @@
       this.enemyIndex = 0;
       this.playerItem = playerItem;
       this.enemyItem = enemyItem;
-      this.playerItemUsed = false; // ⭐ 1バトル1回のみ
+      this.playerItemUsed = false;
       this.enemyItemUsed = false;
       this.turn = 1;
       this.maxTurns = 10;
@@ -249,7 +269,6 @@
       this.player.isGuarding = (pAction === 'guard');
       this.enemy.isGuarding = (eAction === 'guard');
 
-      // ⭐ アイテム使用ルール（1バトル1回のみ）
       if (pAction === 'item' && this.playerItem && !this.playerItemUsed) {
         this.playerItemUsed = true;
         this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + 300);
@@ -308,10 +327,9 @@
       let rand = 0.9 + Math.random() * 0.2;
       let dmg = Math.max(1, Math.round(raw * mult * rand));
 
-      // ⭐ 必殺技ルール（SP 100% 達成時のみ消費して高威力を発動）
       if (action === 'skill') {
         if (self.sp >= 100) {
-          self.sp = 0; // SP全消費
+          self.sp = 0;
           dmg = Math.round(dmg * 1.8);
           turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
         } else {
@@ -481,7 +499,6 @@
   let oppTurnAction = null;
   let network = new NetworkManager();
 
-  // カメラ関連状態
   let mediaStream = null;
   let scanIntervalId = null;
   let barcodeDetector = null;
@@ -511,7 +528,6 @@
 
   window.appSwitchScreen = switchScreen;
 
-  // ⭐【復元】カメラ制御ロジック
   async function startCamera() {
     const video = document.getElementById('scan-video');
     const statusMsg = document.getElementById('camera-status-msg');
@@ -587,13 +603,13 @@
       if (scannedCard.type === 'character') {
         resultBox.innerHTML = `
           <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
-            ✨ ${scannedCard.rarity} ゲット！
+            ✨ ${scannedCard.rarity} ゲット！ (能力倍率適用)
           </div>
           <div class="sprite-container" style="color: var(--element-${scannedCard.element})">
             ${scannedCard.spriteSvg}
           </div>
           <div class="char-name">${scannedCard.name}</div>
-          <div><span class="element-tag element-${scannedCard.element}">${scannedCard.element}</span></div>
+          <div><span class="element-tag element-${scannedCard.element}">${scannedCard.element}</span> <span class="rarity-tag">${scannedCard.rarity}</span></div>
           <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text-muted); margin-top: 4px;">
             HP: ${scannedCard.hp} / ATK: ${scannedCard.atk} / DEF: ${scannedCard.def} / SPD: ${scannedCard.spd}<br>
             ✨ 必殺技: 【${scannedCard.skill.name}】
@@ -654,7 +670,7 @@
       div.innerHTML = `
         <div class="mini-sprite" style="color: var(--element-${c.element || '火'})">${c.spriteSvg || '🎁'}</div>
         <div style="font-weight: 800; font-size: 0.8rem; margin-top: 4px;">${c.name}</div>
-        <div style="font-size: 0.7rem; color: var(--text-muted);">${c.type === 'character' ? `HP:${c.hp} ATK:${c.atk}` : c.desc}</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted);">${c.type === 'character' ? `[${c.rarity}] HP:${c.hp} ATK:${c.atk}` : c.desc}</div>
       `;
 
       div.onclick = function() {
@@ -909,7 +925,7 @@
   }
 
   /**
-   * ⭐【リアルタイムボタン制御】アイテム1回制限 & 必殺SP100%制御の画面反映
+   * ⭐【リアルタイムボタン制御】「こうげき」は毎ターン何度でも使用可能！
    */
   function renderBattle() {
     if (!activeBattle) return;
@@ -933,17 +949,21 @@
     document.getElementById('e-sprite').innerHTML = e.spriteSvg;
     document.getElementById('e-sprite').style.color = `var(--element-${e.element})`;
 
-    // ⭐【制限ルール適用】ボタンの非活性/活性コントロール
-    const btnSkill = document.getElementById('btn-cmd-skill');
-    const btnItem = document.getElementById('btn-cmd-item');
+    // ⭐【修復】「こうげき」と「ガード」は毎ターン必ず活性化！
+    const btnAttack = document.getElementById('btn-cmd-attack');
+    const btnGuard = document.getElementById('btn-cmd-guard');
+    if (btnAttack) { btnAttack.disabled = false; btnAttack.style.opacity = "1.0"; }
+    if (btnGuard) { btnGuard.disabled = false; btnGuard.style.opacity = "1.0"; }
 
     // 1. ひっさつ: SPが100%未満の場合は非活性
+    const btnSkill = document.getElementById('btn-cmd-skill');
     if (btnSkill) {
       btnSkill.disabled = (p.sp < 100);
       btnSkill.style.opacity = (p.sp < 100) ? "0.4" : "1.0";
     }
 
     // 2. アイテム: 1バトル1回のみ (使用済み または アイテム未セットの場合は非活性)
+    const btnItem = document.getElementById('btn-cmd-item');
     if (btnItem) {
       const isItemUsable = (b.playerItem && !b.playerItemUsed);
       btnItem.disabled = !isItemUsable;
@@ -954,7 +974,7 @@
   function handleAction(act) {
     if (!activeBattle || activeBattle.isOver) return;
 
-    // ⭐ バリデーションガード
+    // バリデーションガード
     if (act === 'item') {
       if (!activeBattle.playerItem) {
         alert("⚠️ デッキに アイテムカードが セットされていません！");
@@ -1017,7 +1037,7 @@
 
   // --- イベントバインド ---
   document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded -> Binding controls v1.1.1...");
+    console.log("DOMContentLoaded -> Binding controls v1.1.2...");
 
     document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
     document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
@@ -1102,7 +1122,7 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v1.1.1 Camera & Limits Fully Ready!");
+    console.log("Barcode Battler v1.1.2 Unlimited Attack & Rarity Balanced!");
   });
 
 })();
