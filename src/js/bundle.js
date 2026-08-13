@@ -1,0 +1,493 @@
+/**
+ * Barcode Battler - Single Standalone Bundle JS (No Module Import Errors)
+ * 全ブラウザ・スマホで100%確実に動作する防衛統合スクリプト
+ */
+
+(function() {
+  console.log("Barcode Battler bundle loading...");
+
+  // --- 1. BarcodeEngine ---
+  const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの"];
+  const BASE_NAMES = ["ドラゴン", "ゴーレム", "ナイト", "フェニックス", "タイガー", "スライム", "ベア", "ロボ", "ウルフ", "ライオン"];
+  const SUFFIXES = ["バトラー", "キング", "マスター", "ヒーロー", "ビースト", "ガード", "ファイター", "ロード"];
+
+  const MONSTER_SILHOUETTES = [
+    `<svg viewBox="0 0 100 100"><path d="M50 15 L65 35 L85 30 L70 55 L80 85 L50 70 L20 85 L30 55 L15 30 L35 35 Z" fill="currentColor"/><circle cx="40" cy="35" r="4" fill="#fff"/><circle cx="60" cy="35" r="4" fill="#fff"/></svg>`,
+    `<svg viewBox="0 0 100 100"><rect x="25" y="20" width="50" height="40" rx="8" fill="currentColor"/><rect x="15" y="30" width="15" height="45" rx="5" fill="currentColor"/><rect x="70" y="30" width="15" height="45" rx="5" fill="currentColor"/><rect x="30" y="60" width="15" height="30" rx="4" fill="currentColor"/><rect x="55" y="60" width="15" height="30" rx="4" fill="currentColor"/><circle cx="40" cy="35" r="5" fill="#fff"/><circle cx="60" cy="35" r="5" fill="#fff"/></svg>`,
+    `<svg viewBox="0 0 100 100"><path d="M50 10 L75 35 L70 90 L30 90 L25 35 Z" fill="currentColor"/><rect x="35" y="30" width="30" height="8" fill="#fff"/><path d="M50 90 L85 50 L50 10" fill="none" stroke="currentColor" stroke-width="4"/></svg>`,
+    `<svg viewBox="0 0 100 100"><path d="M50 15 C30 30 10 20 5 45 C25 45 35 60 50 85 C65 60 75 45 95 45 C90 20 70 30 50 15 Z" fill="currentColor"/><circle cx="50" cy="30" r="4" fill="#fff"/></svg>`,
+    `<svg viewBox="0 0 100 100"><path d="M20 20 L40 30 L50 15 L60 30 L80 20 L75 55 L85 85 L15 85 L25 55 Z" fill="currentColor"/><circle cx="35" cy="40" r="4" fill="#fff"/><circle cx="65" cy="40" r="4" fill="#fff"/></svg>`
+  ];
+
+  class BarcodeEngine {
+    static hashBarcode(codeStr) {
+      let cleaned = (codeStr || "4901234567890").replace(/\D/g, '') || "4901234567890";
+      let hash = 0;
+      for (let i = 0; i < cleaned.length; i++) {
+        hash = ((hash << 5) - hash) + cleaned.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash);
+    }
+
+    static generateFromBarcode(codeStr, customMemo = "") {
+      const cleaned = (codeStr || "4901234567890").replace(/\D/g, '') || "4901234567890";
+      const digits = cleaned.split('').map(Number);
+      while (digits.length < 13) digits.push(0);
+
+      const hash = this.hashBarcode(cleaned);
+      const isItemCard = (hash % 5 === 0);
+
+      if (isItemCard) {
+        const itemTypes = [
+          { name: "やくそうカード", type: "heal", value: 300, desc: "HPを 300 かいふく！" },
+          { name: "パワーエナジー", type: "buff_atk", value: 50, desc: "ATKを +50 アップ！" },
+          { name: "プロテクトシールド", type: "buff_def", value: 40, desc: "DEFを +40 アップ！" },
+          { name: "スピードブーツ", type: "buff_spd", value: 30, desc: "SPDを +30 アップ！" }
+        ];
+        const item = itemTypes[hash % itemTypes.length];
+        return {
+          id: `item_${cleaned}_${hash}`,
+          barcode: cleaned,
+          type: "item",
+          name: item.name,
+          effectType: item.type,
+          value: item.value,
+          desc: item.desc,
+          rarity: "R",
+          memo: customMemo || "バーコードアイテム",
+          createdAt: new Date().toISOString()
+        };
+      }
+
+      const hp = 1000 + ((digits[9] || 7) * 100) + ((digits[10] || 8) * 10);
+      const atk = 100 + ((digits[7] || 5) * 20) + (digits[8] || 6);
+      const def = 50 + ((digits[5] || 3) * 10) + (digits[6] || 4);
+      const spd = 10 + ((digits[3] || 1) * 5) + (digits[4] || 2);
+
+      const elements = ["火", "水", "木"];
+      const element = elements[(digits[12] || 0) % 3];
+
+      const rarityVal = (digits[0] || 4) * (digits[1] || 9) * (digits[2] || 0);
+      let rarity = "N";
+      if (rarityVal >= 250) rarity = "SSR";
+      else if (rarityVal >= 120) rarity = "SR";
+      else if (rarityVal >= 40) rarity = "R";
+
+      const pIdx = hash % PREFIXES.length;
+      const bIdx = (hash + 1) % BASE_NAMES.length;
+      const sIdx = (hash + 2) % SUFFIXES.length;
+      const name = `${PREFIXES[pIdx]}${BASE_NAMES[bIdx]}${SUFFIXES[sIdx]}`;
+
+      const spriteSvg = MONSTER_SILHOUETTES[hash % MONSTER_SILHOUETTES.length];
+
+      return {
+        id: `char_${cleaned}_${hash}`,
+        barcode: cleaned,
+        type: "character",
+        name: name,
+        element: element,
+        rarity: rarity,
+        hp: hp,
+        maxHp: hp,
+        atk: atk,
+        def: def,
+        spd: spd,
+        skill: { name: "ギガブレイク", desc: "大ダメージをあたえる" },
+        spriteSvg: spriteSvg,
+        memo: customMemo || "",
+        createdAt: new Date().toISOString()
+      };
+    }
+  }
+
+  // --- 2. StorageManager ---
+  const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
+  const STORAGE_KEY_DECK = "barcode_battler_deck";
+
+  class StorageManager {
+    static getCollection() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY_COLLECTION);
+        return data ? JSON.parse(data) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    static saveToCollection(card) {
+      const collection = this.getCollection();
+      const existingIndex = collection.findIndex(c => c.id === card.id);
+      if (existingIndex >= 0) {
+        collection[existingIndex] = card;
+      } else {
+        if (collection.length >= 100) collection.shift();
+        collection.push(card);
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+      } catch (e) {}
+    }
+
+    static updateMemo(cardId, newMemo) {
+      const collection = this.getCollection();
+      const target = collection.find(c => c.id === cardId);
+      if (target) {
+        target.memo = newMemo;
+        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+      }
+    }
+
+    static getDeck() {
+      let deck = { mainChar: null, subChar1: null, subChar2: null, itemCard: null };
+      try {
+        const data = localStorage.getItem(STORAGE_KEY_DECK);
+        if (data) deck = JSON.parse(data);
+      } catch (e) {}
+
+      const collection = this.getCollection();
+      const validChars = collection.filter(c => c.type === 'character' && typeof c.hp === 'number');
+      const validItems = collection.filter(c => c.type === 'item');
+
+      if (deck.mainChar && deck.mainChar.type !== 'character') deck.mainChar = null;
+      if (deck.subChar1 && deck.subChar1.type !== 'character') deck.subChar1 = null;
+      if (deck.subChar2 && deck.subChar2.type !== 'character') deck.subChar2 = null;
+      if (deck.itemCard && deck.itemCard.type !== 'item') deck.itemCard = null;
+
+      if (!deck.mainChar && validChars.length > 0) deck.mainChar = validChars[0];
+      if (!deck.subChar1 && validChars.length > 1) deck.subChar1 = validChars[1];
+      if (!deck.subChar2 && validChars.length > 2) deck.subChar2 = validChars[2];
+      if (!deck.itemCard && validItems.length > 0) deck.itemCard = validItems[0];
+
+      return deck;
+    }
+
+    static setDeckSlot(slotType, card) {
+      if ((slotType === 'mainChar' || slotType === 'subChar1' || slotType === 'subChar2') && card.type !== 'character') {
+        alert("⚠️ キャラクター枠には アイテムカードを セットできません！");
+        return false;
+      }
+      if (slotType === 'itemCard' && card.type !== 'item') {
+        alert("⚠️ アイテム枠には キャラクターを セットできません！");
+        return false;
+      }
+
+      const deck = this.getDeck();
+      deck[slotType] = card;
+      try {
+        localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+  }
+
+  // --- 3. BattleEngine ---
+  class BattleEngine {
+    constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
+      this.mode = mode;
+      this.playerTeam = (Array.isArray(playerTeam) ? playerTeam : [playerTeam]).map(c => this._normalize(c, true));
+      this.enemyTeam = (Array.isArray(enemyTeam) ? enemyTeam : [enemyTeam]).map(c => this._normalize(c, false));
+      this.playerIndex = 0;
+      this.enemyIndex = 0;
+      this.playerItem = playerItem;
+      this.enemyItem = enemyItem;
+      this.turn = 1;
+      this.maxTurns = 10;
+      this.isOver = false;
+      this.winner = null;
+    }
+
+    _normalize(c, isPlayer) {
+      const hp = Math.max(100, Number(c?.hp) || 1200);
+      const atk = Math.max(10, Number(c?.atk) || 180);
+      const def = Math.max(0, Number(c?.def) || 80);
+      const spd = Math.max(5, Number(c?.spd) || 50);
+      return {
+        id: c?.id || `char_${Math.random()}`,
+        name: c?.name || (isPlayer ? "爆炎ドラゴン" : "アクアタイガー"),
+        element: c?.element || "火",
+        rarity: c?.rarity || "R",
+        hp: hp,
+        maxHp: hp,
+        currentHp: hp,
+        atk: atk,
+        def: def,
+        spd: spd,
+        skill: c?.skill || { name: "ギガブレイク", desc: "大ダメージ" },
+        spriteSvg: c?.spriteSvg || `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="currentColor"/></svg>`,
+        sp: 0,
+        isGuarding: false,
+        qteUsed: false,
+        itemUsed: false,
+        isPlayer: isPlayer
+      };
+    }
+
+    get player() { return this.playerTeam[this.playerIndex]; }
+    get enemy() { return this.enemyTeam[this.enemyIndex]; }
+
+    processTurn(pAction, pQte = false, eAction = null, eQte = false) {
+      if (this.isOver) return null;
+      if (!eAction) {
+        const opts = ['attack', 'attack', 'guard'];
+        if (this.enemy.sp >= 100) opts.push('skill');
+        eAction = opts[Math.floor(Math.random() * opts.length)];
+      }
+
+      const turnLog = { turn: this.turn, actions: [] };
+
+      this.player.isGuarding = (pAction === 'guard');
+      this.enemy.isGuarding = (eAction === 'guard');
+
+      if (pAction === 'item' && this.playerItem && !this.player.itemUsed) {
+        this.player.itemUsed = true;
+        this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + 300);
+        turnLog.actions.push({ actor: 'player', message: `💊 【${this.playerItem.name}】をつかった！ HPが 300 かいふく！` });
+      }
+
+      if (this.player.isGuarding) {
+        this.player.sp = Math.min(100, this.player.sp + 30);
+        turnLog.actions.push({ actor: 'player', message: `🛡️ ${this.player.name} は ガード！ (被ダメ半減)` });
+      }
+      if (this.enemy.isGuarding) {
+        this.enemy.sp = Math.min(100, this.enemy.sp + 30);
+        turnLog.actions.push({ actor: 'enemy', message: `🛡️ ${this.enemy.name} は ガード！ (被ダメ半減)` });
+      }
+
+      const pPriority = this.player.spd * (0.85 + Math.random() * 0.3);
+      const ePriority = this.enemy.spd * (0.85 + Math.random() * 0.3);
+
+      const first = (pPriority >= ePriority) ? 'player' : 'enemy';
+      const second = (first === 'player') ? 'enemy' : 'player';
+
+      const actMap = {
+        player: { action: pAction, qte: pQte, self: this.player, target: this.enemy },
+        enemy: { action: eAction, qte: eQte, self: this.enemy, target: this.player }
+      };
+
+      this._execAction(actMap[first], turnLog);
+      if (!this._checkWin(turnLog)) {
+        this._execAction(actMap[second], turnLog);
+        this._checkWin(turnLog);
+      }
+
+      if (!this.isOver) {
+        this.turn++;
+        if (this.turn > this.maxTurns) {
+          this.isOver = true;
+          this.winner = (this.player.currentHp >= this.enemy.currentHp) ? 'player' : 'enemy';
+          turnLog.actions.push({ actor: 'system', message: "10ターン けいか！ 勝敗判定！" });
+        }
+      }
+
+      return turnLog;
+    }
+
+    _execAction({ action, qte, self, target }, turnLog) {
+      if (self.currentHp <= 0 || target.currentHp <= 0) return;
+      if (action === 'guard' || action === 'item') return;
+
+      if (Math.random() < 0.08 && action !== 'qte') {
+        turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `${self.name} の こうげき！ しかし MISS!` });
+        return;
+      }
+
+      let raw = Math.max(1, self.atk - target.def);
+      let mult = (self.element === '火' && target.element === '木') ? 1.5 : 1.0;
+      let rand = 0.9 + Math.random() * 0.2;
+      let dmg = Math.max(1, Math.round(raw * mult * rand));
+
+      if (action === 'skill' && self.sp >= 100) {
+        self.sp = 0;
+        dmg = Math.round(dmg * 1.8);
+      } else if (action === 'qte') {
+        dmg = qte ? Math.round(dmg * 2.5) : Math.round(dmg * 0.5);
+      } else {
+        self.sp = Math.min(100, self.sp + 25);
+      }
+
+      if (target.isGuarding) dmg = Math.max(1, Math.round(dmg * 0.5));
+
+      target.currentHp = Math.max(0, target.currentHp - dmg);
+      target.sp = Math.min(100, target.sp + 15);
+
+      turnLog.actions.push({
+        actor: self.isPlayer ? 'player' : 'enemy',
+        message: `${self.name} の こうげき！ -> ${target.name} に ${dmg} ダメージ！`
+      });
+    }
+
+    _checkWin(turnLog) {
+      if (this.enemy.currentHp <= 0) {
+        this.isOver = true;
+        this.winner = 'player';
+        turnLog.actions.push({ actor: 'system', message: `🎉 ${this.enemy.name} を たおした！ あなたの しょうり！` });
+        return true;
+      }
+      if (this.player.currentHp <= 0) {
+        this.isOver = true;
+        this.winner = 'enemy';
+        turnLog.actions.push({ actor: 'system', message: `💧 ${this.player.name} は たおれた... あなたの まけ...` });
+        return true;
+      }
+      return false;
+    }
+  }
+
+  // --- 4. Main App Controller & Global SwitchScreen ---
+  let currentScreen = 'SCR-01';
+  let activeBattle = null;
+  let scannedCard = null;
+
+  function switchScreen(screenId) {
+    console.log("Switching to screen:", screenId);
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById(screenId);
+    if (target) {
+      target.classList.add('active');
+      currentScreen = screenId;
+    }
+
+    if (screenId === 'SCR-01') renderHome();
+    else if (screenId === 'SCR-04') renderCollection();
+    else if (screenId === 'SCR-05') renderLobby();
+  }
+
+  // グローバル関数として公開 (onclickバックアップ用)
+  window.appSwitchScreen = switchScreen;
+
+  function renderHome() {
+    const col = StorageManager.getCollection();
+    const badge = document.getElementById('home-count-badge');
+    if (badge) badge.textContent = `しょじ ${col.length}/100`;
+
+    const showcase = document.getElementById('home-showcase');
+    const deck = StorageManager.getDeck();
+    const mainChar = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : col.find(c => c.type === 'character');
+
+    if (mainChar && showcase) {
+      showcase.innerHTML = `
+        <div class="sprite-container" style="color: var(--element-${mainChar.element})">${mainChar.spriteSvg}</div>
+        <div class="char-name">${mainChar.name}</div>
+        <div><span class="element-tag element-${mainChar.element}">${mainChar.element}</span> <span class="rarity-tag">${mainChar.rarity}</span></div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">HP: ${mainChar.hp} / ATK: ${mainChar.atk} / DEF: ${mainChar.def} / SPD: ${mainChar.spd}</div>
+      `;
+    }
+  }
+
+  function renderCollection() {
+    const grid = document.getElementById('collection-grid-container');
+    if (!grid) return;
+    const col = StorageManager.getCollection();
+    grid.innerHTML = "";
+
+    if (col.length === 0) {
+      grid.innerHTML = `<div style="grid-column: 1/3; text-align: center; color: var(--text-muted); padding: 40px 0;">カードがありません。スキャンしよう！</div>`;
+      return;
+    }
+
+    col.forEach(c => {
+      const div = document.createElement('div');
+      div.className = `card-item ${c.type === 'item' ? 'item-card' : ''}`;
+      div.innerHTML = `
+        <div class="mini-sprite" style="color: var(--element-${c.element || '火'})">${c.spriteSvg || '🎁'}</div>
+        <div style="font-weight: 800; font-size: 0.8rem;">${c.name}</div>
+      `;
+      grid.appendChild(div);
+    });
+  }
+
+  function renderLobby() {
+    document.getElementById('lobby-select-view').style.display = 'block';
+    document.getElementById('lobby-host-wait-view').style.display = 'none';
+  }
+
+  function startBattle() {
+    const deck = StorageManager.getDeck();
+    const pChar = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : BarcodeEngine.generateFromBarcode("4901234567890");
+    const eChar = BarcodeEngine.generateFromBarcode("4909876543210");
+
+    activeBattle = new BattleEngine([pChar], deck.itemCard, [eChar], null, '1p');
+    renderBattle();
+    switchScreen('SCR-06');
+  }
+
+  function renderBattle() {
+    if (!activeBattle) return;
+    const p = activeBattle.player;
+    const e = activeBattle.enemy;
+
+    document.getElementById('p-name').textContent = p.name;
+    document.getElementById('p-hp-num').textContent = `${p.currentHp}/${p.maxHp}`;
+    document.getElementById('p-hp-bar').style.width = `${(p.currentHp / p.maxHp) * 100}%`;
+    document.getElementById('p-sp-bar').style.width = `${p.sp}%`;
+    document.getElementById('p-sprite').innerHTML = p.spriteSvg;
+    document.getElementById('p-sprite').style.color = `var(--element-${p.element})`;
+
+    document.getElementById('e-name').textContent = e.name;
+    document.getElementById('e-hp-num').textContent = `${e.currentHp}/${e.maxHp}`;
+    document.getElementById('e-hp-bar').style.width = `${(e.currentHp / e.maxHp) * 100}%`;
+    document.getElementById('e-sp-bar').style.width = `${e.sp}%`;
+    document.getElementById('e-sprite').innerHTML = e.spriteSvg;
+    document.getElementById('e-sprite').style.color = `var(--element-${e.element})`;
+  }
+
+  function handleAction(act) {
+    if (!activeBattle || activeBattle.isOver) return;
+    const turnLog = activeBattle.processTurn(act);
+    renderBattle();
+
+    const logBox = document.getElementById('battle-log');
+    if (logBox && turnLog) {
+      turnLog.actions.forEach(a => {
+        const d = document.createElement('div');
+        d.textContent = a.message;
+        logBox.appendChild(d);
+      });
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    if (activeBattle.isOver) {
+      setTimeout(() => {
+        alert(activeBattle.winner === 'player' ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
+        switchScreen('SCR-05');
+      }, 800);
+    }
+  }
+
+  // --- イベントバインド ---
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOMContentLoaded -> Binding all buttons...");
+
+    document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
+    document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
+    document.getElementById('btn-nav-battle')?.addEventListener('click', () => switchScreen('SCR-05'));
+
+    document.querySelectorAll('.btn-back-home').forEach(b => {
+      b.addEventListener('click', () => switchScreen('SCR-01'));
+    });
+
+    document.querySelectorAll('.btn-demo-barcode').forEach(b => {
+      b.addEventListener('click', (e) => {
+        const code = e.target.getAttribute('data-code');
+        scannedCard = BarcodeEngine.generateFromBarcode(code);
+        StorageManager.saveToCollection(scannedCard);
+        alert(`【${scannedCard.name}】を ゲットした！`);
+        switchScreen('SCR-04');
+      });
+    });
+
+    document.getElementById('btn-cpu-battle')?.addEventListener('click', () => startBattle());
+    document.getElementById('btn-cmd-attack')?.addEventListener('click', () => handleAction('attack'));
+    document.getElementById('btn-cmd-skill')?.addEventListener('click', () => handleAction('skill'));
+    document.getElementById('btn-cmd-guard')?.addEventListener('click', () => handleAction('guard'));
+    document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
+    document.getElementById('btn-battle-escape')?.addEventListener('click', () => switchScreen('SCR-05'));
+
+    renderHome();
+    console.log("Barcode Battler Ready!");
+  });
+
+})();
