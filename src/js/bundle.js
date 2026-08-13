@@ -1,24 +1,44 @@
 /**
- * Barcode Battler - Standalone Bundle JS (v1.2.3 Emergency Stability Restore)
- * サイト起動エラーの完全復元・完全構文チェック済み統合コード
+ * Barcode Battler - Official Release JS (v2.0.0 Official Edition)
+ * 全12系統の本格かっこいいモンスターSVG & 全8種専用アイテムSVG & 3~5ターン超爽快バトル計算式
  */
 
 (function() {
   "use strict";
-  console.log("Barcode Battler bundle v1.2.3 emergency restoring...");
+  console.log("Barcode Battler v2.0.0 Official Edition initializing...");
 
-  // --- 1. BarcodeEngine ---
+  // --- 1. Monster Visual System (12 Unique Monster Species SVGs) ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
   const BASE_NAMES = ["ドラゴン", "ゴーレム", "ナイト", "フェニックス", "タイガー", "スライム", "ベア", "ロボ", "ウルフ", "ライオン", "イエティ", "グリフォン"];
   const SUFFIXES = ["バトラー", "キング", "マスター", "ヒーロー", "ビースト", "ガード", "ファイター", "ロード", "カイザー", "エンペラー"];
 
-  const MONSTER_SILHOUETTES = [
-    `<svg viewBox="0 0 100 100"><path d="M50 15 L65 35 L85 30 L70 55 L80 85 L50 70 L20 85 L30 55 L15 30 L35 35 Z" fill="currentColor"/><circle cx="40" cy="35" r="4" fill="#fff"/><circle cx="60" cy="35" r="4" fill="#fff"/></svg>`,
-    `<svg viewBox="0 0 100 100"><rect x="25" y="20" width="50" height="40" rx="8" fill="currentColor"/><rect x="15" y="30" width="15" height="45" rx="5" fill="currentColor"/><rect x="70" y="30" width="15" height="45" rx="5" fill="currentColor"/><rect x="30" y="60" width="15" height="30" rx="4" fill="currentColor"/><rect x="55" y="60" width="15" height="30" rx="4" fill="currentColor"/><circle cx="40" cy="35" r="5" fill="#fff"/><circle cx="60" cy="35" r="5" fill="#fff"/></svg>`,
-    `<svg viewBox="0 0 100 100"><path d="M50 10 L75 35 L70 90 L30 90 L25 35 Z" fill="currentColor"/><rect x="35" y="30" width="30" height="8" fill="#fff"/><path d="M50 90 L85 50 L50 10" fill="none" stroke="currentColor" stroke-width="4"/></svg>`,
-    `<svg viewBox="0 0 100 100"><path d="M50 15 C30 30 10 20 5 45 C25 45 35 60 50 85 C65 60 75 45 95 45 C90 20 70 30 50 15 Z" fill="currentColor"/><circle cx="50" cy="30" r="4" fill="#fff"/></svg>`,
-    `<svg viewBox="0 0 100 100"><path d="M20 20 L40 30 L50 15 L60 30 L80 20 L75 55 L85 85 L15 85 L25 55 Z" fill="currentColor"/><circle cx="35" cy="40" r="4" fill="#fff"/><circle cx="65" cy="40" r="4" fill="#fff"/></svg>`
-  ];
+  // 小中学生に大人気のクール＆グラフィカルな12系統SVG
+  const SPECIES_SVGS = {
+    "ドラゴン": `<svg viewBox="0 0 100 100"><path d="M50 10 Q65 25 80 15 Q75 35 90 40 Q70 55 75 80 Q50 70 25 80 Q30 55 10 40 Q25 35 20 15 Q35 25 50 10 Z" fill="currentColor"/><path d="M35 30 L45 25 L40 40 Z" fill="#fff"/><path d="M65 30 L55 25 L60 40 Z" fill="#fff"/><circle cx="38" cy="35" r="4" fill="#ff0055"/><circle cx="62" cy="35" r="4" fill="#ff0055"/></svg>`,
+    "ゴーレム": `<svg viewBox="0 0 100 100"><rect x="20" y="15" width="60" height="45" rx="8" fill="currentColor"/><rect x="10" y="25" width="18" height="50" rx="6" fill="currentColor"/><rect x="72" y="25" width="18" height="50" rx="6" fill="currentColor"/><rect x="25" y="60" width="20" height="35" rx="5" fill="currentColor"/><rect x="55" y="60" width="20" height="35" rx="5" fill="currentColor"/><rect x="30" y="28" width="40" height="12" fill="#000"/><circle cx="40" cy="34" r="4" fill="#00e5ff"/><circle cx="60" cy="34" r="4" fill="#00e5ff"/></svg>`,
+    "ナイト": `<svg viewBox="0 0 100 100"><path d="M50 8 L75 25 L75 50 Q75 80 50 92 Q25 80 25 50 L25 25 Z" fill="currentColor"/><rect x="35" y="32" width="30" height="8" rx="3" fill="#fff"/><line x1="50" y1="20" x2="50" y2="80" stroke="#fff" stroke-width="4"/><path d="M75 40 L95 20 L85 60 Z" fill="currentColor"/></svg>`,
+    "フェニックス": `<svg viewBox="0 0 100 100"><path d="M50 12 C30 25 10 15 2 40 C20 42 30 55 42 75 C45 85 50 95 50 95 C50 95 55 85 58 75 C70 55 80 42 98 40 C90 15 70 25 50 12 Z" fill="currentColor"/><path d="M45 25 Q50 5 55 25" stroke="#fff" stroke-width="3" fill="none"/><circle cx="43" cy="28" r="3" fill="#fff"/><circle cx="57" cy="28" r="3" fill="#fff"/></svg>`,
+    "タイガー": `<svg viewBox="0 0 100 100"><path d="M20 20 L38 32 L50 18 L62 32 L80 20 L75 55 L85 85 L15 85 L25 55 Z" fill="currentColor"/><path d="M30 40 L40 45 L30 50" fill="none" stroke="#fff" stroke-width="3"/><path d="M70 40 L60 45 L70 50" fill="none" stroke="#fff" stroke-width="3"/><circle cx="36" cy="42" r="4" fill="#fff"/><circle cx="64" cy="42" r="4" fill="#fff"/></svg>`,
+    "スライム": `<svg viewBox="0 0 100 100"><path d="M50 15 C20 15 10 50 10 70 C10 88 30 92 50 92 C70 92 90 88 90 70 C90 50 80 15 50 15 Z" fill="currentColor"/><circle cx="35" cy="50" r="7" fill="#fff"/><circle cx="65" cy="50" r="7" fill="#fff"/><circle cx="37" cy="50" r="3" fill="#000"/><circle cx="67" cy="50" r="3" fill="#000"/><path d="M40 70 Q50 80 60 70" stroke="#fff" stroke-width="3" fill="none"/></svg>`,
+    "ベア": `<svg viewBox="0 0 100 100"><circle cx="25" cy="25" r="15" fill="currentColor"/><circle cx="75" cy="25" r="15" fill="currentColor"/><path d="M20 40 Q50 25 80 40 L85 85 C85 85 50 95 15 85 Z" fill="currentColor"/><ellipse cx="50" cy="65" rx="18" ry="12" fill="#fff"/><circle cx="50" cy="60" r="5" fill="#000"/><circle cx="38" cy="48" r="4" fill="#fff"/><circle cx="62" cy="48" r="4" fill="#fff"/></svg>`,
+    "ロボ": `<svg viewBox="0 0 100 100"><rect x="25" y="20" width="50" height="45" rx="5" fill="currentColor"/><line x1="50" y1="5" x2="50" y2="20" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="5" r="6" fill="#ff0055"/><rect x="32" y="32" width="36" height="12" fill="#000"/><circle cx="42" cy="38" r="4" fill="#00e5ff"/><circle cx="58" cy="38" r="4" fill="#00e5ff"/><rect x="20" y="70" width="60" height="22" rx="4" fill="currentColor"/></svg>`,
+    "ウルフ": `<svg viewBox="0 0 100 100"><path d="M50 10 L68 35 L90 40 L70 65 L78 92 L50 78 L22 92 L30 65 L10 40 L32 35 Z" fill="currentColor"/><polygon points="50,45 42,60 58,60" fill="#fff"/><circle cx="38" cy="40" r="4" fill="#ffea00"/><circle cx="62" cy="40" r="4" fill="#ffea00"/></svg>`,
+    "ライオン": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="currentColor"/><path d="M30 30 Q50 10 70 30 Q90 50 70 70 Q50 90 30 70 Q10 50 30 30 Z" fill="#ff9900"/><circle cx="50" cy="52" r="22" fill="currentColor"/><circle cx="40" cy="45" r="4" fill="#fff"/><circle cx="60" cy="45" r="4" fill="#fff"/><polygon points="50,55 45,63 55,63" fill="#fff"/></svg>`,
+    "イエティ": `<svg viewBox="0 0 100 100"><path d="M50 10 C20 20 15 50 15 88 L85 88 C85 50 80 20 50 10 Z" fill="currentColor"/><ellipse cx="50" cy="42" rx="25" ry="18" fill="#000"/><circle cx="40" cy="40" r="5" fill="#00e5ff"/><circle cx="60" cy="40" r="5" fill="#00e5ff"/><polygon points="45,52 50,47 55,52" fill="#fff"/></svg>`,
+    "グリフォン": `<svg viewBox="0 0 100 100"><path d="M50 10 L70 30 L95 25 L80 55 L90 88 L50 75 L10 88 L20 55 L5 25 L30 30 Z" fill="currentColor"/><path d="M50 30 L65 50 L35 50 Z" fill="#fff"/><circle cx="40" cy="32" r="4" fill="#ff0055"/><circle cx="60" cy="32" r="4" fill="#ff0055"/></svg>`
+  };
+
+  // --- 2. Item Visual System (8 Distinct Item SVGs) ---
+  const ITEM_SVGS = {
+    "heal": `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="25" ry="30" fill="#00e5ff"/><rect x="42" y="15" width="16" height="15" rx="4" fill="#fff"/><path d="M50 40 L50 70 M35 55 L65 55" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>`,
+    "buff_atk": `<svg viewBox="0 0 100 100"><path d="M50 10 L65 40 L55 40 L55 85 L45 85 L45 40 L35 40 Z" fill="#ff3366"/><path d="M30 65 L50 85 L70 65" stroke="#ffea00" stroke-width="6" fill="none"/></svg>`,
+    "buff_def": `<svg viewBox="0 0 100 100"><path d="M50 10 L85 25 L85 55 Q85 85 50 95 Q15 85 15 55 L15 25 Z" fill="#b066ff"/><path d="M50 25 L50 80 M30 50 L70 50" stroke="#fff" stroke-width="5"/></svg>`,
+    "buff_spd": `<svg viewBox="0 0 100 100"><path d="M20 70 Q40 20 85 30 Q60 60 40 85 Z" fill="#00ffcc"/><path d="M10 40 L40 50 M15 60 L45 70" stroke="#ffea00" stroke-width="5" stroke-linecap="round"/></svg>`,
+    "charge_sp": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="#ffea00"/><polygon points="50,18 60,38 82,38 64,52 71,74 50,60 29,74 36,52 18,38 40,38" fill="#fff"/></svg>`,
+    "bomb": `<svg viewBox="0 0 100 100"><circle cx="45" cy="55" r="32" fill="#333"/><path d="M65 35 Q80 20 90 25" stroke="#ff9900" stroke-width="4" fill="none"/><circle cx="90" cy="25" r="6" fill="#ff0055"/></svg>`,
+    "heal_def": `<svg viewBox="0 0 100 100"><path d="M50 15 L80 30 L80 60 Q80 85 50 92 Q20 85 20 60 L20 30 Z" fill="#00e5ff"/><path d="M50 35 C50 35 35 25 35 42 C35 52 50 65 50 65 C50 65 65 52 65 42 C65 25 50 35 50 35 Z" fill="#ff3366"/></svg>`,
+    "all_buff": `<svg viewBox="0 0 100 100"><path d="M20 75 L30 30 L50 55 L70 30 L80 75 Z" fill="#ffea00"/><circle cx="30" cy="25" r="5" fill="#ff0055"/><circle cx="50" cy="20" r="6" fill="#00e5ff"/><circle cx="70" cy="25" r="5" fill="#b066ff"/></svg>`
+  };
 
   class BarcodeEngine {
     static hashBarcode(codeStr) {
@@ -59,6 +79,8 @@
           { name: "おうかんの輝き", type: "all_buff", value: 40, desc: "ATK・DEF・SPDを すべて +40 アップ！" }
         ];
         const item = itemTypes[hash % itemTypes.length];
+        const itemSvg = ITEM_SVGS[item.type] || ITEM_SVGS["heal"];
+
         return {
           id: `item_${cleaned}_${hash}`,
           barcode: cleaned,
@@ -68,11 +90,13 @@
           value: item.value,
           desc: item.desc,
           rarity: "R",
+          spriteSvg: itemSvg, // ⭐ 専用個別のSVGグラフィック
           memo: customMemo || "バーコードアイテム",
           createdAt: new Date().toISOString()
         };
       }
 
+      // レアリティ判定 (SSR: 3%, SR: 12%, R: 35%, N: 50%)
       const rarityScore = (hash % 100);
       let rarity = "N";
       let rarityMultiplier = 1.0;
@@ -107,15 +131,19 @@
       const pIdx = hash % PREFIXES.length;
       const bIdx = (hash + 1) % BASE_NAMES.length;
       const sIdx = (hash + 2) % SUFFIXES.length;
-      const name = `${PREFIXES[pIdx]}${BASE_NAMES[bIdx]}${SUFFIXES[sIdx]}`;
 
-      const spriteSvg = MONSTER_SILHOUETTES[hash % MONSTER_SILHOUETTES.length];
+      const baseSpeciesName = BASE_NAMES[bIdx]; // 例: "ドラゴン"
+      const name = `${PREFIXES[pIdx]}${baseSpeciesName}${SUFFIXES[sIdx]}`;
+
+      // ⭐ ベース名が同じなら必ず同じ系統グラフィックが紐づく！
+      const spriteSvg = SPECIES_SVGS[baseSpeciesName] || SPECIES_SVGS["ドラゴン"];
 
       return {
         id: `char_${cleaned}_${hash}`,
         barcode: cleaned,
         type: "character",
         name: name,
+        species: baseSpeciesName,
         element: element,
         rarity: rarity,
         hp: hp,
@@ -149,7 +177,7 @@
         if (!collection || collection.length === 0) return;
 
         const updatedCollection = collection.map(card => {
-          if (card && card.type === 'character' && card.barcode) {
+          if (card && card.barcode) {
             const freshCard = BarcodeEngine.generateFromBarcode(card.barcode, card.memo || "");
             freshCard.id = card.id;
             freshCard.createdAt = card.createdAt || new Date().toISOString();
@@ -233,7 +261,7 @@
     }
   }
 
-  // --- 3. BattleEngine ---
+  // --- 3. BattleEngine (Ultra High-Damage Formula: 3~5 Turns Resolution) ---
   class BattleEngine {
     constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
       this.mode = mode;
@@ -268,7 +296,7 @@
         def: def,
         spd: spd,
         skill: c?.skill || { name: "ギガブレイク", desc: "大ダメージ" },
-        spriteSvg: c?.spriteSvg || `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="currentColor"/></svg>`,
+        spriteSvg: c?.spriteSvg || SPECIES_SVGS["ドラゴン"],
         sp: 0,
         isGuarding: false,
         isPlayer: isPlayer
@@ -328,12 +356,12 @@
       }
 
       if (this.player.isGuarding) {
-        this.player.sp = Math.min(100, this.player.sp + 30);
-        turnLog.actions.push({ actor: 'player', message: `🛡️ ${this.player.name} は ガード！ (被ダメ半減 & SP+30)` });
+        this.player.sp = Math.min(100, this.player.sp + 35);
+        turnLog.actions.push({ actor: 'player', message: `🛡️ ${this.player.name} は ガード！ (被ダメ半減 & SP+35)` });
       }
       if (this.enemy.isGuarding) {
-        this.enemy.sp = Math.min(100, this.enemy.sp + 30);
-        turnLog.actions.push({ actor: 'enemy', message: `🛡️ ${this.enemy.name} は ガード！ (被ダメ半減 & SP+30)` });
+        this.enemy.sp = Math.min(100, this.enemy.sp + 35);
+        turnLog.actions.push({ actor: 'enemy', message: `🛡️ ${this.enemy.name} は ガード！ (被ダメ半減 & SP+35)` });
       }
 
       const pPriority = this.player.spd * (0.85 + Math.random() * 0.3);
@@ -365,30 +393,34 @@
       return turnLog;
     }
 
+    /**
+     * ⭐【新高威力計算式】3〜5ターンで爽快決着（通常攻撃450〜650 / 必殺技900〜1300）
+     */
     _execAction({ action, qte, self, target }, turnLog) {
       if (self.currentHp <= 0 || target.currentHp <= 0) return;
       if (action === 'guard' || action === 'item') return;
 
-      if (Math.random() < 0.05 && action !== 'qte') {
+      if (Math.random() < 0.04 && action !== 'qte') {
         turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `${self.name} の こうげき！ しかし MISS!` });
         return;
       }
 
-      const baseDamage = self.atk * 1.5 * (120 / (120 + target.def * 0.5));
-      const minGuaranteed = self.atk * 0.35;
+      // 超爽快火力 (基礎攻撃力 2.5倍)
+      const baseDamage = self.atk * 2.5 * (100 / (100 + target.def * 0.35));
+      const minGuaranteed = self.atk * 0.50; // 最低でも攻撃力の半数は確実打撃
       let raw = Math.max(minGuaranteed, baseDamage);
 
       let mult = (self.element === '火' && target.element === '木') ? 1.5 : 1.0;
       if (self.element === '木' && target.element === '水') mult = 1.5;
       if (self.element === '水' && target.element === '火') mult = 1.5;
 
-      let rand = 0.92 + Math.random() * 0.16;
+      let rand = 0.95 + Math.random() * 0.10;
       let dmg = Math.max(1, Math.round(raw * mult * rand));
 
       if (action === 'skill') {
         if (self.sp >= 100) {
           self.sp = 0;
-          dmg = Math.round(dmg * 1.85);
+          dmg = Math.round(dmg * 1.85); // 必殺技は一発KO級の900〜1300ダメ！
           turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
         } else {
           action = 'attack';
@@ -396,7 +428,7 @@
       }
 
       if (action === 'attack') {
-        self.sp = Math.min(100, self.sp + 30);
+        self.sp = Math.min(100, self.sp + 35);
       }
 
       if (target.isGuarding) dmg = Math.max(1, Math.round(dmg * 0.5));
@@ -678,6 +710,9 @@
           <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
             🎁 きょうかアイテム ゲット！
           </div>
+          <div class="sprite-container" style="width:70px; height:70px; margin: 4px auto;">
+            ${scannedCard.spriteSvg}
+          </div>
           <div class="char-name" style="color: var(--accent-gold);">${scannedCard.name}</div>
           <div style="font-size: 0.85rem; margin-top: 4px; color: var(--text-muted);">${scannedCard.desc}</div>
         `;
@@ -803,7 +838,7 @@
 
       content.innerHTML = `
         <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【アイテム効果詳細】</div>
-        <div style="font-size: 2.2rem; margin: 4px 0;">🎁</div>
+        <div style="width: 70px; height: 70px; margin: 4px auto;">${card.spriteSvg || '🎁'}</div>
         <div style="font-size: 1.05rem; font-weight: 800; color: var(--accent-gold);">${card.name}</div>
         <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: var(--surface-card); padding: 8px; border-radius: 8px; margin-top: 6px; line-height: 1.4;">
           💊 効果: ${card.desc}<br>
@@ -1171,9 +1206,8 @@
     logBox.scrollTop = logBox.scrollHeight;
   }
 
-  // --- 初期化ルーチン (堅牢ガード) ---
   function initApp() {
-    console.log("Initializing Barcode Battler v1.2.3 Application...");
+    console.log("Initializing Barcode Battler v2.0.0 Official Edition...");
     try {
       StorageManager.migrateCollectionData();
     } catch (e) {
@@ -1267,7 +1301,7 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v1.2.3 App Successfully Started!");
+    console.log("Barcode Battler v2.0.0 Official Edition Ready!");
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
