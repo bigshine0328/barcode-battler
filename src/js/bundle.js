@@ -1,10 +1,10 @@
 /**
- * Barcode Battler - Single Standalone Bundle JS (No Module Import Errors)
- * 全ブラウザ・スマホで100%確実に動作する防衛統合スクリプト
+ * Barcode Battler - Complete Standalone Bundle JS (v1.0.7)
+ * 全機能完全修復：カード詳細・メモ編集・デッキへんせい・PeerJS P2P対戦・ログクリア
  */
 
 (function() {
-  console.log("Barcode Battler bundle loading...");
+  console.log("Barcode Battler bundle v1.0.7 initializing...");
 
   // --- 1. BarcodeEngine ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの"];
@@ -93,7 +93,7 @@
         atk: atk,
         def: def,
         spd: spd,
-        skill: { name: "ギガブレイク", desc: "大ダメージをあたえる" },
+        skill: { name: "ギガブレイク", desc: "敵に強力な属性ダメージ！" },
         spriteSvg: spriteSvg,
         memo: customMemo || "",
         createdAt: new Date().toISOString()
@@ -110,9 +110,7 @@
       try {
         const data = localStorage.getItem(STORAGE_KEY_COLLECTION);
         return data ? JSON.parse(data) : [];
-      } catch (e) {
-        return [];
-      }
+      } catch (e) { return []; }
     }
 
     static saveToCollection(card) {
@@ -134,7 +132,9 @@
       const target = collection.find(c => c.id === cardId);
       if (target) {
         target.memo = newMemo;
-        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+        try {
+          localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+        } catch (e) {}
       }
     }
 
@@ -321,28 +321,150 @@
 
     _checkWin(turnLog) {
       if (this.enemy.currentHp <= 0) {
-        this.isOver = true;
-        this.winner = 'player';
-        turnLog.actions.push({ actor: 'system', message: `🎉 ${this.enemy.name} を たおした！ あなたの しょうり！` });
-        return true;
+        if (this.mode === '3p' && this.enemyIndex < this.enemyTeam.length - 1) {
+          this.enemyIndex++;
+          turnLog.actions.push({ actor: 'system', message: `🎉 相手のキャラを たおした！ 敵チームは ${this.enemy.name} が 出撃！` });
+          return false;
+        } else {
+          this.isOver = true;
+          this.winner = 'player';
+          turnLog.actions.push({ actor: 'system', message: `🎉 ${this.enemy.name} を たおした！ あなたの しょうり！` });
+          return true;
+        }
       }
       if (this.player.currentHp <= 0) {
-        this.isOver = true;
-        this.winner = 'enemy';
-        turnLog.actions.push({ actor: 'system', message: `💧 ${this.player.name} は たおれた... あなたの まけ...` });
-        return true;
+        if (this.mode === '3p' && this.playerIndex < this.playerTeam.length - 1) {
+          this.playerIndex++;
+          turnLog.actions.push({ actor: 'system', message: `💧 あなたのキャラが たおれた... つぎの ${this.player.name} が 出撃！` });
+          return false;
+        } else {
+          this.isOver = true;
+          this.winner = 'enemy';
+          turnLog.actions.push({ actor: 'system', message: `💧 ${this.player.name} は たおれた... あなたの まけ...` });
+          return true;
+        }
       }
       return false;
     }
   }
 
-  // --- 4. Main App Controller & Global SwitchScreen ---
+  // --- 4. NetworkManager (PeerJS WebRTC P2P) ---
+  class NetworkManager {
+    constructor() {
+      this.roomCode = null;
+      this.isHost = false;
+      this.peer = null;
+      this.connection = null;
+      this.onMessageCallback = null;
+      this.isConnected = false;
+    }
+
+    static generateRoomCode() {
+      return Math.floor(1000 + Math.random() * 9000).toString();
+    }
+
+    createRoom(code, myDeck, onSuccess, onError) {
+      this.roomCode = code;
+      this.isHost = true;
+      this.myDeck = myDeck;
+      this.disconnect();
+
+      const peerId = `bcbtl_room_${code}`;
+
+      if (typeof window.Peer !== 'undefined') {
+        try {
+          this.peer = new window.Peer(peerId, { debug: 1 });
+          this.peer.on('open', (id) => { if (onSuccess) onSuccess(id); });
+          this.peer.on('connection', (conn) => {
+            this.connection = conn;
+            this.isConnected = true;
+            this._setupConn(conn);
+          });
+          this.peer.on('error', (err) => {
+            if (onError) onError("すでに使われているコードです。");
+          });
+        } catch (e) {}
+      }
+    }
+
+    joinRoom(code, myDeck, onSuccess, onError) {
+      this.roomCode = code;
+      this.isHost = false;
+      this.myDeck = myDeck;
+      this.disconnect();
+
+      const peerId = `bcbtl_room_${code}`;
+      let hasConn = false;
+
+      const timeoutId = setTimeout(() => {
+        if (!hasConn && !this.isConnected) {
+          this.disconnect();
+          if (onError) onError("へやが見つかりませんでした。ルームコードを確認してください。");
+        }
+      }, 5000);
+
+      if (typeof window.Peer !== 'undefined') {
+        try {
+          this.peer = new window.Peer({ debug: 1 });
+          this.peer.on('open', () => {
+            const conn = this.peer.connect(peerId, { reliable: true });
+            this.connection = conn;
+
+            conn.on('open', () => {
+              hasConn = true;
+              clearTimeout(timeoutId);
+              this.isConnected = true;
+              this._setupConn(conn);
+              this.send({ type: 'JOIN_REQUEST', guestDeck: myDeck });
+              if (onSuccess) onSuccess();
+            });
+
+            conn.on('error', () => {
+              clearTimeout(timeoutId);
+              this.disconnect();
+              if (onError) onError("へやが見つかりませんでした。");
+            });
+          });
+          this.peer.on('error', () => {
+            clearTimeout(timeoutId);
+            this.disconnect();
+            if (onError) onError("へやが見つかりませんでした。");
+          });
+        } catch (e) {}
+      }
+    }
+
+    _setupConn(conn) {
+      conn.on('data', (data) => {
+        if (data.type === 'JOIN_REQUEST' && this.isHost) {
+          this.send({ type: 'JOIN_ACCEPT', hostDeck: this.myDeck });
+        }
+        if (this.onMessageCallback) this.onMessageCallback(data);
+      });
+    }
+
+    send(data) {
+      if (this.connection && this.connection.open) {
+        this.connection.send(data);
+      }
+    }
+
+    disconnect() {
+      if (this.connection) { try { this.connection.close(); } catch(e){} this.connection = null; }
+      if (this.peer) { try { this.peer.destroy(); } catch(e){} this.peer = null; }
+      this.isConnected = false;
+    }
+  }
+
+  // --- 5. Main App Controller ---
   let currentScreen = 'SCR-01';
   let activeBattle = null;
   let scannedCard = null;
+  let selectedCardForDetail = null;
+  let matchMode = '1p';
+  let network = new NetworkManager();
 
   function switchScreen(screenId) {
-    console.log("Switching to screen:", screenId);
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(screenId);
     if (target) {
@@ -355,7 +477,6 @@
     else if (screenId === 'SCR-05') renderLobby();
   }
 
-  // グローバル関数として公開 (onclickバックアップ用)
   window.appSwitchScreen = switchScreen;
 
   function renderHome() {
@@ -374,6 +495,8 @@
         <div><span class="element-tag element-${mainChar.element}">${mainChar.element}</span> <span class="rarity-tag">${mainChar.rarity}</span></div>
         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">HP: ${mainChar.hp} / ATK: ${mainChar.atk} / DEF: ${mainChar.def} / SPD: ${mainChar.spd}</div>
       `;
+    } else if (showcase) {
+      showcase.innerHTML = `<div style="color: var(--text-muted); padding: 20px 0;">バーコードを スキャンして<br>キャラを ゲットしよう！</div>`;
     }
   }
 
@@ -393,10 +516,82 @@
       div.className = `card-item ${c.type === 'item' ? 'item-card' : ''}`;
       div.innerHTML = `
         <div class="mini-sprite" style="color: var(--element-${c.element || '火'})">${c.spriteSvg || '🎁'}</div>
-        <div style="font-weight: 800; font-size: 0.8rem;">${c.name}</div>
+        <div style="font-weight: 800; font-size: 0.8rem; margin-top: 4px;">${c.name}</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted);">${c.type === 'character' ? `HP:${c.hp} ATK:${c.atk}` : c.desc}</div>
       `;
+
+      // カードタップで能力詳細・メモ編集・デッキセットモーダルを開く
+      div.addEventListener('click', () => {
+        openDetailModal(c);
+      });
+
       grid.appendChild(div);
     });
+
+    renderDeckSlots();
+  }
+
+  function openDetailModal(card) {
+    selectedCardForDetail = card;
+    const content = document.getElementById('detail-card-content');
+    const modal = document.getElementById('detail-modal');
+
+    const btnMain = document.getElementById('btn-set-main');
+    const btnSub1 = document.getElementById('btn-set-sub1');
+    const btnSub2 = document.getElementById('btn-set-sub2');
+    const btnItem = document.getElementById('btn-set-item');
+
+    if (card.type === 'character') {
+      if (btnMain) btnMain.style.display = 'block';
+      if (btnSub1) btnSub1.style.display = 'block';
+      if (btnSub2) btnSub2.style.display = 'block';
+      if (btnItem) btnItem.style.display = 'none';
+
+      content.innerHTML = `
+        <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【キャラ能力詳細】</div>
+        <div class="sprite-container" style="color: var(--element-${card.element}); margin: 0 auto 6px auto; width: 70px; height: 70px;">${card.spriteSvg}</div>
+        <div style="font-size: 1.05rem; font-weight: 800;">${card.name}</div>
+        <div style="margin: 4px 0;"><span class="element-tag element-${card.element}">${card.element}</span> <span class="rarity-tag">${card.rarity}</span></div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: var(--surface-card); padding: 8px; border-radius: 8px; line-height: 1.4;">
+          ❤️ 体力 (HP): ${card.hp}<br>
+          ⚔️ 攻撃力 (ATK): ${card.atk}<br>
+          🛡️ 防御力 (DEF): ${card.def}<br>
+          ⚡ 素早さ (SPD): ${card.spd}<br>
+          ✨ 必殺技: 【${card.skill.name}】<br>
+          📝 メモ: ${card.memo || "メモなし"}
+        </div>
+      `;
+    } else {
+      if (btnMain) btnMain.style.display = 'none';
+      if (btnSub1) btnSub1.style.display = 'none';
+      if (btnSub2) btnSub2.style.display = 'none';
+      if (btnItem) btnItem.style.display = 'block';
+
+      content.innerHTML = `
+        <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【アイテム効果詳細】</div>
+        <div style="font-size: 2.2rem; margin: 4px 0;">🎁</div>
+        <div style="font-size: 1.05rem; font-weight: 800; color: var(--accent-gold);">${card.name}</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: var(--surface-card); padding: 8px; border-radius: 8px; margin-top: 6px; line-height: 1.4;">
+          💊 効果: ${card.desc}<br>
+          📝 メモ: ${card.memo || "メモなし"}
+        </div>
+      `;
+    }
+
+    if (modal) modal.classList.add('active');
+  }
+
+  function renderDeckSlots() {
+    const deck = StorageManager.getDeck();
+    const m = document.getElementById('slot-content-main');
+    const s1 = document.getElementById('slot-content-sub1');
+    const s2 = document.getElementById('slot-content-sub2');
+    const item = document.getElementById('slot-content-item');
+
+    if (m) m.textContent = deck.mainChar ? `${deck.mainChar.name} (HP:${deck.mainChar.hp} ATK:${deck.mainChar.atk})` : "未セット";
+    if (s1) s1.textContent = deck.subChar1 ? `${deck.subChar1.name} (HP:${deck.subChar1.hp} ATK:${deck.subChar1.atk})` : "未セット";
+    if (s2) s2.textContent = deck.subChar2 ? `${deck.subChar2.name} (HP:${deck.subChar2.hp} ATK:${deck.subChar2.atk})` : "未セット";
+    if (item) item.textContent = deck.itemCard ? `${deck.itemCard.name} (${deck.itemCard.desc})` : "未セット";
   }
 
   function renderLobby() {
@@ -404,12 +599,44 @@
     document.getElementById('lobby-host-wait-view').style.display = 'none';
   }
 
-  function startBattle() {
+  // --- バトル開始＆ログクリア ---
+  function startBattle(isCpu = true, oppDeck = null) {
     const deck = StorageManager.getDeck();
-    const pChar = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : BarcodeEngine.generateFromBarcode("4901234567890");
-    const eChar = BarcodeEngine.generateFromBarcode("4909876543210");
+    const defaultChar1 = BarcodeEngine.generateFromBarcode("4901234567890");
+    const defaultChar2 = BarcodeEngine.generateFromBarcode("4909876543210");
 
-    activeBattle = new BattleEngine([pChar], deck.itemCard, [eChar], null, '1p');
+    let playerMain = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : defaultChar1;
+    let playerTeam = [playerMain];
+
+    if (matchMode === '3p') {
+      playerTeam.push((deck.subChar1 && deck.subChar1.type === 'character') ? deck.subChar1 : BarcodeEngine.generateFromBarcode("4901111111111"));
+      playerTeam.push((deck.subChar2 && deck.subChar2.type === 'character') ? deck.subChar2 : BarcodeEngine.generateFromBarcode("4902222222222"));
+    }
+
+    let enemyTeam = [];
+    if (isCpu) {
+      enemyTeam.push(defaultChar2);
+      if (matchMode === '3p') {
+        enemyTeam.push(BarcodeEngine.generateFromBarcode("4903333333333"));
+        enemyTeam.push(BarcodeEngine.generateFromBarcode("4904444444444"));
+      }
+    } else if (oppDeck) {
+      let oppMain = (oppDeck.mainChar && oppDeck.mainChar.type === 'character') ? oppDeck.mainChar : defaultChar2;
+      enemyTeam.push(oppMain);
+      if (matchMode === '3p') {
+        enemyTeam.push((oppDeck.subChar1 && oppDeck.subChar1.type === 'character') ? oppDeck.subChar1 : BarcodeEngine.generateFromBarcode("4905555555555"));
+        enemyTeam.push((oppDeck.subChar2 && oppDeck.subChar2.type === 'character') ? oppDeck.subChar2 : BarcodeEngine.generateFromBarcode("4906666666666"));
+      }
+    } else {
+      enemyTeam.push(defaultChar2);
+    }
+
+    activeBattle = new BattleEngine(playerTeam, deck.itemCard, enemyTeam, oppDeck?.itemCard || null, matchMode);
+    
+    // ⭐【修正】2回目のバトル開始時に前の対戦ログを完全に初期化（クリア）
+    const logBox = document.getElementById('battle-log');
+    if (logBox) logBox.innerHTML = `<div>⚔️ バトルが はじまった！ (${matchMode === '3p' ? '3Pチーム戦' : '1P勝負'})</div>`;
+
     renderBattle();
     switchScreen('SCR-06');
   }
@@ -420,15 +647,15 @@
     const e = activeBattle.enemy;
 
     document.getElementById('p-name').textContent = p.name;
-    document.getElementById('p-hp-num').textContent = `${p.currentHp}/${p.maxHp}`;
-    document.getElementById('p-hp-bar').style.width = `${(p.currentHp / p.maxHp) * 100}%`;
+    document.getElementById('p-hp-num').textContent = `${Math.max(0, p.currentHp)}/${p.maxHp}`;
+    document.getElementById('p-hp-bar').style.width = `${Math.max(0, (p.currentHp / p.maxHp) * 100)}%`;
     document.getElementById('p-sp-bar').style.width = `${p.sp}%`;
     document.getElementById('p-sprite').innerHTML = p.spriteSvg;
     document.getElementById('p-sprite').style.color = `var(--element-${p.element})`;
 
     document.getElementById('e-name').textContent = e.name;
-    document.getElementById('e-hp-num').textContent = `${e.currentHp}/${e.maxHp}`;
-    document.getElementById('e-hp-bar').style.width = `${(e.currentHp / e.maxHp) * 100}%`;
+    document.getElementById('e-hp-num').textContent = `${Math.max(0, e.currentHp)}/${e.maxHp}`;
+    document.getElementById('e-hp-bar').style.width = `${Math.max(0, (e.currentHp / e.maxHp) * 100)}%`;
     document.getElementById('e-sp-bar').style.width = `${e.sp}%`;
     document.getElementById('e-sprite').innerHTML = e.spriteSvg;
     document.getElementById('e-sprite').style.color = `var(--element-${e.element})`;
@@ -459,7 +686,7 @@
 
   // --- イベントバインド ---
   document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded -> Binding all buttons...");
+    console.log("DOMContentLoaded -> Binding controls v1.0.7...");
 
     document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
     document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
@@ -469,6 +696,140 @@
       b.addEventListener('click', () => switchScreen('SCR-01'));
     });
 
+    // タブ切替
+    const tabCol = document.getElementById('tab-btn-collection');
+    const tabDeck = document.getElementById('tab-btn-deck');
+    const viewCol = document.getElementById('view-collection-tab');
+    const viewDeck = document.getElementById('view-deck-tab');
+
+    tabCol?.addEventListener('click', () => {
+      tabCol.classList.add('active');
+      tabDeck?.classList.remove('active');
+      if (viewCol) viewCol.style.display = 'flex';
+      if (viewDeck) viewDeck.style.display = 'none';
+      renderCollection();
+    });
+
+    tabDeck?.addEventListener('click', () => {
+      tabDeck.classList.add('active');
+      tabCol?.classList.remove('active');
+      if (viewDeck) viewDeck.style.display = 'flex';
+      if (viewCol) viewCol.style.display = 'none';
+      renderDeckSlots();
+    });
+
+    // モーダル閉じる & メモ編集 & デッキセット
+    document.getElementById('btn-close-detail')?.addEventListener('click', () => {
+      document.getElementById('detail-modal')?.classList.remove('active');
+    });
+
+    document.getElementById('btn-edit-memo')?.addEventListener('click', () => {
+      if (!selectedCardForDetail) return;
+      const newMemo = prompt("このカードのメモをへんしゅう (例: おかしの箱):", selectedCardForDetail.memo || "");
+      if (newMemo !== null) {
+        StorageManager.updateMemo(selectedCardForDetail.id, newMemo);
+        selectedCardForDetail.memo = newMemo;
+        alert("メモを こうしんしました！");
+        renderCollection();
+        openDetailModal(selectedCardForDetail);
+      }
+    });
+
+    document.getElementById('btn-set-main')?.addEventListener('click', () => {
+      if (selectedCardForDetail && StorageManager.setDeckSlot('mainChar', selectedCardForDetail) !== false) {
+        alert(`【${selectedCardForDetail.name}】を メインにセットしました！`);
+        document.getElementById('detail-modal')?.classList.remove('active');
+        renderDeckSlots();
+        renderHome();
+      }
+    });
+    document.getElementById('btn-set-sub1')?.addEventListener('click', () => {
+      if (selectedCardForDetail && StorageManager.setDeckSlot('subChar1', selectedCardForDetail) !== false) {
+        alert(`【${selectedCardForDetail.name}】を サブ1にセットしました！`);
+        document.getElementById('detail-modal')?.classList.remove('active');
+        renderDeckSlots();
+      }
+    });
+    document.getElementById('btn-set-sub2')?.addEventListener('click', () => {
+      if (selectedCardForDetail && StorageManager.setDeckSlot('subChar2', selectedCardForDetail) !== false) {
+        alert(`【${selectedCardForDetail.name}】を サブ2にセットしました！`);
+        document.getElementById('detail-modal')?.classList.remove('active');
+        renderDeckSlots();
+      }
+    });
+    document.getElementById('btn-set-item')?.addEventListener('click', () => {
+      if (selectedCardForDetail && StorageManager.setDeckSlot('itemCard', selectedCardForDetail) !== false) {
+        alert(`【${selectedCardForDetail.name}】を アイテムにセットしました！`);
+        document.getElementById('detail-modal')?.classList.remove('active');
+        renderDeckSlots();
+      }
+    });
+
+    // 1P / 3P モード選択
+    const btn1p = document.getElementById('btn-mode-1p');
+    const btn3p = document.getElementById('btn-mode-3p');
+    btn1p?.addEventListener('click', () => {
+      matchMode = '1p';
+      btn1p.classList.add('active');
+      btn3p?.classList.remove('active');
+    });
+    btn3p?.addEventListener('click', () => {
+      matchMode = '3p';
+      btn3p.classList.add('active');
+      btn1p?.classList.remove('active');
+    });
+
+    // オンライン対戦 (ホスト作成)
+    document.getElementById('btn-create-room')?.addEventListener('click', () => {
+      const code = NetworkManager.generateRoomCode();
+      const deck = StorageManager.getDeck();
+      document.getElementById('lobby-select-view').style.display = 'none';
+      document.getElementById('lobby-host-wait-view').style.display = 'block';
+
+      const codeDisp = document.getElementById('host-room-code');
+      if (codeDisp) codeDisp.textContent = code;
+
+      network.createRoom(code, deck, () => {}, (err) => { alert(err); renderLobby(); });
+      network.onMessageCallback = (data) => {
+        if (data.type === 'JOIN_REQUEST') {
+          startBattle(false, data.guestDeck);
+        }
+      };
+    });
+
+    document.getElementById('btn-cancel-host')?.addEventListener('click', () => {
+      network.disconnect();
+      renderLobby();
+    });
+
+    // オンライン対戦 (ゲスト参加・厳密バリデーション)
+    document.getElementById('btn-join-room')?.addEventListener('click', () => {
+      const input = document.getElementById('input-guest-code');
+      const codeStr = input ? input.value.trim() : "";
+      const deck = StorageManager.getDeck();
+
+      if (!codeStr || codeStr.length !== 4) {
+        alert("⚠️ 4けたの ルームコードを 正しく入力してください (例: 7821)");
+        return;
+      }
+
+      const btnJoin = document.getElementById('btn-join-room');
+      if (btnJoin) { btnJoin.disabled = true; btnJoin.textContent = "🌀 せつぞく中..."; }
+
+      network.joinRoom(codeStr, deck, () => {}, (errMsg) => {
+        if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
+        alert(`❌ ${errMsg}`);
+      });
+
+      network.onMessageCallback = (data) => {
+        if (data.type === 'JOIN_ACCEPT') {
+          if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
+          startBattle(false, data.hostDeck);
+        }
+      };
+    });
+
+    // デモバーコード
     document.querySelectorAll('.btn-demo-barcode').forEach(b => {
       b.addEventListener('click', (e) => {
         const code = e.target.getAttribute('data-code');
@@ -479,7 +840,7 @@
       });
     });
 
-    document.getElementById('btn-cpu-battle')?.addEventListener('click', () => startBattle());
+    document.getElementById('btn-cpu-battle')?.addEventListener('click', () => startBattle(true));
     document.getElementById('btn-cmd-attack')?.addEventListener('click', () => handleAction('attack'));
     document.getElementById('btn-cmd-skill')?.addEventListener('click', () => handleAction('skill'));
     document.getElementById('btn-cmd-guard')?.addEventListener('click', () => handleAction('guard'));
@@ -487,7 +848,7 @@
     document.getElementById('btn-battle-escape')?.addEventListener('click', () => switchScreen('SCR-05'));
 
     renderHome();
-    console.log("Barcode Battler Ready!");
+    console.log("Barcode Battler v1.0.7 Fully Ready!");
   });
 
 })();
