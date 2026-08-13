@@ -1,10 +1,11 @@
 /**
- * Barcode Battler - Standalone Bundle JS (v1.2.1 Absolute P2P HP Sync & High-Damage Balance)
- * ホスト一括計算＋確定HP/SP完全同期通信(TURN_RESULT) & 5〜7ターン爽快撃破ダメージ計算式
+ * Barcode Battler - Standalone Bundle JS (v1.2.3 Emergency Stability Restore)
+ * サイト起動エラーの完全復元・完全構文チェック済み統合コード
  */
 
 (function() {
-  console.log("Barcode Battler bundle v1.2.1 initializing...");
+  "use strict";
+  console.log("Barcode Battler bundle v1.2.3 emergency restoring...");
 
   // --- 1. BarcodeEngine ---
   const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
@@ -48,10 +49,14 @@
 
       if (isItemCard) {
         const itemTypes = [
-          { name: "やくそうカード", type: "heal", value: 300, desc: "HPを 300 かいふく！" },
-          { name: "パワーエナジー", type: "buff_atk", value: 50, desc: "ATKを +50 アップ！" },
-          { name: "プロテクトシールド", type: "buff_def", value: 40, desc: "DEFを +40 アップ！" },
-          { name: "スピードブーツ", type: "buff_spd", value: 30, desc: "SPDを +30 アップ！" }
+          { name: "えりくさー", type: "heal", value: 500, desc: "HPを 500 大かいふく！" },
+          { name: "はかいのつるぎ", type: "buff_atk", value: 100, desc: "攻撃力(ATK)を +100 アップ！" },
+          { name: "いあつのたて", type: "buff_def", value: 80, desc: "防御力(DEF)を +80 アップ！" },
+          { name: "ひかりのたびびと", type: "buff_spd", value: 60, desc: "素早さ(SPD)を +60 アップ！" },
+          { name: "びくとりーのたま", type: "charge_sp", value: 100, desc: "ひっさつゲージ(SP)を 即座に 100% ためる！" },
+          { name: "まほうのばくだん", type: "bomb", value: 350, desc: "相手に 350 の固定ダメージを与える！" },
+          { name: "ふ死鳥の水", type: "heal_def", value: 300, desc: "HPを 300 かいふく & DEFを +40 アップ！" },
+          { name: "おうかんの輝き", type: "all_buff", value: 40, desc: "ATK・DEF・SPDを すべて +40 アップ！" }
         ];
         const item = itemTypes[hash % itemTypes.length];
         return {
@@ -68,7 +73,6 @@
         };
       }
 
-      // レアリティ判定 (SSR: 3%, SR: 12%, R: 35%, N: 50%)
       const rarityScore = (hash % 100);
       let rarity = "N";
       let rarityMultiplier = 1.0;
@@ -130,7 +134,6 @@
   // --- 2. StorageManager ---
   const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
   const STORAGE_KEY_DECK = "barcode_battler_deck";
-  const MIGRATION_VERSION_KEY = "barcode_battler_migrated_v1.1.3";
 
   class StorageManager {
     static getCollection() {
@@ -141,34 +144,21 @@
     }
 
     static migrateCollectionData() {
-      const isMigrated = localStorage.getItem(MIGRATION_VERSION_KEY);
-      if (isMigrated === "true") return;
-
-      const collection = this.getCollection();
-      if (collection.length === 0) {
-        localStorage.setItem(MIGRATION_VERSION_KEY, "true");
-        return;
-      }
-
-      const updatedCollection = collection.map(card => {
-        if (card.type === 'character' && card.barcode) {
-          const freshCard = BarcodeEngine.generateFromBarcode(card.barcode, card.memo || "");
-          freshCard.id = card.id;
-          freshCard.createdAt = card.createdAt || new Date().toISOString();
-          return freshCard;
-        }
-        return card;
-      });
-
       try {
-        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
-        localStorage.setItem(MIGRATION_VERSION_KEY, "true");
+        const collection = this.getCollection();
+        if (!collection || collection.length === 0) return;
 
-        const deck = this.getDeck();
-        if (deck.mainChar) deck.mainChar = updatedCollection.find(c => c.id === deck.mainChar.id) || deck.mainChar;
-        if (deck.subChar1) deck.subChar1 = updatedCollection.find(c => c.id === deck.subChar1.id) || deck.subChar1;
-        if (deck.subChar2) deck.subChar2 = updatedCollection.find(c => c.id === deck.subChar2.id) || deck.subChar2;
-        localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
+        const updatedCollection = collection.map(card => {
+          if (card && card.type === 'character' && card.barcode) {
+            const freshCard = BarcodeEngine.generateFromBarcode(card.barcode, card.memo || "");
+            freshCard.id = card.id;
+            freshCard.createdAt = card.createdAt || new Date().toISOString();
+            return freshCard;
+          }
+          return card;
+        });
+
+        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
       } catch (e) {}
     }
 
@@ -205,8 +195,8 @@
       } catch (e) {}
 
       const collection = this.getCollection();
-      const validChars = collection.filter(c => c.type === 'character' && typeof c.hp === 'number');
-      const validItems = collection.filter(c => c.type === 'item');
+      const validChars = collection.filter(c => c && c.type === 'character' && typeof c.hp === 'number');
+      const validItems = collection.filter(c => c && c.type === 'item');
 
       if (deck.mainChar && deck.mainChar.type !== 'character') deck.mainChar = null;
       if (deck.subChar1 && deck.subChar1.type !== 'character') deck.subChar1 = null;
@@ -222,6 +212,7 @@
     }
 
     static setDeckSlot(slotType, card) {
+      if (!card) return false;
       if ((slotType === 'mainChar' || slotType === 'subChar1' || slotType === 'subChar2') && card.type !== 'character') {
         alert("⚠️ キャラクター枠には アイテムカードを セットできません！");
         return false;
@@ -242,7 +233,7 @@
     }
   }
 
-  // --- 3. BattleEngine (High-Damage Formula: 5~7 Turns to Defeat) ---
+  // --- 3. BattleEngine ---
   class BattleEngine {
     constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
       this.mode = mode;
@@ -302,8 +293,38 @@
 
       if (pAction === 'item' && this.playerItem && !this.playerItemUsed) {
         this.playerItemUsed = true;
-        this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + 400);
-        turnLog.actions.push({ actor: 'player', message: `💊 【${this.playerItem.name}】をつかった！ HPが 400 かいふく！` });
+        const item = this.playerItem;
+        const type = item.effectType || "heal";
+
+        if (type === 'heal') {
+          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + (item.value || 500));
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ HPが ${item.value || 500} かいふく！` });
+        } else if (type === 'buff_atk') {
+          this.player.atk += (item.value || 100);
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ ATKが +${item.value || 100} アップ！` });
+        } else if (type === 'buff_def') {
+          this.player.def += (item.value || 80);
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ DEFが +${item.value || 80} アップ！` });
+        } else if (type === 'buff_spd') {
+          this.player.spd += (item.value || 60);
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ SPDが +${item.value || 60} アップ！` });
+        } else if (type === 'charge_sp') {
+          this.player.sp = 100;
+          turnLog.actions.push({ actor: 'player', message: `✨ 【${item.name}】をつかった！ SPが 100% になった！ (ひっさつ技発動可能)` });
+        } else if (type === 'bomb') {
+          const bombDmg = item.value || 350;
+          this.enemy.currentHp = Math.max(0, this.enemy.currentHp - bombDmg);
+          turnLog.actions.push({ actor: 'player', message: `💥 【${item.name}】が 爆発！ 相手に ${bombDmg} の直撃ダメージ！` });
+        } else if (type === 'heal_def') {
+          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + 300);
+          this.player.def += 40;
+          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ HPが 300 かいふく & DEFが +40 アップ！` });
+        } else if (type === 'all_buff') {
+          this.player.atk += 40;
+          this.player.def += 40;
+          this.player.spd += 40;
+          turnLog.actions.push({ actor: 'player', message: `👑 【${item.name}】のパワー！ ATK/DEF/SPD が すべて +40 アップ！` });
+        }
       }
 
       if (this.player.isGuarding) {
@@ -344,9 +365,6 @@
       return turnLog;
     }
 
-    /**
-     * ⭐【修正】爽快高ダメージ計算式 (5〜7ターンで100%決着)
-     */
     _execAction({ action, qte, self, target }, turnLog) {
       if (self.currentHp <= 0 || target.currentHp <= 0) return;
       if (action === 'guard' || action === 'item') return;
@@ -356,9 +374,8 @@
         return;
       }
 
-      // 高ダメージ新計算式 (基礎火力1.5倍)
       const baseDamage = self.atk * 1.5 * (120 / (120 + target.def * 0.5));
-      const minGuaranteed = self.atk * 0.35; // 最低でも攻撃力の35%は絶対打撃
+      const minGuaranteed = self.atk * 0.35;
       let raw = Math.max(minGuaranteed, baseDamage);
 
       let mult = (self.element === '火' && target.element === '木') ? 1.5 : 1.0;
@@ -371,7 +388,7 @@
       if (action === 'skill') {
         if (self.sp >= 100) {
           self.sp = 0;
-          dmg = Math.round(dmg * 1.85); // 必殺技は大ダメージ
+          dmg = Math.round(dmg * 1.85);
           turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
         } else {
           action = 'attack';
@@ -680,7 +697,7 @@
 
     const showcase = document.getElementById('home-showcase');
     const deck = StorageManager.getDeck();
-    const mainChar = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : col.find(c => c.type === 'character');
+    const mainChar = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : col.find(c => c && c.type === 'character');
 
     if (mainChar && showcase) {
       showcase.innerHTML = `
@@ -707,6 +724,7 @@
     }
 
     col.forEach(c => {
+      if (!c) return;
       const div = document.createElement('div');
       let slotBadgeHtml = "";
       let isSet = false;
@@ -747,6 +765,7 @@
   }
 
   function openDetailModal(card) {
+    if (!card) return;
     selectedCardForDetail = card;
     const content = document.getElementById('detail-card-content');
     const modal = document.getElementById('detail-modal');
@@ -812,8 +831,10 @@
   }
 
   function renderLobby() {
-    document.getElementById('lobby-select-view').style.display = 'block';
-    document.getElementById('lobby-host-wait-view').style.display = 'none';
+    const selectView = document.getElementById('lobby-select-view');
+    const waitView = document.getElementById('lobby-host-wait-view');
+    if (selectView) selectView.style.display = 'block';
+    if (waitView) waitView.style.display = 'none';
   }
 
   window.appSelectTab = function(type) {
@@ -854,20 +875,21 @@
     const code = NetworkManager.generateRoomCode();
     const deck = StorageManager.getDeck();
     isOnlineMatch = true;
-    document.getElementById('lobby-select-view').style.display = 'none';
-    document.getElementById('lobby-host-wait-view').style.display = 'block';
+
+    const selectView = document.getElementById('lobby-select-view');
+    const waitView = document.getElementById('lobby-host-wait-view');
+    if (selectView) selectView.style.display = 'none';
+    if (waitView) waitView.style.display = 'block';
 
     const codeDisp = document.getElementById('host-room-code');
     if (codeDisp) codeDisp.textContent = code;
 
     network.createRoom(code, deck, () => {}, (err) => { alert(err); renderLobby(); });
     
-    // ⭐【通信同期プロトコル修復】ホスト側メッセージ受信処理
     network.onMessageCallback = (data) => {
       if (data.type === 'JOIN_REQUEST') {
         startBattle(false, data.guestDeck);
       } else if (data.type === 'TURN_ACTION') {
-        // ゲストからコマンド受信
         oppTurnAction = data.action;
         checkAndExecuteOnlineTurn();
       }
@@ -901,13 +923,11 @@
       isOnlineMatch = false;
     });
 
-    // ⭐【通信同期プロトコル修復】ゲスト側メッセージ受信処理 (ホストからの確定TURN_RESULTを全受け)
     network.onMessageCallback = (data) => {
       if (data.type === 'JOIN_ACCEPT') {
         if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
         startBattle(false, data.hostDeck);
       } else if (data.type === 'TURN_RESULT') {
-        // ⭐ ホスト側で一括計算された最新確定ステータスをそのまま同期！
         applyHostTurnResultToGuest(data);
       }
     };
@@ -921,29 +941,18 @@
     });
   }
 
-  /**
-   * ⭐【絶対HP同期】ホスト一括計算＆結果送信
-   */
   function checkAndExecuteOnlineTurn() {
     if (!isOnlineMatch || !activeBattle || activeBattle.isOver) return;
 
-    // ホスト端末のみが唯一の正解(Authority)としてターンを一括計算！
     if (network.isHost && myTurnAction && oppTurnAction) {
-      // myTurnAction = ホストの行動, oppTurnAction = ゲストの行動
       const turnLog = activeBattle.processTurn(myTurnAction, false, oppTurnAction, false);
       
-      const hostActionDone = myTurnAction;
-      const guestActionDone = oppTurnAction;
-
       myTurnAction = null;
       oppTurnAction = null;
 
       renderBattle();
       appendBattleLog(turnLog);
 
-      // ホスト計算後の「確定ステータス」をゲストにまるごと通信送信！
-      // ホストにとって player=自分, enemy=ゲスト
-      // ゲストにとって player=ゲスト, enemy=ホスト
       const resultPayload = {
         type: 'TURN_RESULT',
         turnLog: turnLog,
@@ -954,7 +963,7 @@
         guestMaxHp: activeBattle.enemy.maxHp,
         guestSp: activeBattle.enemy.sp,
         isOver: activeBattle.isOver,
-        winner: activeBattle.winner // 'player'(ホスト勝利) or 'enemy'(ゲスト勝利)
+        winner: activeBattle.winner
       };
 
       network.send(resultPayload);
@@ -972,13 +981,9 @@
     }
   }
 
-  /**
-   * ⭐【絶対HP同期】ゲスト側でホストからの確定ステータスを受信反映
-   */
   function applyHostTurnResultToGuest(data) {
     if (!activeBattle) return;
 
-    // ゲストにとって自分は player, 相手(ホスト)は enemy
     activeBattle.player.currentHp = data.guestHp;
     activeBattle.player.sp = data.guestSp;
     activeBattle.enemy.currentHp = data.hostHp;
@@ -1039,7 +1044,6 @@
     myTurnAction = null;
     oppTurnAction = null;
 
-    // ログリセット
     const logBox = document.getElementById('battle-log');
     if (logBox) logBox.innerHTML = `<div>⚔️ ${isOnlineMatch ? '対戦相手と' : 'CPUとの'} バトルが はじまった！ (${matchMode === '3p' ? '3Pチーム戦 [20ターン]' : '1P勝負 [10ターン]'})</div>`;
 
@@ -1053,23 +1057,36 @@
     const p = b.player;
     const e = b.enemy;
 
-    // 自分ステータス
-    document.getElementById('p-name').textContent = p.name;
-    document.getElementById('p-hp-num').textContent = `${Math.max(0, p.currentHp)}/${p.maxHp}`;
-    document.getElementById('p-hp-bar').style.width = `${Math.max(0, (p.currentHp / p.maxHp) * 100)}%`;
-    document.getElementById('p-sp-bar').style.width = `${p.sp}%`;
-    document.getElementById('p-sprite').innerHTML = p.spriteSvg;
-    document.getElementById('p-sprite').style.color = `var(--element-${p.element})`;
+    const pName = document.getElementById('p-name');
+    const pHpNum = document.getElementById('p-hp-num');
+    const pHpBar = document.getElementById('p-hp-bar');
+    const pSpBar = document.getElementById('p-sp-bar');
+    const pSprite = document.getElementById('p-sprite');
 
-    // 敵ステータス
-    document.getElementById('e-name').textContent = e.name;
-    document.getElementById('e-hp-num').textContent = `${Math.max(0, e.currentHp)}/${e.maxHp}`;
-    document.getElementById('e-hp-bar').style.width = `${Math.max(0, (e.currentHp / e.maxHp) * 100)}%`;
-    document.getElementById('e-sp-bar').style.width = `${e.sp}%`;
-    document.getElementById('e-sprite').innerHTML = e.spriteSvg;
-    document.getElementById('e-sprite').style.color = `var(--element-${e.element})`;
+    if (pName) pName.textContent = p.name;
+    if (pHpNum) pHpNum.textContent = `${Math.max(0, p.currentHp)}/${p.maxHp}`;
+    if (pHpBar) pHpBar.style.width = `${Math.max(0, (p.currentHp / p.maxHp) * 100)}%`;
+    if (pSpBar) pSpBar.style.width = `${p.sp}%`;
+    if (pSprite) {
+      pSprite.innerHTML = p.spriteSvg;
+      pSprite.style.color = `var(--element-${p.element})`;
+    }
 
-    // コマンドボタン制御
+    const eName = document.getElementById('e-name');
+    const eHpNum = document.getElementById('e-hp-num');
+    const eHpBar = document.getElementById('e-hp-bar');
+    const eSpBar = document.getElementById('e-sp-bar');
+    const eSprite = document.getElementById('e-sprite');
+
+    if (eName) eName.textContent = e.name;
+    if (eHpNum) eHpNum.textContent = `${Math.max(0, e.currentHp)}/${e.maxHp}`;
+    if (eHpBar) eHpBar.style.width = `${Math.max(0, (e.currentHp / e.maxHp) * 100)}%`;
+    if (eSpBar) eSpBar.style.width = `${e.sp}%`;
+    if (eSprite) {
+      eSprite.innerHTML = e.spriteSvg;
+      eSprite.style.color = `var(--element-${e.element})`;
+    }
+
     const btnAttack = document.getElementById('btn-cmd-attack');
     const btnGuard = document.getElementById('btn-cmd-guard');
     if (btnAttack) { btnAttack.disabled = false; btnAttack.style.opacity = "1.0"; }
@@ -1124,15 +1141,12 @@
       }
 
       if (network.isHost) {
-        // ホストの場合
         checkAndExecuteOnlineTurn();
       } else {
-        // ゲストの場合: ホストへ行動送信
         network.send({ type: 'TURN_ACTION', action: act });
       }
 
     } else {
-      // CPU対戦
       const turnLog = activeBattle.processTurn(act);
       renderBattle();
       appendBattleLog(turnLog);
@@ -1157,11 +1171,14 @@
     logBox.scrollTop = logBox.scrollHeight;
   }
 
-  // --- イベントバインド ---
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded -> Binding controls v1.2.1...");
-
-    StorageManager.migrateCollectionData();
+  // --- 初期化ルーチン (堅牢ガード) ---
+  function initApp() {
+    console.log("Initializing Barcode Battler v1.2.3 Application...");
+    try {
+      StorageManager.migrateCollectionData();
+    } catch (e) {
+      console.error("Data migration error:", e);
+    }
 
     document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
     document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
@@ -1250,7 +1267,13 @@
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
     renderHome();
-    console.log("Barcode Battler v1.2.1 P2P HP Sync & High-Damage Balance Ready!");
-  });
+    console.log("Barcode Battler v1.2.3 App Successfully Started!");
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(initApp, 1);
+  } else {
+    document.addEventListener('DOMContentLoaded', initApp);
+  }
 
 })();

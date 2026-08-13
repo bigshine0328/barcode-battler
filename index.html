@@ -1,1267 +1,278 @@
-/**
- * Barcode Battler - Standalone Bundle JS (v1.2.2 8-Item Variation Engine)
- * アイテムバリエーション全8種（SP即100%充填、全ステUP、固定爆撃、回復＆防UP等）へ拡張
- */
-
-(function() {
-  console.log("Barcode Battler bundle v1.2.2 initializing...");
-
-  // --- 1. BarcodeEngine (8 Item Variations) ---
-  const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
-  const BASE_NAMES = ["ドラゴン", "ゴーレム", "ナイト", "フェニックス", "タイガー", "スライム", "ベア", "ロボ", "ウルフ", "ライオン", "イエティ", "グリフォン"];
-  const SUFFIXES = ["バトラー", "キング", "マスター", "ヒーロー", "ビースト", "ガード", "ファイター", "ロード", "カイザー", "エンペラー"];
-
-  const MONSTER_SILHOUETTES = [
-    `<svg viewBox="0 0 100 100"><path d="M50 15 L65 35 L85 30 L70 55 L80 85 L50 70 L20 85 L30 55 L15 30 L35 35 Z" fill="currentColor"/><circle cx="40" cy="35" r="4" fill="#fff"/><circle cx="60" cy="35" r="4" fill="#fff"/></svg>`,
-    `<svg viewBox="0 0 100 100"><rect x="25" y="20" width="50" height="40" rx="8" fill="currentColor"/><rect x="15" y="30" width="15" height="45" rx="5" fill="currentColor"/><rect x="70" y="30" width="15" height="45" rx="5" fill="currentColor"/><rect x="30" y="60" width="15" height="30" rx="4" fill="currentColor"/><rect x="55" y="60" width="15" height="30" rx="4" fill="currentColor"/><circle cx="40" cy="35" r="5" fill="#fff"/><circle cx="60" cy="35" r="5" fill="#fff"/></svg>`,
-    `<svg viewBox="0 0 100 100"><path d="M50 10 L75 35 L70 90 L30 90 L25 35 Z" fill="currentColor"/><rect x="35" y="30" width="30" height="8" fill="#fff"/><path d="M50 90 L85 50 L50 10" fill="none" stroke="currentColor" stroke-width="4"/></svg>`,
-    `<svg viewBox="0 0 100 100"><path d="M50 15 C30 30 10 20 5 45 C25 45 35 60 50 85 C65 60 75 45 95 45 C90 20 70 30 50 15 Z" fill="currentColor"/><circle cx="50" cy="30" r="4" fill="#fff"/></svg>`,
-    `<svg viewBox="0 0 100 100"><path d="M20 20 L40 30 L50 15 L60 30 L80 20 L75 55 L85 85 L15 85 L25 55 Z" fill="currentColor"/><circle cx="35" cy="40" r="4" fill="#fff"/><circle cx="65" cy="40" r="4" fill="#fff"/></svg>`
-  ];
-
-  class BarcodeEngine {
-    static hashBarcode(codeStr) {
-      let cleaned = (codeStr || "4901234567890").replace(/\D/g, '') || "4901234567890";
-      let hash = 0;
-      for (let i = 0; i < cleaned.length; i++) {
-        hash = ((hash << 5) - hash) + cleaned.charCodeAt(i);
-        hash |= 0;
-      }
-      return Math.abs(hash);
-    }
-
-    static getRandomBarcode() {
-      let code = "49";
-      for (let i = 0; i < 11; i++) {
-        code += Math.floor(Math.random() * 10).toString();
-      }
-      return code;
-    }
-
-    static generateFromBarcode(codeStr, customMemo = "") {
-      const cleaned = (codeStr || "4901234567890").replace(/\D/g, '') || "4901234567890";
-      const digits = cleaned.split('').map(Number);
-      while (digits.length < 13) digits.push(0);
-
-      const hash = this.hashBarcode(cleaned);
-      const isItemCard = (hash % 5 === 0);
-
-      if (isItemCard) {
-        // ⭐【拡張】全8種類のバラエティ豊かで魅力的な強化アイテム
-        const itemTypes = [
-          { name: "えりくさー", type: "heal", value: 500, desc: "HPを 500 大かいふく！" },
-          { name: "はかいのつるぎ", type: "buff_atk", value: 100, desc: "攻撃力(ATK)を +100 アップ！" },
-          { name: "いあつのたて", type: "buff_def", value: 80, desc: "防御力(DEF)を +80 アップ！" },
-          { name: "ひかりのたびびと", type: "buff_spd", value: 60, desc: "素早さ(SPD)を +60 アップ！" },
-          { name: "びくとりーのたま", type: "charge_sp", value: 100, desc: "ひっさつゲージ(SP)を 即座に 100% ためる！" },
-          { name: "まほうのばくだん", type: "bomb", value: 350, desc: "相手に 350 の固定ダメージを与える！" },
-          { name: "ふ死鳥の水", type: "heal_def", value: 300, desc: "HPを 300 かいふく & DEFを +40 アップ！" },
-          { name: "おうかんの輝き", type: "all_buff", value: 40, desc: "ATK・DEF・SPDを すべて +40 アップ！" }
-        ];
-        const item = itemTypes[hash % itemTypes.length];
-        return {
-          id: `item_${cleaned}_${hash}`,
-          barcode: cleaned,
-          type: "item",
-          name: item.name,
-          effectType: item.type,
-          value: item.value,
-          desc: item.desc,
-          rarity: "R",
-          memo: customMemo || "バーコードアイテム",
-          createdAt: new Date().toISOString()
-        };
-      }
-
-      // レアリティ判定 (SSR: 3%, SR: 12%, R: 35%, N: 50%)
-      const rarityScore = (hash % 100);
-      let rarity = "N";
-      let rarityMultiplier = 1.0;
-
-      if (rarityScore < 3) {
-        rarity = "SSR";
-        rarityMultiplier = 1.60;
-      } else if (rarityScore < 15) {
-        rarity = "SR";
-        rarityMultiplier = 1.35;
-      } else if (rarityScore < 50) {
-        rarity = "R";
-        rarityMultiplier = 1.15;
-      } else {
-        rarity = "N";
-        rarityMultiplier = 1.00;
-      }
-
-      const baseHp = 900 + ((digits[9] || 7) * 80) + ((digits[10] || 8) * 10);
-      const baseAtk = 90 + ((digits[7] || 5) * 15) + (digits[8] || 6);
-      const baseDef = 40 + ((digits[5] || 3) * 8) + (digits[6] || 4);
-      const baseSpd = 10 + ((digits[3] || 1) * 4) + (digits[4] || 2);
-
-      const hp = Math.round(baseHp * rarityMultiplier);
-      const atk = Math.round(baseAtk * rarityMultiplier);
-      const def = Math.round(baseDef * rarityMultiplier);
-      const spd = Math.round(baseSpd * rarityMultiplier);
-
-      const elements = ["火", "水", "木"];
-      const element = elements[(digits[12] || 0) % 3];
-
-      const pIdx = hash % PREFIXES.length;
-      const bIdx = (hash + 1) % BASE_NAMES.length;
-      const sIdx = (hash + 2) % SUFFIXES.length;
-      const name = `${PREFIXES[pIdx]}${BASE_NAMES[bIdx]}${SUFFIXES[sIdx]}`;
-
-      const spriteSvg = MONSTER_SILHOUETTES[hash % MONSTER_SILHOUETTES.length];
-
-      return {
-        id: `char_${cleaned}_${hash}`,
-        barcode: cleaned,
-        type: "character",
-        name: name,
-        element: element,
-        rarity: rarity,
-        hp: hp,
-        maxHp: hp,
-        atk: atk,
-        def: def,
-        spd: spd,
-        skill: { name: "ギガブレイク", desc: "敵に強力な属性ダメージ！" },
-        spriteSvg: spriteSvg,
-        memo: customMemo || "",
-        createdAt: new Date().toISOString()
-      };
-    }
-  }
-
-  // --- 2. StorageManager ---
-  const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
-  const STORAGE_KEY_DECK = "barcode_battler_deck";
-  const MIGRATION_VERSION_KEY = "barcode_battler_migrated_v1.1.3";
-
-  class StorageManager {
-    static getCollection() {
-      try {
-        const data = localStorage.getItem(STORAGE_KEY_COLLECTION);
-        return data ? JSON.parse(data) : [];
-      } catch (e) { return []; }
-    }
-
-    static migrateCollectionData() {
-      const isMigrated = localStorage.getItem(MIGRATION_VERSION_KEY);
-      if (isMigrated === "true") return;
-
-      const collection = this.getCollection();
-      if (collection.length === 0) {
-        localStorage.setItem(MIGRATION_VERSION_KEY, "true");
-        return;
-      }
-
-      const updatedCollection = collection.map(card => {
-        if (card.type === 'character' && card.barcode) {
-          const freshCard = BarcodeEngine.generateFromBarcode(card.barcode, card.memo || "");
-          freshCard.id = card.id;
-          freshCard.createdAt = card.createdAt || new Date().toISOString();
-          return freshCard;
-        }
-        return card;
-      });
-
-      try {
-        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
-        localStorage.setItem(MIGRATION_VERSION_KEY, "true");
-
-        const deck = this.getDeck();
-        if (deck.mainChar) deck.mainChar = updatedCollection.find(c => c.id === deck.mainChar.id) || deck.mainChar;
-        if (deck.subChar1) deck.subChar1 = updatedCollection.find(c => c.id === deck.subChar1.id) || deck.subChar1;
-        if (deck.subChar2) deck.subChar2 = updatedCollection.find(c => c.id === deck.subChar2.id) || deck.subChar2;
-        localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
-      } catch (e) {}
-    }
-
-    static saveToCollection(card) {
-      const collection = this.getCollection();
-      const existingIndex = collection.findIndex(c => c.id === card.id);
-      if (existingIndex >= 0) {
-        collection[existingIndex] = card;
-      } else {
-        if (collection.length >= 100) collection.shift();
-        collection.push(card);
-      }
-      try {
-        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
-      } catch (e) {}
-    }
-
-    static updateMemo(cardId, newMemo) {
-      const collection = this.getCollection();
-      const target = collection.find(c => c.id === cardId);
-      if (target) {
-        target.memo = newMemo;
-        try {
-          localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
-        } catch (e) {}
-      }
-    }
-
-    static getDeck() {
-      let deck = { mainChar: null, subChar1: null, subChar2: null, itemCard: null };
-      try {
-        const data = localStorage.getItem(STORAGE_KEY_DECK);
-        if (data) deck = JSON.parse(data);
-      } catch (e) {}
-
-      const collection = this.getCollection();
-      const validChars = collection.filter(c => c.type === 'character' && typeof c.hp === 'number');
-      const validItems = collection.filter(c => c.type === 'item');
-
-      if (deck.mainChar && deck.mainChar.type !== 'character') deck.mainChar = null;
-      if (deck.subChar1 && deck.subChar1.type !== 'character') deck.subChar1 = null;
-      if (deck.subChar2 && deck.subChar2.type !== 'character') deck.subChar2 = null;
-      if (deck.itemCard && deck.itemCard.type !== 'item') deck.itemCard = null;
-
-      if (!deck.mainChar && validChars.length > 0) deck.mainChar = validChars[0];
-      if (!deck.subChar1 && validChars.length > 1) deck.subChar1 = validChars[1];
-      if (!deck.subChar2 && validChars.length > 2) deck.subChar2 = validChars[2];
-      if (!deck.itemCard && validItems.length > 0) deck.itemCard = validItems[0];
-
-      return deck;
-    }
-
-    static setDeckSlot(slotType, card) {
-      if ((slotType === 'mainChar' || slotType === 'subChar1' || slotType === 'subChar2') && card.type !== 'character') {
-        alert("⚠️ キャラクター枠には アイテムカードを セットできません！");
-        return false;
-      }
-      if (slotType === 'itemCard' && card.type !== 'item') {
-        alert("⚠️ アイテム枠には キャラクターを セットできません！");
-        return false;
-      }
-
-      const deck = this.getDeck();
-      deck[slotType] = card;
-      try {
-        localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-  }
-
-  // --- 3. BattleEngine (8-Item Effect Processors) ---
-  class BattleEngine {
-    constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
-      this.mode = mode;
-      this.playerTeam = (Array.isArray(playerTeam) ? playerTeam : [playerTeam]).map(c => this._normalize(c, true));
-      this.enemyTeam = (Array.isArray(enemyTeam) ? enemyTeam : [enemyTeam]).map(c => this._normalize(c, false));
-      this.playerIndex = 0;
-      this.enemyIndex = 0;
-      this.playerItem = playerItem;
-      this.enemyItem = enemyItem;
-      this.playerItemUsed = false;
-      this.enemyItemUsed = false;
-      this.turn = 1;
-      this.maxTurns = (mode === '3p') ? 20 : 10;
-      this.isOver = false;
-      this.winner = null;
-    }
-
-    _normalize(c, isPlayer) {
-      const hp = Math.max(100, Number(c?.hp) || 1200);
-      const atk = Math.max(10, Number(c?.atk) || 180);
-      const def = Math.max(0, Number(c?.def) || 80);
-      const spd = Math.max(5, Number(c?.spd) || 50);
-      return {
-        id: c?.id || `char_${Math.random()}`,
-        name: c?.name || (isPlayer ? "爆炎ドラゴン" : "アクアタイガー"),
-        element: c?.element || "火",
-        rarity: c?.rarity || "R",
-        hp: hp,
-        maxHp: hp,
-        currentHp: hp,
-        atk: atk,
-        def: def,
-        spd: spd,
-        skill: c?.skill || { name: "ギガブレイク", desc: "大ダメージ" },
-        spriteSvg: c?.spriteSvg || `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="currentColor"/></svg>`,
-        sp: 0,
-        isGuarding: false,
-        isPlayer: isPlayer
-      };
-    }
-
-    get player() { return this.playerTeam[this.playerIndex]; }
-    get enemy() { return this.enemyTeam[this.enemyIndex]; }
-
-    processTurn(pAction, pQte = false, eAction = null, eQte = false) {
-      if (this.isOver) return null;
-      if (!eAction) {
-        const opts = ['attack', 'attack', 'guard'];
-        if (this.enemy.sp >= 100) opts.push('skill');
-        eAction = opts[Math.floor(Math.random() * opts.length)];
-      }
-
-      const turnLog = { turn: this.turn, actions: [] };
-
-      this.player.isGuarding = (pAction === 'guard');
-      this.enemy.isGuarding = (eAction === 'guard');
-
-      // ⭐【全8種類アイテム効果処理】
-      if (pAction === 'item' && this.playerItem && !this.playerItemUsed) {
-        this.playerItemUsed = true;
-        const item = this.playerItem;
-        const type = item.effectType || "heal";
-
-        if (type === 'heal') {
-          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + (item.value || 500));
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ HPが ${item.value || 500} かいふく！` });
-        } else if (type === 'buff_atk') {
-          this.player.atk += (item.value || 100);
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ ATKが +${item.value || 100} アップ！` });
-        } else if (type === 'buff_def') {
-          this.player.def += (item.value || 80);
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ DEFが +${item.value || 80} アップ！` });
-        } else if (type === 'buff_spd') {
-          this.player.spd += (item.value || 60);
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ SPDが +${item.value || 60} アップ！` });
-        } else if (type === 'charge_sp') {
-          this.player.sp = 100;
-          turnLog.actions.push({ actor: 'player', message: `✨ 【${item.name}】をつかった！ SPが 100% になった！ (ひっさつ技発動可能)` });
-        } else if (type === 'bomb') {
-          const bombDmg = item.value || 350;
-          this.enemy.currentHp = Math.max(0, this.enemy.currentHp - bombDmg);
-          turnLog.actions.push({ actor: 'player', message: `💥 【${item.name}】が 爆発！ 相手に ${bombDmg} の直撃ダメージ！` });
-        } else if (type === 'heal_def') {
-          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + 300);
-          this.player.def += 40;
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ HPが 300 かいふく & DEFが +40 アップ！` });
-        } else if (type === 'all_buff') {
-          this.player.atk += 40;
-          this.player.def += 40;
-          this.player.spd += 40;
-          turnLog.actions.push({ actor: 'player', message: `👑 【${item.name}】のパワー！ ATK/DEF/SPD が すべて +40 アップ！` });
-        }
-      }
-
-      if (this.player.isGuarding) {
-        this.player.sp = Math.min(100, this.player.sp + 30);
-        turnLog.actions.push({ actor: 'player', message: `🛡️ ${this.player.name} は ガード！ (被ダメ半減 & SP+30)` });
-      }
-      if (this.enemy.isGuarding) {
-        this.enemy.sp = Math.min(100, this.enemy.sp + 30);
-        turnLog.actions.push({ actor: 'enemy', message: `🛡️ ${this.enemy.name} は ガード！ (被ダメ半減 & SP+30)` });
-      }
-
-      const pPriority = this.player.spd * (0.85 + Math.random() * 0.3);
-      const ePriority = this.enemy.spd * (0.85 + Math.random() * 0.3);
-
-      const first = (pPriority >= ePriority) ? 'player' : 'enemy';
-      const second = (first === 'player') ? 'enemy' : 'player';
-
-      const actMap = {
-        player: { action: pAction, qte: pQte, self: this.player, target: this.enemy },
-        enemy: { action: eAction, qte: eQte, self: this.enemy, target: this.player }
-      };
-
-      this._execAction(actMap[first], turnLog);
-      if (!this._checkWin(turnLog)) {
-        this._execAction(actMap[second], turnLog);
-        this._checkWin(turnLog);
-      }
-
-      if (!this.isOver) {
-        this.turn++;
-        if (this.turn > this.maxTurns) {
-          this.isOver = true;
-          this.winner = (this.player.currentHp >= this.enemy.currentHp) ? 'player' : 'enemy';
-          turnLog.actions.push({ actor: 'system', message: `${this.maxTurns}ターン けいか！ 勝敗判定！` });
-        }
-      }
-
-      return turnLog;
-    }
-
-    _execAction({ action, qte, self, target }, turnLog) {
-      if (self.currentHp <= 0 || target.currentHp <= 0) return;
-      if (action === 'guard' || action === 'item') return;
-
-      if (Math.random() < 0.05 && action !== 'qte') {
-        turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `${self.name} の こうげき！ しかし MISS!` });
-        return;
-      }
-
-      const baseDamage = self.atk * 1.5 * (120 / (120 + target.def * 0.5));
-      const minGuaranteed = self.atk * 0.35;
-      let raw = Math.max(minGuaranteed, baseDamage);
-
-      let mult = (self.element === '火' && target.element === '木') ? 1.5 : 1.0;
-      if (self.element === '木' && target.element === '水') mult = 1.5;
-      if (self.element === '水' && target.element === '火') mult = 1.5;
-
-      let rand = 0.92 + Math.random() * 0.16;
-      let dmg = Math.max(1, Math.round(raw * mult * rand));
-
-      if (action === 'skill') {
-        if (self.sp >= 100) {
-          self.sp = 0;
-          dmg = Math.round(dmg * 1.85);
-          turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
-        } else {
-          action = 'attack';
-        }
-      }
-
-      if (action === 'attack') {
-        self.sp = Math.min(100, self.sp + 30);
-      }
-
-      if (target.isGuarding) dmg = Math.max(1, Math.round(dmg * 0.5));
-
-      target.currentHp = Math.max(0, target.currentHp - dmg);
-      target.sp = Math.min(100, target.sp + 15);
-
-      turnLog.actions.push({
-        actor: self.isPlayer ? 'player' : 'enemy',
-        message: `${self.name} の こうげき！ -> ${target.name} に ${dmg} ダメージ！`
-      });
-    }
-
-    _checkWin(turnLog) {
-      if (this.enemy.currentHp <= 0) {
-        if (this.mode === '3p' && this.enemyIndex < this.enemyTeam.length - 1) {
-          this.enemyIndex++;
-          turnLog.actions.push({ actor: 'system', message: `🎉 相手のキャラを たおした！ 敵チームは ${this.enemy.name} が 出撃！` });
-          return false;
-        } else {
-          this.isOver = true;
-          this.winner = 'player';
-          turnLog.actions.push({ actor: 'system', message: `🎉 ${this.enemy.name} を たおした！ あなたの しょうり！` });
-          return true;
-        }
-      }
-      if (this.player.currentHp <= 0) {
-        if (this.mode === '3p' && this.playerIndex < this.playerTeam.length - 1) {
-          this.playerIndex++;
-          turnLog.actions.push({ actor: 'system', message: `💧 あなたのキャラが たおれた... つぎの ${this.player.name} が 出撃！` });
-          return false;
-        } else {
-          this.isOver = true;
-          this.winner = 'enemy';
-          turnLog.actions.push({ actor: 'system', message: `💧 ${this.player.name} は たおれた... あなたの まけ...` });
-          return true;
-        }
-      }
-      return false;
-    }
-  }
-
-  // --- 4. NetworkManager ---
-  class NetworkManager {
-    constructor() {
-      this.roomCode = null;
-      this.isHost = false;
-      this.peer = null;
-      this.connection = null;
-      this.onMessageCallback = null;
-      this.isConnected = false;
-    }
-
-    static generateRoomCode() {
-      return Math.floor(1000 + Math.random() * 9000).toString();
-    }
-
-    createRoom(code, myDeck, onSuccess, onError) {
-      this.roomCode = code;
-      this.isHost = true;
-      this.myDeck = myDeck;
-      this.disconnect();
-
-      const peerId = `bcbtl_room_${code}`;
-
-      if (typeof window.Peer !== 'undefined') {
-        try {
-          this.peer = new window.Peer(peerId, { debug: 1 });
-          this.peer.on('open', (id) => { if (onSuccess) onSuccess(id); });
-          this.peer.on('connection', (conn) => {
-            this.connection = conn;
-            this.isConnected = true;
-            this._setupConn(conn);
-          });
-          this.peer.on('error', () => {
-            if (onError) onError("すでに使われているコードです。");
-          });
-        } catch (e) {}
-      }
-    }
-
-    joinRoom(code, myDeck, onSuccess, onError) {
-      this.roomCode = code;
-      this.isHost = false;
-      this.myDeck = myDeck;
-      this.disconnect();
-
-      const peerId = `bcbtl_room_${code}`;
-      let hasConn = false;
-
-      const timeoutId = setTimeout(() => {
-        if (!hasConn && !this.isConnected) {
-          this.disconnect();
-          if (onError) onError("へやが見つかりませんでした。ルームコードを確認してください。");
-        }
-      }, 5000);
-
-      if (typeof window.Peer !== 'undefined') {
-        try {
-          this.peer = new window.Peer({ debug: 1 });
-          this.peer.on('open', () => {
-            const conn = this.peer.connect(peerId, { reliable: true });
-            this.connection = conn;
-
-            conn.on('open', () => {
-              hasConn = true;
-              clearTimeout(timeoutId);
-              this.isConnected = true;
-              this._setupConn(conn);
-              this.send({ type: 'JOIN_REQUEST', guestDeck: myDeck });
-              if (onSuccess) onSuccess();
-            });
-
-            conn.on('error', () => {
-              clearTimeout(timeoutId);
-              this.disconnect();
-              if (onError) onError("へやが見つかりませんでした。");
-            });
-          });
-          this.peer.on('error', () => {
-            clearTimeout(timeoutId);
-            this.disconnect();
-            if (onError) onError("へやが見つかりませんでした。");
-          });
-        } catch (e) {}
-      }
-    }
-
-    _setupConn(conn) {
-      conn.on('data', (data) => {
-        if (data.type === 'JOIN_REQUEST' && this.isHost) {
-          this.send({ type: 'JOIN_ACCEPT', hostDeck: this.myDeck });
-        }
-        if (this.onMessageCallback) this.onMessageCallback(data);
-      });
-    }
-
-    send(data) {
-      if (this.connection && this.connection.open) {
-        this.connection.send(data);
-      }
-    }
-
-    disconnect() {
-      if (this.connection) { try { this.connection.close(); } catch(e){} this.connection = null; }
-      if (this.peer) { try { this.peer.destroy(); } catch(e){} this.peer = null; }
-      this.isConnected = false;
-    }
-  }
-
-  // --- 5. App State & Camera & Global Handlers ---
-  let activeBattle = null;
-  let scannedCard = null;
-  let selectedCardForDetail = null;
-  let matchMode = '1p';
-  let isOnlineMatch = false;
-  let myTurnAction = null;
-  let oppTurnAction = null;
-  let network = new NetworkManager();
-
-  let mediaStream = null;
-  let scanIntervalId = null;
-  let barcodeDetector = null;
-
-  if ('BarcodeDetector' in window) {
-    try {
-      barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'qr_code'] });
-    } catch (e) {}
-  }
-
-  function switchScreen(screenId) {
-    if (screenId !== 'SCR-02') {
-      stopCamera();
-    }
-
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const target = document.getElementById(screenId);
-    if (target) {
-      target.classList.add('active');
-    }
-
-    if (screenId === 'SCR-01') renderHome();
-    else if (screenId === 'SCR-02') startCamera();
-    else if (screenId === 'SCR-04') renderCollection();
-    else if (screenId === 'SCR-05') renderLobby();
-  }
-
-  window.appSwitchScreen = switchScreen;
-
-  async function startCamera() {
-    const video = document.getElementById('scan-video');
-    const statusMsg = document.getElementById('camera-status-msg');
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      if (statusMsg) statusMsg.textContent = "※ お使いのブラウザは カメラに 対応していません（下のテストボタンをご利用ください）";
-      return;
-    }
-
-    try {
-      if (statusMsg) statusMsg.textContent = "カメラを き動しています...";
-      const constraints = {
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false
-      };
-
-      mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (video) {
-        video.srcObject = mediaStream;
-        await video.play();
-      }
-
-      if (statusMsg) statusMsg.textContent = "バーコードを わくの中に あわせよう！";
-      startScanLoop();
-
-    } catch (err) {
-      console.error("Camera error:", err);
-      if (statusMsg) statusMsg.textContent = "⚠️ カメラのきょかが ありません。下のテストボタンをご利用ください。";
-    }
-  }
-
-  window.appStartCamera = startCamera;
-
-  function stopCamera() {
-    if (scanIntervalId) {
-      clearInterval(scanIntervalId);
-      scanIntervalId = null;
-    }
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-      mediaStream = null;
-    }
-    const video = document.getElementById('scan-video');
-    if (video) video.srcObject = null;
-  }
-
-  function startScanLoop() {
-    const video = document.getElementById('scan-video');
-    if (!video) return;
-
-    scanIntervalId = setInterval(async () => {
-      if (!video.videoWidth || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-
-      if (barcodeDetector) {
-        try {
-          const barcodes = await barcodeDetector.detect(video);
-          if (barcodes && barcodes.length > 0) {
-            const detectedCode = barcodes[0].rawValue;
-            stopCamera();
-            processScanResult(detectedCode);
-          }
-        } catch (e) {}
-      }
-    }, 300);
-  }
-
-  function processScanResult(codeStr) {
-    scannedCard = BarcodeEngine.generateFromBarcode(codeStr);
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-    const resultBox = document.getElementById('scan-result-card');
-    if (resultBox) {
-      if (scannedCard.type === 'character') {
-        resultBox.innerHTML = `
-          <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
-            ✨ ${scannedCard.rarity} ゲット！
-          </div>
-          <div class="sprite-container" style="color: var(--element-${scannedCard.element})">
-            ${scannedCard.spriteSvg}
-          </div>
-          <div class="char-name">${scannedCard.name}</div>
-          <div><span class="element-tag element-${scannedCard.element}">${scannedCard.element}</span> <span class="rarity-tag">${scannedCard.rarity}</span></div>
-          <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text-muted); margin-top: 4px;">
-            HP: ${scannedCard.hp} / ATK: ${scannedCard.atk} / DEF: ${scannedCard.def} / SPD: ${scannedCard.spd}<br>
-            ✨ 必殺技: 【${scannedCard.skill.name}】
-          </div>
-        `;
-      } else {
-        resultBox.innerHTML = `
-          <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
-            🎁 きょうかアイテム ゲット！
-          </div>
-          <div class="char-name" style="color: var(--accent-gold);">${scannedCard.name}</div>
-          <div style="font-size: 0.85rem; margin-top: 4px; color: var(--text-muted);">${scannedCard.desc}</div>
-        `;
-      }
-    }
-
-    const memoInput = document.getElementById('scanned-memo-input');
-    if (memoInput) memoInput.value = "";
-
-    switchScreen('SCR-03');
-  }
-
-  function renderHome() {
-    const col = StorageManager.getCollection();
-    const badge = document.getElementById('home-count-badge');
-    if (badge) badge.textContent = `しょじ ${col.length}/100`;
-
-    const showcase = document.getElementById('home-showcase');
-    const deck = StorageManager.getDeck();
-    const mainChar = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : col.find(c => c.type === 'character');
-
-    if (mainChar && showcase) {
-      showcase.innerHTML = `
-        <div class="sprite-container" style="color: var(--element-${mainChar.element})">${mainChar.spriteSvg}</div>
-        <div class="char-name">${mainChar.name}</div>
-        <div><span class="element-tag element-${mainChar.element}">${mainChar.element}</span> <span class="rarity-tag">${mainChar.rarity}</span></div>
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">HP: ${mainChar.hp} / ATK: ${mainChar.atk} / DEF: ${mainChar.def} / SPD: ${mainChar.spd}</div>
-      `;
-    } else if (showcase) {
-      showcase.innerHTML = `<div style="color: var(--text-muted); padding: 20px 0;">バーコードを スキャンして<br>キャラを ゲットしよう！</div>`;
-    }
-  }
-
-  function renderCollection() {
-    const grid = document.getElementById('collection-grid-container');
-    if (!grid) return;
-    const col = StorageManager.getCollection();
-    const deck = StorageManager.getDeck();
-    grid.innerHTML = "";
-
-    if (col.length === 0) {
-      grid.innerHTML = `<div style="grid-column: 1/3; text-align: center; color: var(--text-muted); padding: 40px 0;">カードがありません。スキャンしよう！</div>`;
-      return;
-    }
-
-    col.forEach(c => {
-      const div = document.createElement('div');
-      let slotBadgeHtml = "";
-      let isSet = false;
-
-      if (deck.mainChar && deck.mainChar.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-main">⚔️ メイン</span>`;
-        isSet = true;
-      } else if (deck.subChar1 && deck.subChar1.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-sub1">🛡️ サブ1</span>`;
-        isSet = true;
-      } else if (deck.subChar2 && deck.subChar2.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-sub2">🛡️ サブ2</span>`;
-        isSet = true;
-      } else if (deck.itemCard && deck.itemCard.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-item">💊 アイテム</span>`;
-        isSet = true;
-      }
-
-      div.className = `card-item ${c.type === 'item' ? 'item-card' : ''} ${isSet ? 'is-deck-set' : ''}`;
-      
-      div.innerHTML = `
-        ${slotBadgeHtml}
-        <div class="mini-sprite" style="color: var(--element-${c.element || '火'})">${c.spriteSvg || '🎁'}</div>
-        <div style="font-weight: 800; font-size: 0.8rem; margin-top: 4px;">${c.name}</div>
-        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">
-          ${c.type === 'character' ? `[${c.rarity}] HP:${c.hp}<br>A:${c.atk} D:${c.def}` : c.desc}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>バーコードバトラー (プロトタイプ版)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/css/style.css?v=1.2.3">
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+  <div id="app-container">
+
+    <!-- SCR-01: ホーム画面 -->
+    <section id="SCR-01" class="screen active">
+      <header>
+        <div>
+          <h1 class="logo">⚡ バーコードバトラー</h1>
+          <span class="version-tag">v1.2.3</span>
         </div>
-      `;
+        <div id="home-count-badge" class="counter-badge">しょじ 0/100</div>
+      </header>
 
-      div.onclick = function() {
-        window.appOpenDetailModal(c);
-      };
+      <div style="margin-top: 10px; font-size: 0.85rem; font-weight: 800; color: var(--secondary-cyan); text-align: center;">
+        ⚔️ げんざいの「しゅつげきメインキャラ」
+      </div>
 
-      grid.appendChild(div);
-    });
+      <div id="home-showcase" class="char-showcase">
+        <div style="color: var(--text-muted);">バーコードを スキャンして<br>キャラを ゲットしよう！</div>
+      </div>
 
-    renderDeckSlots();
-  }
+      <button id="btn-nav-scan" class="btn btn-primary" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-02');">📷 バーコードをすきゃん！</button>
+      <div class="btn-group">
+        <button id="btn-nav-deck" class="btn btn-secondary" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-04');">📖 ずかん・デッキへんせい</button>
+        <button id="btn-nav-battle" class="btn btn-gold" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-05');">⚔️ たいせんロビー</button>
+      </div>
+    </section>
 
-  function openDetailModal(card) {
-    selectedCardForDetail = card;
-    const content = document.getElementById('detail-card-content');
-    const modal = document.getElementById('detail-modal');
+    <!-- SCR-02: スキャン画面 -->
+    <section id="SCR-02" class="screen">
+      <header>
+        <button id="btn-stop-camera-back" class="btn-back-home" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-01');" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
+        <h1 class="logo" style="font-size:1.1rem;">📷 バーコードスキャン</h1>
+      </header>
 
-    const btnMain = document.getElementById('btn-set-main');
-    const btnSub1 = document.getElementById('btn-set-sub1');
-    const btnSub2 = document.getElementById('btn-set-sub2');
-    const btnItem = document.getElementById('btn-set-item');
+      <div id="camera-status-msg" style="text-align: center; margin: 10px 0 6px 0; font-size: 0.9rem; color: var(--secondary-cyan);">
+        バーコードを わくの中に あわせよう！
+      </div>
 
-    if (card.type === 'character') {
-      if (btnMain) btnMain.style.display = 'block';
-      if (btnSub1) btnSub1.style.display = 'block';
-      if (btnSub2) btnSub2.style.display = 'block';
-      if (btnItem) btnItem.style.display = 'none';
+      <div class="camera-box">
+        <video id="scan-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+        <canvas id="scan-canvas" style="display: none;"></canvas>
+        <div class="scan-laser"></div>
+      </div>
 
-      content.innerHTML = `
-        <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【キャラ能力詳細】</div>
-        <div class="sprite-container" style="color: var(--element-${card.element}); margin: 0 auto 6px auto; width: 70px; height: 70px;">${card.spriteSvg}</div>
-        <div style="font-size: 1.05rem; font-weight: 800;">${card.name}</div>
-        <div style="margin: 4px 0;"><span class="element-tag element-${card.element}">${card.element}</span> <span class="rarity-tag">${card.rarity}</span></div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: var(--surface-card); padding: 8px; border-radius: 8px; line-height: 1.4;">
-          ❤️ 体力 (HP): ${card.hp}<br>
-          ⚔️ 攻撃力 (ATK): ${card.atk}<br>
-          🛡️ 防御力 (DEF): ${card.def}<br>
-          ⚡ 素早さ (SPD): ${card.spd}<br>
-          ✨ 必殺技: 【${card.skill?.name || "ギガブレイク"}】<br>
-          📝 メモ: ${card.memo || "メモなし"}
+      <button id="btn-start-camera" class="btn btn-secondary" onclick="if(window.appStartCamera) window.appStartCamera();" style="margin-top: 10px; font-size: 0.95rem; min-height: 44px;">
+        🎥 カメラを き動する
+      </button>
+
+      <div class="demo-barcode-section">
+        <div style="font-size: 0.85rem; font-weight: 800;">🧪 テスト用バーコード（カメラがない環境用）</div>
+        <div class="demo-btn-grid">
+          <button class="demo-btn btn-demo-barcode" data-code="4901234567890">🍫 おかしの箱 (火)</button>
+          <button class="demo-btn btn-demo-barcode" data-code="4909876543210">🧃 ジュースの缶 (水)</button>
+          <button class="demo-btn btn-demo-barcode" data-code="4901111222233">✏️ ノート (木)</button>
+          <button class="demo-btn btn-demo-barcode" data-code="4908888777766">🎁 レアアイテム</button>
         </div>
-      `;
-    } else {
-      if (btnMain) btnMain.style.display = 'none';
-      if (btnSub1) btnSub1.style.display = 'none';
-      if (btnSub2) btnSub2.style.display = 'none';
-      if (btnItem) btnItem.style.display = 'block';
 
-      content.innerHTML = `
-        <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【アイテム効果詳細】</div>
-        <div style="font-size: 2.2rem; margin: 4px 0;">🎁</div>
-        <div style="font-size: 1.05rem; font-weight: 800; color: var(--accent-gold);">${card.name}</div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: var(--surface-card); padding: 8px; border-radius: 8px; margin-top: 6px; line-height: 1.4;">
-          💊 効果: ${card.desc}<br>
-          📝 メモ: ${card.memo || "メモなし"}
+        <div style="margin-top: 10px; display: flex; gap: 6px;">
+          <input type="text" id="input-manual-barcode" class="memo-input" placeholder="JANコードを直接入力 (例: 4901234...)" style="margin:0; font-size:0.85rem;">
+          <button id="btn-manual-scan" class="btn btn-secondary" style="width: auto; min-height:44px; margin:0; font-size:0.9rem;">けってい</button>
         </div>
-      `;
-    }
-
-    if (modal) modal.classList.add('active');
-  }
-
-  window.appOpenDetailModal = openDetailModal;
-
-  function renderDeckSlots() {
-    const deck = StorageManager.getDeck();
-    const m = document.getElementById('slot-content-main');
-    const s1 = document.getElementById('slot-content-sub1');
-    const s2 = document.getElementById('slot-content-sub2');
-    const item = document.getElementById('slot-content-item');
-
-    if (m) m.textContent = deck.mainChar ? `${deck.mainChar.name} (HP:${deck.mainChar.hp} ATK:${deck.mainChar.atk} DEF:${deck.mainChar.def})` : "未セット";
-    if (s1) s1.textContent = deck.subChar1 ? `${deck.subChar1.name} (HP:${deck.subChar1.hp} ATK:${deck.subChar1.atk} DEF:${deck.subChar1.def})` : "未セット";
-    if (s2) s2.textContent = deck.subChar2 ? `${deck.subChar2.name} (HP:${deck.subChar2.hp} ATK:${deck.subChar2.atk} DEF:${deck.subChar2.def})` : "未セット";
-    if (item) item.textContent = deck.itemCard ? `${deck.itemCard.name} (${deck.itemCard.desc})` : "未セット";
-  }
-
-  function renderLobby() {
-    document.getElementById('lobby-select-view').style.display = 'block';
-    document.getElementById('lobby-host-wait-view').style.display = 'none';
-  }
-
-  window.appSelectTab = function(type) {
-    const tabCol = document.getElementById('tab-btn-collection');
-    const tabDeck = document.getElementById('tab-btn-deck');
-    const viewCol = document.getElementById('view-collection-tab');
-    const viewDeck = document.getElementById('view-deck-tab');
-
-    if (type === 'col') {
-      tabCol?.classList.add('active');
-      tabDeck?.classList.remove('active');
-      if (viewCol) viewCol.style.display = 'flex';
-      if (viewDeck) viewDeck.style.display = 'none';
-      renderCollection();
-    } else {
-      tabDeck?.classList.add('active');
-      tabCol?.classList.remove('active');
-      if (viewDeck) viewDeck.style.display = 'flex';
-      if (viewCol) viewCol.style.display = 'none';
-      renderDeckSlots();
-    }
-  };
-
-  window.appSetMode = function(mode) {
-    matchMode = mode;
-    const btn1p = document.getElementById('btn-mode-1p');
-    const btn3p = document.getElementById('btn-mode-3p');
-    if (mode === '1p') {
-      btn1p?.classList.add('active');
-      btn3p?.classList.remove('active');
-    } else {
-      btn3p?.classList.add('active');
-      btn1p?.classList.remove('active');
-    }
-  };
-
-  window.appCreateRoom = function() {
-    const code = NetworkManager.generateRoomCode();
-    const deck = StorageManager.getDeck();
-    isOnlineMatch = true;
-    document.getElementById('lobby-select-view').style.display = 'none';
-    document.getElementById('lobby-host-wait-view').style.display = 'block';
-
-    const codeDisp = document.getElementById('host-room-code');
-    if (codeDisp) codeDisp.textContent = code;
-
-    network.createRoom(code, deck, () => {}, (err) => { alert(err); renderLobby(); });
-    
-    network.onMessageCallback = (data) => {
-      if (data.type === 'JOIN_REQUEST') {
-        startBattle(false, data.guestDeck);
-      } else if (data.type === 'TURN_ACTION') {
-        oppTurnAction = data.action;
-        checkAndExecuteOnlineTurn();
-      }
-    };
-  };
-
-  window.appCancelHost = function() {
-    network.disconnect();
-    isOnlineMatch = false;
-    renderLobby();
-  };
-
-  window.appJoinRoom = function() {
-    const input = document.getElementById('input-guest-code');
-    const codeStr = input ? input.value.trim() : "";
-    const deck = StorageManager.getDeck();
-
-    if (!codeStr || codeStr.length !== 4) {
-      alert("⚠️ 4けたの ルームコードを 正しく入力してください (例: 7821)");
-      return;
-    }
-
-    const btnJoin = document.getElementById('btn-join-room');
-    if (btnJoin) { btnJoin.disabled = true; btnJoin.textContent = "🌀 せつぞく中..."; }
-
-    isOnlineMatch = true;
-
-    network.joinRoom(codeStr, deck, () => {}, (errMsg) => {
-      if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
-      alert(`❌ ${errMsg}`);
-      isOnlineMatch = false;
-    });
-
-    network.onMessageCallback = (data) => {
-      if (data.type === 'JOIN_ACCEPT') {
-        if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
-        startBattle(false, data.hostDeck);
-      } else if (data.type === 'TURN_RESULT') {
-        applyHostTurnResultToGuest(data);
-      }
-    };
-  };
-
-  function setBattleButtonsDisabled(disabled) {
-    const ids = ['btn-cmd-attack', 'btn-cmd-skill', 'btn-cmd-guard', 'btn-cmd-item'];
-    ids.forEach(id => {
-      const b = document.getElementById(id);
-      if (b) b.disabled = disabled;
-    });
-  }
-
-  function checkAndExecuteOnlineTurn() {
-    if (!isOnlineMatch || !activeBattle || activeBattle.isOver) return;
-
-    if (network.isHost && myTurnAction && oppTurnAction) {
-      const turnLog = activeBattle.processTurn(myTurnAction, false, oppTurnAction, false);
-      
-      myTurnAction = null;
-      oppTurnAction = null;
-
-      renderBattle();
-      appendBattleLog(turnLog);
-
-      const resultPayload = {
-        type: 'TURN_RESULT',
-        turnLog: turnLog,
-        hostHp: activeBattle.player.currentHp,
-        hostMaxHp: activeBattle.player.maxHp,
-        hostSp: activeBattle.player.sp,
-        guestHp: activeBattle.enemy.currentHp,
-        guestMaxHp: activeBattle.enemy.maxHp,
-        guestSp: activeBattle.enemy.sp,
-        isOver: activeBattle.isOver,
-        winner: activeBattle.winner
-      };
-
-      network.send(resultPayload);
-
-      if (activeBattle.isOver) {
-        setTimeout(() => {
-          alert(activeBattle.winner === 'player' ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
-          isOnlineMatch = false;
-          network.disconnect();
-          switchScreen('SCR-05');
-        }, 1000);
-      } else {
-        setBattleButtonsDisabled(false);
-      }
-    }
-  }
-
-  function applyHostTurnResultToGuest(data) {
-    if (!activeBattle) return;
-
-    activeBattle.player.currentHp = data.guestHp;
-    activeBattle.player.sp = data.guestSp;
-    activeBattle.enemy.currentHp = data.hostHp;
-    activeBattle.enemy.sp = data.hostSp;
-    activeBattle.isOver = data.isOver;
-
-    renderBattle();
-    appendBattleLog(data.turnLog);
-    setBattleButtonsDisabled(false);
-
-    if (data.isOver) {
-      const isGuestWin = (data.winner === 'enemy');
-      setTimeout(() => {
-        alert(isGuestWin ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
-        isOnlineMatch = false;
-        network.disconnect();
-        switchScreen('SCR-05');
-      }, 1000);
-    }
-  }
-
-  window.appStartCpuBattle = function() {
-    isOnlineMatch = false;
-    startBattle(true, null);
-  };
-
-  function startBattle(isCpu = true, oppDeck = null) {
-    const deck = StorageManager.getDeck();
-    const defaultChar1 = BarcodeEngine.generateFromBarcode("4901234567890");
-
-    let playerMain = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : defaultChar1;
-    let playerTeam = [playerMain];
-
-    if (matchMode === '3p') {
-      playerTeam.push((deck.subChar1 && deck.subChar1.type === 'character') ? deck.subChar1 : BarcodeEngine.generateFromBarcode("4901111111111"));
-      playerTeam.push((deck.subChar2 && deck.subChar2.type === 'character') ? deck.subChar2 : BarcodeEngine.generateFromBarcode("4902222222222"));
-    }
-
-    let enemyTeam = [];
-    if (isCpu) {
-      enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
-      if (matchMode === '3p') {
-        enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
-        enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
-      }
-    } else if (oppDeck) {
-      let oppMain = (oppDeck.mainChar && oppDeck.mainChar.type === 'character') ? oppDeck.mainChar : BarcodeEngine.generateFromBarcode("4909876543210");
-      enemyTeam.push(oppMain);
-      if (matchMode === '3p') {
-        enemyTeam.push((oppDeck.subChar1 && oppDeck.subChar1.type === 'character') ? oppDeck.subChar1 : BarcodeEngine.generateFromBarcode("4905555555555"));
-        enemyTeam.push((oppDeck.subChar2 && oppDeck.subChar2.type === 'character') ? oppDeck.subChar2 : BarcodeEngine.generateFromBarcode("4906666666666"));
-      }
-    } else {
-      enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
-    }
-
-    activeBattle = new BattleEngine(playerTeam, deck.itemCard, enemyTeam, oppDeck?.itemCard || null, matchMode);
-    myTurnAction = null;
-    oppTurnAction = null;
-
-    // ログリセット
-    const logBox = document.getElementById('battle-log');
-    if (logBox) logBox.innerHTML = `<div>⚔️ ${isOnlineMatch ? '対戦相手と' : 'CPUとの'} バトルが はじまった！ (${matchMode === '3p' ? '3Pチーム戦 [20ターン]' : '1P勝負 [10ターン]'})</div>`;
-
-    renderBattle();
-    switchScreen('SCR-06');
-  }
-
-  function renderBattle() {
-    if (!activeBattle) return;
-    const b = activeBattle;
-    const p = b.player;
-    const e = b.enemy;
-
-    // 自分ステータス
-    document.getElementById('p-name').textContent = p.name;
-    document.getElementById('p-hp-num').textContent = `${Math.max(0, p.currentHp)}/${p.maxHp}`;
-    document.getElementById('p-hp-bar').style.width = `${Math.max(0, (p.currentHp / p.maxHp) * 100)}%`;
-    document.getElementById('p-sp-bar').style.width = `${p.sp}%`;
-    document.getElementById('p-sprite').innerHTML = p.spriteSvg;
-    document.getElementById('p-sprite').style.color = `var(--element-${p.element})`;
-
-    // 敵ステータス
-    document.getElementById('e-name').textContent = e.name;
-    document.getElementById('e-hp-num').textContent = `${Math.max(0, e.currentHp)}/${e.maxHp}`;
-    document.getElementById('e-hp-bar').style.width = `${Math.max(0, (e.currentHp / e.maxHp) * 100)}%`;
-    document.getElementById('e-sp-bar').style.width = `${e.sp}%`;
-    document.getElementById('e-sprite').innerHTML = e.spriteSvg;
-    document.getElementById('e-sprite').style.color = `var(--element-${e.element})`;
-
-    // コマンドボタン制御
-    const btnAttack = document.getElementById('btn-cmd-attack');
-    const btnGuard = document.getElementById('btn-cmd-guard');
-    if (btnAttack) { btnAttack.disabled = false; btnAttack.style.opacity = "1.0"; }
-    if (btnGuard) { btnGuard.disabled = false; btnGuard.style.opacity = "1.0"; }
-
-    const btnSkill = document.getElementById('btn-cmd-skill');
-    if (btnSkill) {
-      btnSkill.disabled = (p.sp < 100);
-      btnSkill.style.opacity = (p.sp < 100) ? "0.4" : "1.0";
-    }
-
-    const btnItem = document.getElementById('btn-cmd-item');
-    if (btnItem) {
-      const isItemUsable = (b.playerItem && !b.playerItemUsed);
-      btnItem.disabled = !isItemUsable;
-      btnItem.style.opacity = isItemUsable ? "1.0" : "0.4";
-    }
-  }
-
-  function handleAction(act) {
-    if (!activeBattle || activeBattle.isOver) return;
-
-    if (act === 'item') {
-      if (!activeBattle.playerItem) {
-        alert("⚠️ デッキに アイテムカードが セットされていません！");
-        return;
-      }
-      if (activeBattle.playerItemUsed) {
-        alert("⚠️ アイテムは 1バトルに 1回しか つかえません！");
-        return;
-      }
-    }
-
-    if (act === 'skill') {
-      if (activeBattle.player.sp < 100) {
-        alert("⚠️ ひっさつ技は SPゲージが 100% になってから つかえます！");
-        return;
-      }
-    }
-
-    if (isOnlineMatch) {
-      myTurnAction = act;
-      setBattleButtonsDisabled(true);
-
-      const logBox = document.getElementById('battle-log');
-      if (logBox) {
-        const div = document.createElement('div');
-        div.style.color = "var(--secondary-cyan)";
-        div.textContent = "🌀 あいての コマンド選択を まっています...";
-        logBox.appendChild(div);
-        logBox.scrollTop = logBox.scrollHeight;
-      }
-
-      if (network.isHost) {
-        checkAndExecuteOnlineTurn();
-      } else {
-        network.send({ type: 'TURN_ACTION', action: act });
-      }
-
-    } else {
-      // CPU対戦
-      const turnLog = activeBattle.processTurn(act);
-      renderBattle();
-      appendBattleLog(turnLog);
-
-      if (activeBattle.isOver) {
-        setTimeout(() => {
-          alert(activeBattle.winner === 'player' ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
-          switchScreen('SCR-05');
-        }, 800);
-      }
-    }
-  }
-
-  function appendBattleLog(turnLog) {
-    const logBox = document.getElementById('battle-log');
-    if (!logBox || !turnLog) return;
-    turnLog.actions.forEach(a => {
-      const d = document.createElement('div');
-      d.textContent = a.message;
-      logBox.appendChild(d);
-    });
-    logBox.scrollTop = logBox.scrollHeight;
-  }
-
-  // --- イベントバインド ---
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded -> Binding controls v1.2.2...");
-
-    StorageManager.migrateCollectionData();
-
-    document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
-    document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
-    document.getElementById('btn-nav-battle')?.addEventListener('click', () => switchScreen('SCR-05'));
-
-    document.querySelectorAll('.btn-back-home').forEach(b => {
-      b.addEventListener('click', () => switchScreen('SCR-01'));
-    });
-
-    document.getElementById('btn-start-camera')?.addEventListener('click', () => startCamera());
-    document.getElementById('btn-manual-scan')?.addEventListener('click', () => {
-      const input = document.getElementById('input-manual-barcode');
-      if (input && input.value) {
-        stopCamera();
-        processScanResult(input.value);
-      }
-    });
-
-    document.getElementById('btn-save-scanned')?.addEventListener('click', () => {
-      if (scannedCard) {
-        const memoInput = document.getElementById('scanned-memo-input');
-        if (memoInput && memoInput.value) scannedCard.memo = memoInput.value;
-        StorageManager.saveToCollection(scannedCard);
-        alert(`【${scannedCard.name}】を ずかんに ほぞんしました！`);
-        switchScreen('SCR-04');
-      }
-    });
-
-    document.getElementById('btn-edit-memo')?.addEventListener('click', () => {
-      if (!selectedCardForDetail) return;
-      const newMemo = prompt("このカードのメモをへんしゅう (例: おかしの箱):", selectedCardForDetail.memo || "");
-      if (newMemo !== null) {
-        StorageManager.updateMemo(selectedCardForDetail.id, newMemo);
-        selectedCardForDetail.memo = newMemo;
-        alert("メモを こうしんしました！");
-        renderCollection();
-        openDetailModal(selectedCardForDetail);
-      }
-    });
-
-    document.getElementById('btn-set-main')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('mainChar', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を メインにセットしました！`);
-        document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
-        renderCollection();
-        renderHome();
-      }
-    });
-    document.getElementById('btn-set-sub1')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('subChar1', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を サブ1にセットしました！`);
-        document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
-        renderCollection();
-      }
-    });
-    document.getElementById('btn-set-sub2')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('subChar2', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を サブ2にセットしました！`);
-        document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
-        renderCollection();
-      }
-    });
-    document.getElementById('btn-set-item')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('itemCard', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を アイテムにセットしました！`);
-        document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
-        renderCollection();
-      }
-    });
-
-    document.querySelectorAll('.btn-demo-barcode').forEach(b => {
-      b.addEventListener('click', (e) => {
-        const code = e.target.getAttribute('data-code');
-        stopCamera();
-        processScanResult(code);
-      });
-    });
-
-    document.getElementById('btn-cmd-attack')?.addEventListener('click', () => handleAction('attack'));
-    document.getElementById('btn-cmd-skill')?.addEventListener('click', () => handleAction('skill'));
-    document.getElementById('btn-cmd-guard')?.addEventListener('click', () => handleAction('guard'));
-    document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
-
-    renderHome();
-    console.log("Barcode Battler v1.2.2 8-Item Variation Engine Ready!");
-  });
-
-})();
+      </div>
+    </section>
+
+    <!-- SCR-03: スキャン結果画面 -->
+    <section id="SCR-03" class="screen">
+      <header>
+        <h1 class="logo">✨ スキャンせいか</h1>
+      </header>
+
+      <div id="scan-result-card" class="char-showcase"></div>
+
+      <input type="text" id="scanned-memo-input" class="memo-input" placeholder="📝 商品名やメモを入力（例: ポテトチップス）">
+
+      <button id="btn-save-scanned" class="btn btn-primary">📖 ずかんに ほぞんする</button>
+      <button class="btn btn-dark btn-back-home" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-01');">🏠 ホームへ もどる</button>
+    </section>
+
+    <!-- SCR-04: 図鑑 & デッキ画面 -->
+    <section id="SCR-04" class="screen">
+      <header>
+        <button class="btn-back-home" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-01');" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
+        <h1 class="logo" style="font-size:1.1rem;">📖 ずかん・デッキ</h1>
+      </header>
+
+      <!-- タブ切替 -->
+      <div style="display: flex; gap: 6px; margin: 8px 0;">
+        <button id="tab-btn-collection" class="tab-btn active" onclick="if(window.appSelectTab) window.appSelectTab('col');">📖 所持ずかん</button>
+        <button id="tab-btn-deck" class="tab-btn" onclick="if(window.appSelectTab) window.appSelectTab('deck');">⚔️ デッキへんせい</button>
+      </div>
+
+      <!-- ずかんビュー -->
+      <div id="view-collection-tab" style="display: flex; flex-direction: column; flex: 1;">
+        <div style="font-size: 0.78rem; color: var(--accent-gold); font-weight: 800; margin-bottom: 4px;">
+          👇 カードをタップすると【能力確認・メモ編集・セット】ができます！
+        </div>
+        <div id="collection-grid-container" class="collection-grid"></div>
+      </div>
+
+      <!-- デッキへんせいビュー -->
+      <div id="view-deck-tab" style="display: none; flex-direction: column; flex: 1; gap: 8px;">
+        <div style="font-size: 0.82rem; color: var(--accent-gold); font-weight: 800;">
+          現在のチーム編成（ずかんのカードから変更）
+        </div>
+
+        <div class="deck-slot-box" id="slot-main-char">
+          <div class="slot-label">【メインキャラ (出撃)】</div>
+          <div class="slot-content" id="slot-content-main">未セット</div>
+        </div>
+
+        <div class="deck-slot-box" id="slot-sub-char1">
+          <div class="slot-label">【サブキャラ 1 (3P用)】</div>
+          <div class="slot-content" id="slot-content-sub1">未セット</div>
+        </div>
+
+        <div class="deck-slot-box" id="slot-sub-char2">
+          <div class="slot-label">【サブキャラ 2 (3P用)】</div>
+          <div class="slot-content" id="slot-content-sub2">未セット</div>
+        </div>
+
+        <div class="deck-slot-box" id="slot-item-card">
+          <div class="slot-label">【強化アイテムカード】</div>
+          <div class="slot-content" id="slot-content-item">未セット</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCR-05: 対戦ロビー画面 -->
+    <section id="SCR-05" class="screen">
+      <header>
+        <button class="btn-back-home" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-01');" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
+        <h1 class="logo" style="font-size:1.1rem;">⚔️ 対戦ロビー</h1>
+      </header>
+
+      <div id="lobby-select-view" style="margin-top: 10px;">
+        <!-- ルールモード選択 -->
+        <div style="background: var(--surface-color); padding: 10px; border-radius: 14px; border: 1px solid #2e3558; margin-bottom: 10px;">
+          <div style="font-size: 0.82rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 6px;">
+            🎮 対戦ルールを選択
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button id="btn-mode-1p" class="mode-btn active" onclick="if(window.appSetMode) window.appSetMode('1p');">1P対戦 (1体勝負)</button>
+            <button id="btn-mode-3p" class="mode-btn" onclick="if(window.appSetMode) window.appSetMode('3p');">3P対戦 (3体チーム戦)</button>
+          </div>
+        </div>
+
+        <button id="btn-create-room" class="btn btn-primary" onclick="if(window.appCreateRoom) window.appCreateRoom();" style="min-height: 54px; margin-bottom: 10px;">
+          🏠 へやをつくる (コードはっこう)
+        </button>
+
+        <div style="background: var(--surface-color); padding: 10px; border-radius: 14px; border: 1px solid #2e3558;">
+          <div style="font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">🔑 へやにはいる</div>
+          <input type="number" id="input-guest-code" class="memo-input" placeholder="4けたのコードを入力 (例: 7821)">
+          <button id="btn-join-room" class="btn btn-secondary" onclick="if(window.appJoinRoom) window.appJoinRoom();" style="margin:0;">さんかする</button>
+        </div>
+
+        <div style="margin-top: 16px; text-align: center;">
+          <button id="btn-cpu-battle" class="btn btn-gold" onclick="if(window.appStartCpuBattle) window.appStartCpuBattle();">🤖 ひとりで CPU対戦テスト</button>
+        </div>
+      </div>
+
+      <!-- ホスト待機表示 -->
+      <div id="lobby-host-wait-view" style="display: none; text-align: center; margin-top: 20px;">
+        <div style="font-size: 0.85rem; color: var(--text-muted);">友達に このコードを おしえよう！</div>
+        <div id="host-room-code" style="font-family: var(--font-arcade); font-size: 2.8rem; color: var(--accent-gold); margin: 12px 0; letter-spacing: 4px;">
+          ----
+        </div>
+        <div style="color: var(--secondary-cyan); font-weight: 800; font-size: 0.85rem;">
+          🌀 あいてのさんかを まっています...
+        </div>
+        <button id="btn-cancel-host" class="btn btn-dark" onclick="if(window.appCancelHost) window.appCancelHost();" style="margin-top: 16px;">キャンセルして もどる</button>
+      </div>
+    </section>
+
+    <!-- SCR-06: バトル画面 -->
+    <section id="SCR-06" class="screen">
+      <header style="padding-bottom: 6px;">
+        <h1 class="logo" style="font-size: 1rem;">⚔️ バトル</h1>
+        <button id="btn-battle-escape" class="btn btn-dark" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-05');" style="width: auto; min-height: 36px; padding: 4px 12px; font-size: 0.8rem; margin: 0;">
+          🏃 にげる
+        </button>
+      </header>
+
+      <div class="battle-stage">
+        <!-- 敵情報 -->
+        <div class="fighter-bar enemy-bar">
+          <div style="display:flex; justify-content: space-between; align-items:center;">
+            <span style="font-weight: 900; font-size: 0.78rem; background: #ff3366; color: #fff; padding: 2px 6px; border-radius: 6px; margin-right: 6px;">🔴 あいて</span>
+            <span id="e-name" style="font-weight: 800; font-size: 0.85rem;">???</span>
+            <span id="e-hp-num" style="font-size: 0.8rem; color: var(--secondary-cyan); margin-left: auto;">1000/1000</span>
+          </div>
+          <div class="hp-gauge-bg"><div id="e-hp-bar" class="hp-gauge-fill"></div></div>
+          <div class="sp-gauge-bg"><div id="e-sp-bar" class="sp-gauge-fill"></div></div>
+        </div>
+
+        <!-- バトルアリーナ -->
+        <div class="battle-arena">
+          <div class="arena-char">
+            <div id="p-sprite" class="mini-sprite" style="width:80px; height:80px;"></div>
+            <div style="font-size: 0.72rem; font-weight: 800; color: var(--secondary-cyan); margin-top: 2px;">🟢 あなた</div>
+          </div>
+          <div style="font-family: var(--font-arcade); font-size: 1.2rem; color: var(--primary-pink);">VS</div>
+          <div class="arena-char">
+            <div id="e-sprite" class="mini-sprite" style="width:80px; height:80px;"></div>
+            <div style="font-size: 0.72rem; font-weight: 800; color: var(--primary-pink); margin-top: 2px;">🔴 あいて</div>
+          </div>
+        </div>
+
+        <!-- 自分情報 -->
+        <div class="fighter-bar player-bar">
+          <div style="display:flex; justify-content: space-between; align-items:center;">
+            <span style="font-weight: 900; font-size: 0.78rem; background: #00e5ff; color: #000; padding: 2px 6px; border-radius: 6px; margin-right: 6px;">🟢 あなた</span>
+            <span id="p-name" style="font-weight: 800; font-size: 0.85rem;">???</span>
+            <span id="p-hp-num" style="font-size: 0.8rem; color: var(--secondary-cyan); margin-left: auto;">1000/1000</span>
+          </div>
+          <div class="hp-gauge-bg"><div id="p-hp-bar" class="hp-gauge-fill"></div></div>
+          <div class="sp-gauge-bg"><div id="p-sp-bar" class="sp-gauge-fill"></div></div>
+        </div>
+
+        <!-- バトルログ -->
+        <div id="battle-log" class="battle-log-box">
+          <div>⚔️ バトルが はじまった！</div>
+        </div>
+
+        <!-- コマンドボタン -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px;">
+          <button id="btn-cmd-attack" class="btn btn-primary" style="margin:0; min-height:44px; font-size:0.8rem; padding: 4px 2px;">⚔️ こうげき</button>
+          <button id="btn-cmd-skill" class="btn btn-secondary" style="margin:0; min-height:44px; font-size:0.8rem; padding: 4px 2px;" disabled>✨ ひっさつ</button>
+          <button id="btn-cmd-guard" class="btn btn-dark" style="margin:0; min-height:44px; font-size:0.8rem; padding: 4px 2px;">🛡️ ガード</button>
+          <button id="btn-cmd-item" class="btn btn-dark" style="margin:0; min-height:44px; font-size:0.8rem; padding: 4px 2px;" disabled>💊 アイテム</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 詳細確認・デッキ変更モーダル -->
+    <div id="detail-modal" class="qte-modal" style="justify-content: center;">
+      <div style="background: var(--surface-color); border: 2px solid var(--secondary-cyan); border-radius: 18px; padding: 16px; width: 90%; max-width: 360px; text-align: center;">
+        <div id="detail-card-content"></div>
+
+        <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 6px;">
+          <button id="btn-edit-memo" class="btn btn-dark" style="margin:0; min-height:36px; font-size:0.8rem;">📝 メモをへんしゅう</button>
+          <button id="btn-set-main" class="btn btn-primary" style="margin:0; min-height:36px; font-size:0.8rem;">⚔️ メインキャラにセット</button>
+          <button id="btn-set-sub1" class="btn btn-secondary" style="margin:0; min-height:36px; font-size:0.8rem;">🛡️ サブ1にセット (3P用)</button>
+          <button id="btn-set-sub2" class="btn btn-secondary" style="margin:0; min-height:36px; font-size:0.8rem;">🛡️ サブ2にセット (3P用)</button>
+          <button id="btn-set-item" class="btn btn-gold" style="margin:0; min-height:36px; font-size:0.8rem;">💊 アイテムにセット</button>
+          <button id="btn-close-detail" class="btn btn-dark" onclick="document.getElementById('detail-modal').classList.remove('active');" style="margin:0; min-height:36px; font-size:0.8rem;">とじる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 全画面共通フッター (バージョン表示) -->
+    <div style="position: absolute; bottom: 4px; right: 10px; font-size: 0.68rem; color: rgba(255,255,255,0.3); font-family: var(--font-arcade); pointer-events: none; z-index: 10;">
+      VER 1.2.3 (Build 20260813.15)
+    </div>
+
+  </div>
+
+  <!-- スクリプト統合読み込み (キャッシュクリア v1.2.3) -->
+  <script src="src/js/bundle.js?v=1.2.3"></script>
+</body>
+</html>
