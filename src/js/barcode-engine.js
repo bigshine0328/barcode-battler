@@ -1,5 +1,5 @@
 /**
- * Barcode Battler - Barcode Engine Module (v2.3.0 20 Species & New Rarity)
+ * Barcode Battler - Barcode Engine Module (v2.4.0 Multi-Element Color & Ultra SSR Background)
  */
 
 export const PREFIXES = [
@@ -21,27 +21,40 @@ export const SUFFIXES = [
   "ガード", "ファイター", "ロード", "カイザー", "エンペラー"
 ];
 
-export const SPECIES_SVGS = {
-  "ドラゴン": `<svg viewBox="0 0 100 100"><path d="M50 10 Q65 25 80 15 Q75 35 90 40 Q70 55 75 80 Q50 70 25 80 Q30 55 10 40 Q25 35 20 15 Q35 25 50 10 Z" fill="currentColor"/><path d="M35 30 L45 25 L40 40 Z" fill="#fff"/><path d="M65 30 L55 25 L60 40 Z" fill="#fff"/><circle cx="38" cy="35" r="4" fill="#ff0055"/><circle cx="62" cy="35" r="4" fill="#ff0055"/></svg>`,
-  "ゴーレム": `<svg viewBox="0 0 100 100"><rect x="20" y="15" width="60" height="45" rx="8" fill="currentColor"/><rect x="10" y="25" width="18" height="50" rx="6" fill="currentColor"/><rect x="72" y="25" width="18" height="50" rx="6" fill="currentColor"/><rect x="25" y="60" width="20" height="35" rx="5" fill="currentColor"/><rect x="55" y="60" width="20" height="35" rx="5" fill="currentColor"/><rect x="30" y="28" width="40" height="12" fill="#000"/><circle cx="40" cy="34" r="4" fill="#00e5ff"/><circle cx="60" cy="34" r="4" fill="#00e5ff"/></svg>`,
-  "ナイト": `<svg viewBox="0 0 100 100"><path d="M50 8 L75 25 L75 50 Q75 80 50 92 Q25 80 25 50 L25 25 Z" fill="currentColor"/><rect x="35" y="32" width="30" height="8" rx="3" fill="#fff"/><line x1="50" y1="20" x2="50" y2="80" stroke="#fff" stroke-width="4"/><path d="M75 40 L95 20 L85 60 Z" fill="currentColor"/></svg>`,
-  "フェニックス": `<svg viewBox="0 0 100 100"><path d="M50 12 C30 25 10 15 2 40 C20 42 30 55 42 75 C45 85 50 95 50 95 C50 95 55 85 58 75 C70 55 80 42 98 40 C90 15 70 25 50 12 Z" fill="currentColor"/><path d="M45 25 Q50 5 55 25" stroke="#fff" stroke-width="3" fill="none"/><circle cx="43" cy="28" r="3" fill="#fff"/><circle cx="57" cy="28" r="3" fill="#fff"/></svg>`,
-  "タイガー": `<svg viewBox="0 0 100 100"><path d="M20 20 L38 32 L50 18 L62 32 L80 20 L75 55 L85 85 L15 85 L25 55 Z" fill="currentColor"/><path d="M30 40 L40 45 L30 50" fill="none" stroke="#fff" stroke-width="3"/><path d="M70 40 L60 45 L70 50" fill="none" stroke="#fff" stroke-width="3"/><circle cx="36" cy="42" r="4" fill="#fff"/><circle cx="64" cy="42" r="4" fill="#fff"/></svg>`,
-  "スライム": `<svg viewBox="0 0 100 100"><path d="M50 15 C20 15 10 50 10 70 C10 88 30 92 50 92 C70 92 90 88 90 70 C90 50 80 15 50 15 Z" fill="currentColor"/><circle cx="35" cy="50" r="7" fill="#fff"/><circle cx="65" cy="50" r="7" fill="#fff"/><circle cx="37" cy="50" r="3" fill="#000"/><circle cx="67" cy="50" r="3" fill="#000"/><path d="M40 70 Q50 80 60 70" stroke="#fff" stroke-width="3" fill="none"/></svg>`,
-  "ベア": `<svg viewBox="0 0 100 100"><circle cx="25" cy="25" r="15" fill="currentColor"/><circle cx="75" cy="25" r="15" fill="currentColor"/><path d="M20 40 Q50 25 80 40 L85 85 C85 85 50 95 15 85 Z" fill="currentColor"/><ellipse cx="50" cy="65" rx="18" ry="12" fill="#fff"/><circle cx="50" cy="60" r="5" fill="#000"/><circle cx="38" cy="48" r="4" fill="#fff"/><circle cx="62" cy="48" r="4" fill="#fff"/></svg>`,
-  "ロボ": `<svg viewBox="0 0 100 100"><rect x="25" y="20" width="50" height="45" rx="5" fill="currentColor"/><line x1="50" y1="5" x2="50" y2="20" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="5" r="6" fill="#ff0055"/><rect x="32" y="32" width="36" height="12" fill="#000"/><circle cx="42" cy="38" r="4" fill="#00e5ff"/><circle cx="58" cy="38" r="4" fill="#00e5ff"/><rect x="20" y="70" width="60" height="22" rx="4" fill="currentColor"/></svg>`,
-  "ウルフ": `<svg viewBox="0 0 100 100"><path d="M50 10 L68 35 L90 40 L70 65 L78 92 L50 78 L22 92 L30 65 L10 40 L32 35 Z" fill="currentColor"/><polygon points="50,45 42,60 58,60" fill="#fff"/><circle cx="38" cy="40" r="4" fill="#ffea00"/><circle cx="62" cy="40" r="4" fill="#ffea00"/></svg>`,
-  "ライオン": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="currentColor"/><path d="M30 30 Q50 10 70 30 Q90 50 70 70 Q50 90 30 70 Q10 50 30 30 Z" fill="#ff9900"/><circle cx="50" cy="52" r="22" fill="currentColor"/><circle cx="40" cy="45" r="4" fill="#fff"/><circle cx="60" cy="45" r="4" fill="#fff"/><polygon points="50,55 45,63 55,63" fill="#fff"/></svg>`,
-  "イエティ": `<svg viewBox="0 0 100 100"><path d="M50 10 C20 20 15 50 15 88 L85 88 C85 50 80 20 50 10 Z" fill="currentColor"/><ellipse cx="50" cy="42" rx="25" ry="18" fill="#000"/><circle cx="40" cy="40" r="5" fill="#00e5ff"/><circle cx="60" cy="40" r="5" fill="#00e5ff"/><polygon points="45,52 50,47 55,52" fill="#fff"/></svg>`,
-  "グリフォン": `<svg viewBox="0 0 100 100"><path d="M50 10 L70 30 L95 25 L80 55 L90 88 L50 75 L10 88 L20 55 L5 25 L30 30 Z" fill="currentColor"/><path d="M50 30 L65 50 L35 50 Z" fill="#fff"/><circle cx="40" cy="32" r="4" fill="#ff0055"/><circle cx="60" cy="32" r="4" fill="#ff0055"/></svg>`,
-  "バトロボ": `<svg viewBox="0 0 100 100"><polygon points="30,10 70,10 85,40 75,90 25,90 15,40" fill="currentColor"/><rect x="25" y="30" width="50" height="15" fill="#000"/><circle cx="38" cy="37" r="5" fill="#ff0055"/><circle cx="62" cy="37" r="5" fill="#ff0055"/><rect x="10" y="45" width="12" height="35" rx="3" fill="#ffea00"/><rect x="78" y="45" width="12" height="35" rx="3" fill="#ffea00"/></svg>`,
-  "クラーケン": `<svg viewBox="0 0 100 100"><circle cx="50" cy="35" r="28" fill="currentColor"/><path d="M25 55 Q10 75 20 95 M38 60 Q30 80 35 95 M50 62 Q50 82 50 95 M62 60 Q70 80 65 95 M75 55 Q90 75 80 95" stroke="currentColor" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="38" cy="32" r="5" fill="#ffea00"/><circle cx="62" cy="32" r="5" fill="#ffea00"/><circle cx="38" cy="32" r="2" fill="#000"/><circle cx="62" cy="32" r="2" fill="#000"/></svg>`,
-  "ペガサス": `<svg viewBox="0 0 100 100"><path d="M50 15 Q35 25 25 50 Q25 80 45 85 Q65 80 75 50 Q65 25 50 15 Z" fill="currentColor"/><path d="M25 35 Q5 20 5 45 Q20 50 30 55" fill="#fff"/><path d="M75 35 Q95 20 95 45 Q80 50 70 55" fill="#fff"/><polygon points="50,5 45,20 55,20" fill="#ffea00"/><circle cx="40" cy="40" r="4" fill="#00e5ff"/><circle cx="60" cy="40" r="4" fill="#00e5ff"/></svg>`,
-  "キマイラ": `<svg viewBox="0 0 100 100"><circle cx="30" cy="30" r="18" fill="currentColor"/><circle cx="70" cy="30" r="18" fill="currentColor"/><circle cx="50" cy="65" r="24" fill="currentColor"/><path d="M20 70 Q50 95 80 70" fill="currentColor"/><circle cx="28" cy="28" r="3" fill="#ff0055"/><circle cx="72" cy="28" r="3" fill="#ffea00"/><circle cx="50" cy="62" r="4" fill="#00e5ff"/></svg>`,
-  "デーモン": `<svg viewBox="0 0 100 100"><path d="M50 20 Q70 10 80 5 Q75 30 80 50 Q65 85 50 90 Q35 85 20 50 Q25 30 20 5 Q30 10 50 20 Z" fill="currentColor"/><polygon points="20,5 30,22 15,25" fill="#ff0055"/><polygon points="80,5 70,22 85,25" fill="#ff0055"/><circle cx="36" cy="42" r="5" fill="#ffea00"/><circle cx="64" cy="42" r="5" fill="#ffea00"/><path d="M40 68 Q50 80 60 68" stroke="#fff" stroke-width="3" fill="none"/></svg>`,
-  "レヴィアタン": `<svg viewBox="0 0 100 100"><path d="M15 80 Q30 20 50 50 Q70 80 85 20 Q95 60 70 85 Q45 60 30 90 Z" fill="currentColor"/><circle cx="80" cy="25" r="4" fill="#ff0055"/><polygon points="75,15 85,10 90,20" fill="#00e5ff"/></svg>`,
-  "ネクロマンサー": `<svg viewBox="0 0 100 100"><path d="M50 10 Q80 20 75 70 L25 70 Q20 20 50 10 Z" fill="currentColor"/><circle cx="50" cy="42" r="18" fill="#000"/><circle cx="42" cy="40" r="4" fill="#00e5ff"/><circle cx="58" cy="40" r="4" fill="#00e5ff"/><path d="M40 70 L50 95 L60 70 Z" fill="currentColor"/></svg>`,
-  "ファントム": `<svg viewBox="0 0 100 100"><path d="M50 10 C25 10 20 40 20 65 Q25 80 35 70 Q45 85 50 70 Q55 85 65 70 Q75 80 80 65 C80 40 75 10 50 10 Z" fill="currentColor"/><ellipse cx="38" cy="38" rx="5" ry="8" fill="#000"/><ellipse cx="62" cy="38" rx="5" ry="8" fill="#000"/><circle cx="38" cy="36" r="2" fill="#00e5ff"/><circle cx="62" cy="36" r="2" fill="#00e5ff"/></svg>`
+export const ELEMENT_PALETTES = {
+  "火": {
+    primary: "#ff2200",
+    secondary: "#ffd700",
+    dark: "#880011",
+    eye: "#ffff00",
+    pupil: "#000000",
+    accent: "#ff6600",
+    glowStart: "#ffe600",
+    glowMid: "#ff5500",
+    glowEnd: "#ff0044"
+  },
+  "水": {
+    primary: "#0088ff",
+    secondary: "#e0ffff",
+    dark: "#002266",
+    eye: "#00ffff",
+    pupil: "#ffffff",
+    accent: "#00e5ff",
+    glowStart: "#00f0ff",
+    glowMid: "#0066ff",
+    glowEnd: "#7b00ff"
+  },
+  "木": {
+    primary: "#00aa44",
+    secondary: "#aaffaa",
+    dark: "#003311",
+    eye: "#ffff33",
+    pupil: "#003300",
+    accent: "#00ff88",
+    glowStart: "#aaff44",
+    glowMid: "#00ff88",
+    glowEnd: "#004422"
+  }
 };
 
 export class BarcodeEngine {
@@ -61,6 +74,290 @@ export class BarcodeEngine {
       code += Math.floor(Math.random() * 10).toString();
     }
     return code;
+  }
+
+  static generateCharacterSvg(species, element = "火", rarity = "N") {
+    const pal = ELEMENT_PALETTES[element] || ELEMENT_PALETTES["火"];
+    const idSuffix = `${Math.floor(Math.random() * 100000)}`;
+
+    let bgDefs = "";
+    let bgSvg = "";
+
+    // レアリティ別背景演出
+    if (rarity === "SSR") {
+      bgDefs = `
+        <radialGradient id="ssr-glow-${idSuffix}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="${pal.glowStart}" stop-opacity="0.95"/>
+          <stop offset="35%" stop-color="#ffd700" stop-opacity="0.8"/>
+          <stop offset="70%" stop-color="${pal.glowMid}" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="${pal.glowEnd}" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="gold-beam-${idSuffix}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="50%" stop-color="#ffe600"/>
+          <stop offset="100%" stop-color="#ff7700"/>
+        </linearGradient>
+      `;
+      bgSvg = `
+        <!-- 超ド派手 SSR サンバースト & 黄金魔方陣 -->
+        <circle cx="70" cy="70" r="66" fill="url(#ssr-glow-${idSuffix})"/>
+        <polygon points="70,4 74,48 116,24 88,58 136,70 88,82 116,116 74,92 70,136 66,92 24,116 52,82 4,70 52,58 24,24 66,48" fill="url(#gold-beam-${idSuffix})" opacity="0.65"/>
+        <polygon points="70,16 73,54 108,32 82,62 124,70 82,78 108,108 73,86 70,124 67,86 32,108 58,78 16,70 58,62 32,32 67,54" fill="#ffffff" opacity="0.45"/>
+        <circle cx="70" cy="70" r="54" stroke="#ffd700" stroke-width="2" fill="none" opacity="0.85"/>
+        <circle cx="70" cy="70" r="48" stroke="#ffe600" stroke-width="1.5" stroke-dasharray="6,4" fill="none" opacity="0.9"/>
+        <circle cx="70" cy="70" r="42" stroke="${pal.accent}" stroke-width="1" stroke-dasharray="3,3" fill="none" opacity="0.75"/>
+        <polygon points="28,28 32,38 42,42 32,46 28,56 24,46 14,42 24,38" fill="#ffffff"/>
+        <polygon points="112,24 115,31 122,34 115,37 112,44 109,37 102,34 109,31" fill="#ffffff"/>
+        <polygon points="22,104 24,109 29,111 24,113 22,118 20,113 15,111 20,109" fill="#ffe600"/>
+        <polygon points="118,98 121,104 127,107 121,110 118,116 115,110 109,107 115,104" fill="#ffe600"/>
+        <circle cx="38" cy="85" r="2.5" fill="#ffffff"/>
+        <circle cx="102" cy="55" r="2" fill="#ffffff"/>
+        <circle cx="70" cy="18" r="3" fill="#ffffff"/>
+      `;
+    } else if (rarity === "SR") {
+      bgDefs = `
+        <radialGradient id="sr-glow-${idSuffix}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#b066ff" stop-opacity="0.65"/>
+          <stop offset="60%" stop-color="${pal.glowMid}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+        </radialGradient>
+      `;
+      bgSvg = `
+        <!-- SR サイバーオーラ & ヘックスグリッド -->
+        <circle cx="70" cy="70" r="60" fill="url(#sr-glow-${idSuffix})"/>
+        <polygon points="70,15 115,40 115,100 70,125 25,100 25,40" stroke="#b066ff" stroke-width="2" fill="none" opacity="0.75"/>
+        <circle cx="70" cy="70" r="48" stroke="${pal.accent}" stroke-width="1.5" stroke-dasharray="6,4" fill="none" opacity="0.8"/>
+        <polygon points="30,30 33,37 40,39 33,41 30,48 27,41 20,39 27,37" fill="#ffffff"/>
+        <polygon points="110,30 113,37 120,39 113,41 110,48 107,41 100,39 107,37" fill="#ffffff"/>
+      `;
+    } else if (rarity === "R") {
+      bgDefs = `
+        <radialGradient id="r-glow-${idSuffix}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="${pal.glowStart}" stop-opacity="0.45"/>
+          <stop offset="70%" stop-color="${pal.glowMid}" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+        </radialGradient>
+      `;
+      bgSvg = `
+        <!-- R クリスタルリング & エナジー粒子 -->
+        <circle cx="70" cy="70" r="56" fill="url(#r-glow-${idSuffix})"/>
+        <circle cx="70" cy="70" r="54" stroke="${pal.accent}" stroke-width="2" stroke-dasharray="8,6" fill="none" opacity="0.85"/>
+        <circle cx="35" cy="40" r="2.5" fill="#ffffff"/>
+        <circle cx="105" cy="40" r="2.5" fill="#ffffff"/>
+      `;
+    } else {
+      bgSvg = `
+        <!-- N シンプルサークルベース -->
+        <circle cx="70" cy="70" r="54" fill="#14182a" stroke="#2e3656" stroke-width="2"/>
+      `;
+    }
+
+    // 種族別ボディ描画
+    let bodySvg = "";
+    switch (species) {
+      case "ドラゴン":
+        bodySvg = `
+          <path d="M70 30 Q85 45 100 35 Q95 55 110 60 Q90 75 95 100 Q70 90 45 100 Q50 75 30 60 Q45 55 40 35 Q55 45 70 30 Z" fill="${pal.primary}"/>
+          <path d="M55 50 L65 45 L60 60 Z" fill="${pal.secondary}"/>
+          <path d="M85 50 L75 45 L80 60 Z" fill="${pal.secondary}"/>
+          <circle cx="58" cy="55" r="4.5" fill="${pal.eye}"/>
+          <circle cx="82" cy="55" r="4.5" fill="${pal.eye}"/>
+          <circle cx="58" cy="55" r="1.8" fill="${pal.pupil}"/>
+          <circle cx="82" cy="55" r="1.8" fill="${pal.pupil}"/>
+        `;
+        break;
+      case "ゴーレム":
+        bodySvg = `
+          <rect x="40" y="32" width="60" height="46" rx="8" fill="${pal.primary}"/>
+          <rect x="30" y="42" width="18" height="50" rx="6" fill="${pal.dark}"/>
+          <rect x="92" y="42" width="18" height="50" rx="6" fill="${pal.dark}"/>
+          <rect x="45" y="78" width="20" height="35" rx="5" fill="${pal.dark}"/>
+          <rect x="75" y="78" width="20" height="35" rx="5" fill="${pal.dark}"/>
+          <rect x="50" y="45" width="40" height="12" fill="#000000"/>
+          <circle cx="60" cy="51" r="4" fill="${pal.eye}"/>
+          <circle cx="80" cy="51" r="4" fill="${pal.eye}"/>
+        `;
+        break;
+      case "ナイト":
+        bodySvg = `
+          <path d="M70 24 L98 42 L98 70 Q98 102 70 114 Q42 102 42 70 L42 42 Z" fill="${pal.primary}"/>
+          <rect x="52" y="50" width="36" height="10" rx="3" fill="${pal.secondary}"/>
+          <line x1="70" y1="36" x2="70" y2="102" stroke="${pal.secondary}" stroke-width="4"/>
+          <path d="M98 58 L118 36 L108 80 Z" fill="${pal.dark}"/>
+        `;
+        break;
+      case "フェニックス":
+        bodySvg = `
+          <path d="M70 24 C48 38 26 28 18 55 C38 57 48 72 62 94 C65 104 70 114 70 114 C70 114 75 104 78 94 C92 72 102 57 122 55 C114 28 92 38 70 24 Z" fill="${pal.primary}"/>
+          <path d="M65 38 Q70 16 75 38" stroke="${pal.secondary}" stroke-width="4" fill="none"/>
+          <circle cx="63" cy="41" r="3.5" fill="${pal.eye}"/>
+          <circle cx="77" cy="41" r="3.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "タイガー":
+        bodySvg = `
+          <path d="M38 38 L58 50 L70 34 L82 50 L102 38 L96 76 L106 108 L34 108 L44 76 Z" fill="${pal.primary}"/>
+          <path d="M48 60 L60 65 L48 70" fill="none" stroke="${pal.secondary}" stroke-width="3"/>
+          <path d="M92 60 L80 65 L92 70" fill="none" stroke="${pal.secondary}" stroke-width="3"/>
+          <circle cx="56" cy="60" r="4" fill="${pal.eye}"/>
+          <circle cx="84" cy="60" r="4" fill="${pal.eye}"/>
+        `;
+        break;
+      case "スライム":
+        bodySvg = `
+          <path d="M70 32 C38 32 26 70 26 92 C26 112 48 116 70 116 C92 116 114 112 114 92 C114 70 102 32 70 32 Z" fill="${pal.primary}"/>
+          <circle cx="53" cy="70" r="8" fill="#ffffff"/>
+          <circle cx="87" cy="70" r="8" fill="#ffffff"/>
+          <circle cx="55" cy="70" r="4" fill="${pal.pupil}"/>
+          <circle cx="89" cy="70" r="4" fill="${pal.pupil}"/>
+          <path d="M58 92 Q70 104 82 92" stroke="${pal.secondary}" stroke-width="3.5" fill="none"/>
+        `;
+        break;
+      case "ベア":
+        bodySvg = `
+          <circle cx="42" cy="42" r="16" fill="${pal.dark}"/>
+          <circle cx="98" cy="42" r="16" fill="${pal.dark}"/>
+          <path d="M36 58 Q70 42 104 58 L110 108 C110 108 70 118 30 108 Z" fill="${pal.primary}"/>
+          <ellipse cx="70" cy="86" rx="20" ry="14" fill="${pal.secondary}"/>
+          <circle cx="70" cy="80" r="6" fill="#000000"/>
+          <circle cx="56" cy="68" r="4.5" fill="${pal.eye}"/>
+          <circle cx="84" cy="68" r="4.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "ロボ":
+        bodySvg = `
+          <rect x="42" y="38" width="56" height="50" rx="6" fill="${pal.primary}"/>
+          <line x1="70" y1="20" x2="70" y2="38" stroke="${pal.secondary}" stroke-width="4"/>
+          <circle cx="70" cy="20" r="6" fill="${pal.accent}"/>
+          <rect x="50" y="50" width="40" height="14" fill="#000000"/>
+          <circle cx="60" cy="57" r="4.5" fill="${pal.eye}"/>
+          <circle cx="80" cy="57" r="4.5" fill="${pal.eye}"/>
+          <rect x="36" y="94" width="68" height="24" rx="4" fill="${pal.dark}"/>
+        `;
+        break;
+      case "ウルフ":
+        bodySvg = `
+          <path d="M70 26 L90 52 L114 58 L92 84 L100 114 L70 98 L40 114 L48 84 L26 58 L50 52 Z" fill="${pal.primary}"/>
+          <polygon points="70,64 60,82 80,82" fill="${pal.secondary}"/>
+          <circle cx="57" cy="58" r="4.5" fill="${pal.eye}"/>
+          <circle cx="83" cy="58" r="4.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "ライオン":
+        bodySvg = `
+          <circle cx="70" cy="70" r="44" fill="${pal.dark}"/>
+          <path d="M48 48 Q70 26 92 48 Q114 70 92 92 Q70 114 48 92 Q26 70 48 48 Z" fill="${pal.accent}"/>
+          <circle cx="70" cy="72" r="24" fill="${pal.primary}"/>
+          <circle cx="59" cy="65" r="4.5" fill="${pal.eye}"/>
+          <circle cx="81" cy="65" r="4.5" fill="${pal.eye}"/>
+          <polygon points="70,76 64,85 76,85" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "イエティ":
+        bodySvg = `
+          <path d="M70 26 C38 36 32 70 32 112 L108 112 C108 70 102 36 70 26 Z" fill="${pal.primary}"/>
+          <ellipse cx="70" cy="62" rx="28" ry="20" fill="#000000"/>
+          <circle cx="58" cy="60" r="5" fill="${pal.eye}"/>
+          <circle cx="82" cy="60" r="5" fill="${pal.eye}"/>
+          <polygon points="64,74 70,68 76,74" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "グリフォン":
+        bodySvg = `
+          <path d="M70 26 L92 48 L118 42 L102 76 L112 112 L70 98 L28 112 L38 76 L22 42 L48 48 Z" fill="${pal.primary}"/>
+          <path d="M70 48 L86 70 L54 70 Z" fill="${pal.secondary}"/>
+          <circle cx="59" cy="50" r="4.5" fill="${pal.eye}"/>
+          <circle cx="81" cy="50" r="4.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "バトロボ":
+        bodySvg = `
+          <polygon points="48,26 92,26 108,60 98,114 42,114 32,60" fill="${pal.primary}"/>
+          <rect x="42" y="48" width="56" height="18" fill="#000000"/>
+          <circle cx="56" cy="57" r="5" fill="${pal.eye}"/>
+          <circle cx="84" cy="57" r="5" fill="${pal.eye}"/>
+          <rect x="25" y="65" width="14" height="38" rx="3" fill="${pal.secondary}"/>
+          <rect x="101" y="65" width="14" height="38" rx="3" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "クラーケン":
+        bodySvg = `
+          <circle cx="70" cy="50" r="30" fill="${pal.primary}"/>
+          <path d="M42 72 Q25 94 36 116 M57 78 Q48 100 53 116 M70 80 Q70 102 70 116 M83 78 Q92 100 87 116 M98 72 Q115 94 104 116" stroke="${pal.accent}" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+          <circle cx="57" cy="47" r="5.5" fill="${pal.eye}"/>
+          <circle cx="83" cy="47" r="5.5" fill="${pal.eye}"/>
+          <circle cx="57" cy="47" r="2.5" fill="${pal.pupil}"/>
+          <circle cx="83" cy="47" r="2.5" fill="${pal.pupil}"/>
+        `;
+        break;
+      case "ペガサス":
+        bodySvg = `
+          <path d="M70 30 Q52 42 42 70 Q42 102 64 108 Q86 102 98 70 Q88 42 70 30 Z" fill="${pal.primary}"/>
+          <path d="M42 52 Q18 35 18 64 Q36 70 48 76" fill="${pal.secondary}"/>
+          <path d="M98 52 Q122 35 122 64 Q104 70 92 76" fill="${pal.secondary}"/>
+          <polygon points="70,18 64,34 76,34" fill="${pal.secondary}"/>
+          <circle cx="58" cy="58" r="4.5" fill="${pal.eye}"/>
+          <circle cx="82" cy="58" r="4.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "キマイラ":
+        bodySvg = `
+          <circle cx="48" cy="48" r="20" fill="${pal.dark}"/>
+          <circle cx="92" cy="48" r="20" fill="${pal.dark}"/>
+          <circle cx="70" cy="86" r="26" fill="${pal.primary}"/>
+          <path d="M36 92 Q70 120 104 92" fill="${pal.accent}"/>
+          <circle cx="45" cy="45" r="4" fill="${pal.eye}"/>
+          <circle cx="95" cy="45" r="4" fill="${pal.eye}"/>
+          <circle cx="70" cy="83" r="5" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "デーモン":
+        bodySvg = `
+          <path d="M70 35 Q90 25 100 20 Q95 45 100 65 Q85 100 70 105 Q55 100 40 65 Q45 45 40 20 Q50 25 70 35 Z" fill="${pal.dark}"/>
+          <polygon points="40,20 50,37 35,40" fill="${pal.secondary}"/>
+          <polygon points="100,20 90,37 105,40" fill="${pal.secondary}"/>
+          <circle cx="56" cy="57" r="5.5" fill="${pal.primary}"/>
+          <circle cx="84" cy="57" r="5.5" fill="${pal.primary}"/>
+          <circle cx="56" cy="57" r="2.5" fill="${pal.eye}"/>
+          <circle cx="84" cy="57" r="2.5" fill="${pal.eye}"/>
+          <path d="M58 84 Q70 96 82 84" stroke="${pal.secondary}" stroke-width="3.5" fill="none"/>
+        `;
+        break;
+      case "レヴィアタン":
+        bodySvg = `
+          <path d="M30 100 Q48 35 70 70 Q92 105 108 35 Q118 80 92 108 Q64 80 46 112 Z" fill="${pal.primary}"/>
+          <circle cx="102" cy="42" r="5" fill="${pal.eye}"/>
+          <polygon points="96,30 108,24 114,36" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "ネクロマンサー":
+        bodySvg = `
+          <path d="M70 26 Q104 38 98 94 L42 94 Q36 38 70 26 Z" fill="${pal.dark}"/>
+          <circle cx="70" cy="60" r="20" fill="#000000"/>
+          <circle cx="61" cy="58" r="4.5" fill="${pal.eye}"/>
+          <circle cx="79" cy="58" r="4.5" fill="${pal.eye}"/>
+          <path d="M58 94 L70 120 L82 94 Z" fill="${pal.primary}"/>
+        `;
+        break;
+      case "ファントム":
+      default:
+        bodySvg = `
+          <path d="M70 26 C42 26 36 60 36 88 Q42 104 54 94 Q65 109 70 94 Q76 109 86 94 Q98 104 104 88 C104 60 98 26 70 26 Z" fill="${pal.primary}"/>
+          <ellipse cx="57" cy="58" rx="6" ry="9" fill="#000000"/>
+          <ellipse cx="83" cy="58" rx="6" ry="9" fill="#000000"/>
+          <circle cx="57" cy="56" r="3" fill="${pal.eye}"/>
+          <circle cx="83" cy="56" r="3" fill="${pal.eye}"/>
+        `;
+        break;
+    }
+
+    return `
+      <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <defs>${bgDefs}</defs>
+        ${bgSvg}
+        ${bodySvg}
+      </svg>
+    `.trim();
   }
 
   static generateFromBarcode(codeStr, customMemo = "") {
@@ -142,7 +439,7 @@ export class BarcodeEngine {
 
     const baseSpeciesName = BASE_NAMES[bIdx];
     const name = `${PREFIXES[pIdx]}${baseSpeciesName}${SUFFIXES[sIdx]}`;
-    const spriteSvg = SPECIES_SVGS[baseSpeciesName] || SPECIES_SVGS["ドラゴン"];
+    const spriteSvg = this.generateCharacterSvg(baseSpeciesName, element, rarity);
 
     return {
       id: `char_${cleaned}_${hash}`,

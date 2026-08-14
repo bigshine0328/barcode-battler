@@ -1,19 +1,19 @@
 /* ==========================================================================
-   Barcode Battler - Cyber Arcade Pop Theme Stylesheet (Updated)
+   Barcode Battler - Cyber Arctic Arcade Theme Stylesheet (v2.4.0)
    ========================================================================== */
 
 :root {
-  --bg-color: #121420;
-  --surface-color: #1e2238;
-  --surface-card: #282d4a;
-  --primary-pink: #ff3366;
+  --bg-color: #0b0e1b;
+  --surface-color: #161b30;
+  --surface-card: #1f2540;
+  --primary-pink: #ff0055;
   --secondary-cyan: #00e5ff;
   --accent-gold: #ffd700;
-  --element-fire: #ff4500;
-  --element-water: #1e90ff;
-  --element-wood: #32cd32;
+  --element-fire: #ff3344;
+  --element-water: #00d2ff;
+  --element-wood: #00ff88;
   --text-main: #ffffff;
-  --text-muted: #a0a8c0;
+  --text-muted: #8c9ba5;
   --font-family: 'M PLUS Rounded 1c', sans-serif;
   --font-arcade: 'Outfit', 'Press Start 2P', monospace;
 }
@@ -42,13 +42,13 @@ body {
   max-width: 480px;
   height: 100vh;
   max-height: 900px;
-  background: radial-gradient(circle at top, #1a1e36 0%, #0d0f18 100%);
-  border-left: 2px solid #2e3558;
-  border-right: 2px solid #2e3558;
+  background: radial-gradient(circle at top, #181d33 0%, #0b0e1b 100%);
+  border-left: 2px solid #2e3656;
+  border-right: 2px solid #2e3656;
   position: relative;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 30px rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 35px rgba(0, 229, 255, 0.2);
   overflow: hidden;
 }
 
@@ -72,14 +72,14 @@ header {
   justify-content: space-between;
   align-items: center;
   padding-bottom: 8px;
-  border-bottom: 2px solid #2e3558;
+  border-bottom: 2px solid #2e3656;
 }
 
 h1.logo {
   font-size: 1.3rem;
   font-weight: 900;
   color: var(--primary-pink);
-  text-shadow: 0 0 10px rgba(255, 51, 102, 0.6);
+  text-shadow: 0 0 12px rgba(255, 0, 85, 0.6);
   letter-spacing: 1px;
   display: inline-block;
 }
@@ -147,22 +147,26 @@ h1.logo {
 .btn-danger {
   background: linear-gradient(135deg, #ff0055 0%, #aa0033 100%);
   color: #fff;
-  border: 1px solid #ff3366;
+  border: 1px solid #ff0055;
 }
 
 .btn-danger:active {
   transform: scale(0.98);
 }
 
+/* 図鑑カードアイテム */
 .card-item {
-  background: var(--surface-card);
-  border: 1px solid #3d4670;
-  border-radius: 12px;
+  background: var(--surface-color);
+  border: 1.5px solid #2e3656;
+  border-radius: 14px;
   padding: 8px;
   text-align: center;
   position: relative;
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-item:hover {
@@ -170,9 +174,34 @@ h1.logo {
   border-color: var(--secondary-cyan);
 }
 
+/* レアリティ別カード装飾 */
+.card-item.rarity-SSR {
+  border-color: #ffd700;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+  animation: ssr-subtle-pulse 3s infinite alternate ease-in-out;
+}
+
+.card-item.rarity-SR {
+  border-color: #b066ff;
+  box-shadow: 0 0 8px rgba(176, 102, 255, 0.3);
+}
+
+.card-item.rarity-R {
+  border-color: #00e5ff;
+}
+
+.card-item.rarity-N {
+  border-color: #3e4868;
+}
+
+@keyframes ssr-subtle-pulse {
+  0% { box-shadow: 0 0 8px rgba(255, 215, 0, 0.25); }
+  100% { box-shadow: 0 0 16px rgba(255, 230, 0, 0.55); }
+}
+
 .card-item.is-deck-set {
   border: 2px solid var(--accent-gold);
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.55) !important;
 }
 
 .slot-badge {
@@ -215,21 +244,21 @@ h1.logo {
 /* デッキスロット表示 */
 .deck-slot-box {
   background: var(--surface-color);
-  border: 1px solid #2e3558;
+  border: 1px solid #2e3656;
   border-radius: 14px;
-  padding: 10px 14px;
+  padding: 8px 12px;
 }
 
 .slot-label {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--secondary-cyan);
   font-weight: 800;
 }
 
 .slot-content {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 800;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 /* 大型ボタン */
@@ -262,8 +291,8 @@ h1.logo {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ff3366, #ff6b8b);
-  box-shadow: 0 6px 20px rgba(255, 51, 102, 0.4);
+  background: linear-gradient(135deg, #ff0055, #ff4570);
+  box-shadow: 0 6px 20px rgba(255, 0, 85, 0.4);
 }
 
 .btn-secondary {
@@ -299,23 +328,23 @@ h1.logo {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin: 12px 0;
+  margin: 10px 0;
   background: var(--surface-color);
   border-radius: 20px;
-  border: 2px solid #2e3558;
+  border: 2px solid #2e3656;
   position: relative;
   overflow: hidden;
-  padding: 16px;
+  padding: 14px;
 }
 
 .sprite-container {
-  width: 120px;
-  height: 120px;
+  width: 130px;
+  height: 130px;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 8px;
-  filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.5));
+  margin-bottom: 6px;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
 }
 
 .sprite-container svg {
@@ -324,21 +353,21 @@ h1.logo {
 }
 
 .char-name {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .element-tag {
   display: inline-block;
-  padding: 3px 8px;
-  border-radius: 10px;
+  padding: 2px 8px;
+  border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 800;
 }
-.element-火 { background: var(--element-fire); }
-.element-水 { background: var(--element-water); }
-.element-木 { background: var(--element-wood); }
+.element-火 { background: var(--element-fire); color: #fff; }
+.element-水 { background: var(--element-water); color: #000; }
+.element-木 { background: var(--element-wood); color: #000; }
 
 .rarity-tag {
   font-family: var(--font-arcade);
@@ -412,37 +441,29 @@ h1.logo {
   border: 1px solid #3d4670;
   color: #fff;
   font-family: var(--font-family);
-  margin: 10px 0;
+  margin: 8px 0;
 }
 
 /* 図鑑一覧グリッド */
 .collection-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 8px;
   overflow-y: auto;
   padding: 4px;
 }
 
-.card-item {
-  background: var(--surface-color);
-  border-radius: 14px;
-  padding: 10px;
-  border: 1px solid #2e3558;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  cursor: pointer;
-}
-
-.card-item.item-card {
-  border-color: var(--accent-gold);
-}
-
 .card-item .mini-sprite {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-item .mini-sprite svg {
+  width: 100%;
+  height: 100%;
 }
 
 /* バトル画面 */
@@ -450,47 +471,46 @@ h1.logo {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 6px 0;
+  gap: 6px;
 }
 
 .fighter-bar {
   background: var(--surface-color);
-  padding: 10px;
-  border-radius: 14px;
-  border: 1px solid #2e3558;
+  border-radius: 12px;
+  padding: 6px 10px;
+  border: 1px solid #2e3656;
 }
 
 .hp-gauge-bg {
   width: 100%;
-  height: 14px;
-  background: #0d0f18;
-  border-radius: 7px;
-  overflow: hidden;
+  height: 8px;
+  background: #252b48;
+  border-radius: 4px;
   margin-top: 4px;
-  border: 1px solid #3d4670;
+  overflow: hidden;
 }
 
 .hp-gauge-fill {
   height: 100%;
-  background: linear-gradient(90deg, #00e5ff, #32cd32);
   width: 100%;
-  transition: width 0.4s ease;
+  background: linear-gradient(90deg, #ff0055, #00ff88);
+  transition: width 0.3s ease;
 }
 
 .sp-gauge-bg {
   width: 100%;
-  height: 8px;
-  background: #0d0f18;
+  height: 5px;
+  background: #252b48;
   border-radius: 4px;
+  margin-top: 3px;
   overflow: hidden;
-  margin-top: 4px;
 }
 
 .sp-gauge-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ffd700, #ff8c00);
   width: 0%;
+  background: var(--accent-gold);
+  box-shadow: 0 0 6px var(--accent-gold);
   transition: width 0.3s ease;
 }
 
@@ -498,7 +518,7 @@ h1.logo {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 140px;
+  padding: 8px 0;
 }
 
 .arena-char {
@@ -508,70 +528,31 @@ h1.logo {
 }
 
 .battle-log-box {
-  background: rgba(13, 15, 24, 0.85);
-  border: 1px solid #2e3558;
+  background: #090c16;
+  border: 1px solid #2e3656;
   border-radius: 10px;
   padding: 8px;
-  font-size: 0.8rem;
-  height: 75px;
+  height: 90px;
   overflow-y: auto;
-  margin-bottom: 6px;
+  font-size: 0.75rem;
   line-height: 1.4;
+  color: var(--text-muted);
 }
 
-/* QTE & 詳細 モーダル */
+/* モーダル */
 .qte-modal {
-  position: absolute;
+  display: none;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.88);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
   z-index: 100;
-  padding: 20px;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  align-items: center;
 }
 
 .qte-modal.active {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
-.qte-bar-container {
-  width: 100%;
-  height: 36px;
-  background: var(--surface-card);
-  border-radius: 18px;
-  position: relative;
-  overflow: hidden;
-  border: 2px solid var(--accent-gold);
-  margin: 24px 0;
-}
-
-.qte-target-zone {
-  position: absolute;
-  top: 0;
-  left: 40%;
-  width: 20%;
-  height: 100%;
-  background: var(--accent-gold);
-  box-shadow: 0 0 15px var(--accent-gold);
-}
-
-.qte-pointer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 8px;
-  height: 100%;
-  background: #fff;
-  box-shadow: 0 0 10px #fff;
+  display: flex;
 }

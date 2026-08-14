@@ -1,13 +1,13 @@
 /**
- * Barcode Battler - Official Release JS (v2.3.0 20 Species, New Rarity, 3 Item Slots)
- * 20種族生成、新レアリティ確率分布(3%/12%/25%/60%)、アイテム3スロット編成・図鑑ハイライト
+ * Barcode Battler - Complete Standalone Bundle (v2.4.0 Multi-Element & Ultra SSR)
  */
 
 (function() {
-  "use strict";
-  console.log("Barcode Battler v2.3.0 initializing...");
+  'use strict';
 
-  // --- 1. Monster Visual System (20 Species) ---
+  // ==========================================
+  // 1. 定数・辞書定義 (20種族 & 属性パレット & レアリティ演出)
+  // ==========================================
   const PREFIXES = [
     "ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー",
     "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの",
@@ -27,54 +27,345 @@
     "ガード", "ファイター", "ロード", "カイザー", "エンペラー"
   ];
 
-  const SPECIES_SVGS = {
-    "ドラゴン": `<svg viewBox="0 0 100 100"><path d="M50 10 Q65 25 80 15 Q75 35 90 40 Q70 55 75 80 Q50 70 25 80 Q30 55 10 40 Q25 35 20 15 Q35 25 50 10 Z" fill="currentColor"/><path d="M35 30 L45 25 L40 40 Z" fill="#fff"/><path d="M65 30 L55 25 L60 40 Z" fill="#fff"/><circle cx="38" cy="35" r="4" fill="#ff0055"/><circle cx="62" cy="35" r="4" fill="#ff0055"/></svg>`,
-    "ゴーレム": `<svg viewBox="0 0 100 100"><rect x="20" y="15" width="60" height="45" rx="8" fill="currentColor"/><rect x="10" y="25" width="18" height="50" rx="6" fill="currentColor"/><rect x="72" y="25" width="18" height="50" rx="6" fill="currentColor"/><rect x="25" y="60" width="20" height="35" rx="5" fill="currentColor"/><rect x="55" y="60" width="20" height="35" rx="5" fill="currentColor"/><rect x="30" y="28" width="40" height="12" fill="#000"/><circle cx="40" cy="34" r="4" fill="#00e5ff"/><circle cx="60" cy="34" r="4" fill="#00e5ff"/></svg>`,
-    "ナイト": `<svg viewBox="0 0 100 100"><path d="M50 8 L75 25 L75 50 Q75 80 50 92 Q25 80 25 50 L25 25 Z" fill="currentColor"/><rect x="35" y="32" width="30" height="8" rx="3" fill="#fff"/><line x1="50" y1="20" x2="50" y2="80" stroke="#fff" stroke-width="4"/><path d="M75 40 L95 20 L85 60 Z" fill="currentColor"/></svg>`,
-    "フェニックス": `<svg viewBox="0 0 100 100"><path d="M50 12 C30 25 10 15 2 40 C20 42 30 55 42 75 C45 85 50 95 50 95 C50 95 55 85 58 75 C70 55 80 42 98 40 C90 15 70 25 50 12 Z" fill="currentColor"/><path d="M45 25 Q50 5 55 25" stroke="#fff" stroke-width="3" fill="none"/><circle cx="43" cy="28" r="3" fill="#fff"/><circle cx="57" cy="28" r="3" fill="#fff"/></svg>`,
-    "タイガー": `<svg viewBox="0 0 100 100"><path d="M20 20 L38 32 L50 18 L62 32 L80 20 L75 55 L85 85 L15 85 L25 55 Z" fill="currentColor"/><path d="M30 40 L40 45 L30 50" fill="none" stroke="#fff" stroke-width="3"/><path d="M70 40 L60 45 L70 50" fill="none" stroke="#fff" stroke-width="3"/><circle cx="36" cy="42" r="4" fill="#fff"/><circle cx="64" cy="42" r="4" fill="#fff"/></svg>`,
-    "スライム": `<svg viewBox="0 0 100 100"><path d="M50 15 C20 15 10 50 10 70 C10 88 30 92 50 92 C70 92 90 88 90 70 C90 50 80 15 50 15 Z" fill="currentColor"/><circle cx="35" cy="50" r="7" fill="#fff"/><circle cx="65" cy="50" r="7" fill="#fff"/><circle cx="37" cy="50" r="3" fill="#000"/><circle cx="67" cy="50" r="3" fill="#000"/><path d="M40 70 Q50 80 60 70" stroke="#fff" stroke-width="3" fill="none"/></svg>`,
-    "ベア": `<svg viewBox="0 0 100 100"><circle cx="25" cy="25" r="15" fill="currentColor"/><circle cx="75" cy="25" r="15" fill="currentColor"/><path d="M20 40 Q50 25 80 40 L85 85 C85 85 50 95 15 85 Z" fill="currentColor"/><ellipse cx="50" cy="65" rx="18" ry="12" fill="#fff"/><circle cx="50" cy="60" r="5" fill="#000"/><circle cx="38" cy="48" r="4" fill="#fff"/><circle cx="62" cy="48" r="4" fill="#fff"/></svg>`,
-    "ロボ": `<svg viewBox="0 0 100 100"><rect x="25" y="20" width="50" height="45" rx="5" fill="currentColor"/><line x1="50" y1="5" x2="50" y2="20" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="5" r="6" fill="#ff0055"/><rect x="32" y="32" width="36" height="12" fill="#000"/><circle cx="42" cy="38" r="4" fill="#00e5ff"/><circle cx="58" cy="38" r="4" fill="#00e5ff"/><rect x="20" y="70" width="60" height="22" rx="4" fill="currentColor"/></svg>`,
-    "ウルフ": `<svg viewBox="0 0 100 100"><path d="M50 10 L68 35 L90 40 L70 65 L78 92 L50 78 L22 92 L30 65 L10 40 L32 35 Z" fill="currentColor"/><polygon points="50,45 42,60 58,60" fill="#fff"/><circle cx="38" cy="40" r="4" fill="#ffea00"/><circle cx="62" cy="40" r="4" fill="#ffea00"/></svg>`,
-    "ライオン": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="currentColor"/><path d="M30 30 Q50 10 70 30 Q90 50 70 70 Q50 90 30 70 Q10 50 30 30 Z" fill="#ff9900"/><circle cx="50" cy="52" r="22" fill="currentColor"/><circle cx="40" cy="45" r="4" fill="#fff"/><circle cx="60" cy="45" r="4" fill="#fff"/><polygon points="50,55 45,63 55,63" fill="#fff"/></svg>`,
-    "イエティ": `<svg viewBox="0 0 100 100"><path d="M50 10 C20 20 15 50 15 88 L85 88 C85 50 80 20 50 10 Z" fill="currentColor"/><ellipse cx="50" cy="42" rx="25" ry="18" fill="#000"/><circle cx="40" cy="40" r="5" fill="#00e5ff"/><circle cx="60" cy="40" r="5" fill="#00e5ff"/><polygon points="45,52 50,47 55,52" fill="#fff"/></svg>`,
-    "グリフォン": `<svg viewBox="0 0 100 100"><path d="M50 10 L70 30 L95 25 L80 55 L90 88 L50 75 L10 88 L20 55 L5 25 L30 30 Z" fill="currentColor"/><path d="M50 30 L65 50 L35 50 Z" fill="#fff"/><circle cx="40" cy="32" r="4" fill="#ff0055"/><circle cx="60" cy="32" r="4" fill="#ff0055"/></svg>`,
-    "バトロボ": `<svg viewBox="0 0 100 100"><polygon points="30,10 70,10 85,40 75,90 25,90 15,40" fill="currentColor"/><rect x="25" y="30" width="50" height="15" fill="#000"/><circle cx="38" cy="37" r="5" fill="#ff0055"/><circle cx="62" cy="37" r="5" fill="#ff0055"/><rect x="10" y="45" width="12" height="35" rx="3" fill="#ffea00"/><rect x="78" y="45" width="12" height="35" rx="3" fill="#ffea00"/></svg>`,
-    "クラーケン": `<svg viewBox="0 0 100 100"><circle cx="50" cy="35" r="28" fill="currentColor"/><path d="M25 55 Q10 75 20 95 M38 60 Q30 80 35 95 M50 62 Q50 82 50 95 M62 60 Q70 80 65 95 M75 55 Q90 75 80 95" stroke="currentColor" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="38" cy="32" r="5" fill="#ffea00"/><circle cx="62" cy="32" r="5" fill="#ffea00"/><circle cx="38" cy="32" r="2" fill="#000"/><circle cx="62" cy="32" r="2" fill="#000"/></svg>`,
-    "ペガサス": `<svg viewBox="0 0 100 100"><path d="M50 15 Q35 25 25 50 Q25 80 45 85 Q65 80 75 50 Q65 25 50 15 Z" fill="currentColor"/><path d="M25 35 Q5 20 5 45 Q20 50 30 55" fill="#fff"/><path d="M75 35 Q95 20 95 45 Q80 50 70 55" fill="#fff"/><polygon points="50,5 45,20 55,20" fill="#ffea00"/><circle cx="40" cy="40" r="4" fill="#00e5ff"/><circle cx="60" cy="40" r="4" fill="#00e5ff"/></svg>`,
-    "キマイラ": `<svg viewBox="0 0 100 100"><circle cx="30" cy="30" r="18" fill="currentColor"/><circle cx="70" cy="30" r="18" fill="currentColor"/><circle cx="50" cy="65" r="24" fill="currentColor"/><path d="M20 70 Q50 95 80 70" fill="currentColor"/><circle cx="28" cy="28" r="3" fill="#ff0055"/><circle cx="72" cy="28" r="3" fill="#ffea00"/><circle cx="50" cy="62" r="4" fill="#00e5ff"/></svg>`,
-    "デーモン": `<svg viewBox="0 0 100 100"><path d="M50 20 Q70 10 80 5 Q75 30 80 50 Q65 85 50 90 Q35 85 20 50 Q25 30 20 5 Q30 10 50 20 Z" fill="currentColor"/><polygon points="20,5 30,22 15,25" fill="#ff0055"/><polygon points="80,5 70,22 85,25" fill="#ff0055"/><circle cx="36" cy="42" r="5" fill="#ffea00"/><circle cx="64" cy="42" r="5" fill="#ffea00"/><path d="M40 68 Q50 80 60 68" stroke="#fff" stroke-width="3" fill="none"/></svg>`,
-    "レヴィアタン": `<svg viewBox="0 0 100 100"><path d="M15 80 Q30 20 50 50 Q70 80 85 20 Q95 60 70 85 Q45 60 30 90 Z" fill="currentColor"/><circle cx="80" cy="25" r="4" fill="#ff0055"/><polygon points="75,15 85,10 90,20" fill="#00e5ff"/></svg>`,
-    "ネクロマンサー": `<svg viewBox="0 0 100 100"><path d="M50 10 Q80 20 75 70 L25 70 Q20 20 50 10 Z" fill="currentColor"/><circle cx="50" cy="42" r="18" fill="#000"/><circle cx="42" cy="40" r="4" fill="#00e5ff"/><circle cx="58" cy="40" r="4" fill="#00e5ff"/><path d="M40 70 L50 95 L60 70 Z" fill="currentColor"/></svg>`,
-    "ファントム": `<svg viewBox="0 0 100 100"><path d="M50 10 C25 10 20 40 20 65 Q25 80 35 70 Q45 85 50 70 Q55 85 65 70 Q75 80 80 65 C80 40 75 10 50 10 Z" fill="currentColor"/><ellipse cx="38" cy="38" rx="5" ry="8" fill="#000"/><ellipse cx="62" cy="38" rx="5" ry="8" fill="#000"/><circle cx="38" cy="36" r="2" fill="#00e5ff"/><circle cx="62" cy="36" r="2" fill="#00e5ff"/></svg>`
+  const ELEMENT_PALETTES = {
+    "火": {
+      primary: "#ff2200",
+      secondary: "#ffd700",
+      dark: "#880011",
+      eye: "#ffff00",
+      pupil: "#000000",
+      accent: "#ff6600",
+      glowStart: "#ffe600",
+      glowMid: "#ff5500",
+      glowEnd: "#ff0044"
+    },
+    "水": {
+      primary: "#0088ff",
+      secondary: "#e0ffff",
+      dark: "#002266",
+      eye: "#00ffff",
+      pupil: "#ffffff",
+      accent: "#00e5ff",
+      glowStart: "#00f0ff",
+      glowMid: "#0066ff",
+      glowEnd: "#7b00ff"
+    },
+    "木": {
+      primary: "#00aa44",
+      secondary: "#aaffaa",
+      dark: "#003311",
+      eye: "#ffff33",
+      pupil: "#003300",
+      accent: "#00ff88",
+      glowStart: "#aaff44",
+      glowMid: "#00ff88",
+      glowEnd: "#004422"
+    }
   };
 
-  const ITEM_SVGS = {
-    "heal": `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="25" ry="30" fill="#00e5ff"/><rect x="42" y="15" width="16" height="15" rx="4" fill="#fff"/><path d="M50 40 L50 70 M35 55 L65 55" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>`,
-    "buff_atk": `<svg viewBox="0 0 100 100"><path d="M50 10 L65 40 L55 40 L55 85 L45 85 L45 40 L35 40 Z" fill="#ff3366"/><path d="M30 65 L50 85 L70 65" stroke="#ffea00" stroke-width="6" fill="none"/></svg>`,
-    "buff_def": `<svg viewBox="0 0 100 100"><path d="M50 10 L85 25 L85 55 Q85 85 50 95 Q15 85 15 55 L15 25 Z" fill="#b066ff"/><path d="M50 25 L50 80 M30 50 L70 50" stroke="#fff" stroke-width="5"/></svg>`,
-    "buff_spd": `<svg viewBox="0 0 100 100"><path d="M20 70 Q40 20 85 30 Q60 60 40 85 Z" fill="#00ffcc"/><path d="M10 40 L40 50 M15 60 L45 70" stroke="#ffea00" stroke-width="5" stroke-linecap="round"/></svg>`,
-    "charge_sp": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="#ffea00"/><polygon points="50,18 60,38 82,38 64,52 71,74 50,60 29,74 36,52 18,38 40,38" fill="#fff"/></svg>`,
-    "bomb": `<svg viewBox="0 0 100 100"><circle cx="45" cy="55" r="32" fill="#333"/><path d="M65 35 Q80 20 90 25" stroke="#ff9900" stroke-width="4" fill="none"/><circle cx="90" cy="25" r="6" fill="#ff0055"/></svg>`,
-    "heal_def": `<svg viewBox="0 0 100 100"><path d="M50 15 L80 30 L80 60 Q80 85 50 92 Q20 85 20 60 L20 30 Z" fill="#00e5ff"/><path d="M50 35 C50 35 35 25 35 42 C35 52 50 65 50 65 C50 65 65 52 65 42 C65 25 50 35 50 35 Z" fill="#ff3366"/></svg>`,
-    "all_buff": `<svg viewBox="0 0 100 100"><path d="M20 75 L30 30 L50 55 L70 30 L80 75 Z" fill="#ffea00"/><circle cx="30" cy="25" r="5" fill="#ff0055"/><circle cx="50" cy="20" r="6" fill="#00e5ff"/><circle cx="70" cy="25" r="5" fill="#b066ff"/></svg>`
+  const ITEM_ICONS = {
+    "heal": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#28a745"/><rect x="42" y="20" width="16" height="60" rx="4" fill="#fff"/><rect x="20" y="42" width="60" height="16" rx="4" fill="#fff"/></svg>`,
+    "buff_atk": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#dc3545"/><path d="M50 15 L70 50 L58 50 L58 85 L42 85 L42 50 L30 50 Z" fill="#fff"/></svg>`,
+    "buff_def": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#007bff"/><path d="M50 15 L80 30 L80 60 Q80 85 50 92 Q20 85 20 60 L20 30 Z" fill="#fff"/></svg>`,
+    "buff_spd": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#ffc107"/><polygon points="55,10 25,55 50,55 45,90 75,45 50,45" fill="#fff"/></svg>`,
+    "charge_sp": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#9b59b6"/><polygon points="50,15 62,38 87,42 68,60 73,85 50,72 27,85 32,60 13,42 38,38" fill="#ffd700"/></svg>`,
+    "bomb": `<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="35" fill="#343a40"/><path d="M50 20 L50 10 Q50 5 60 5" stroke="#ffc107" stroke-width="4" fill="none"/><polygon points="60,2 65,7 60,12 55,7" fill="#ff0055"/></svg>`,
+    "heal_def": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#17a2b8"/><path d="M50 15 L75 28 L75 55 Q75 78 50 85 Q25 78 25 55 L25 28 Z" fill="#fff"/><rect x="44" y="35" width="12" height="30" fill="#28a745"/><rect x="35" y="44" width="30" height="12" fill="#28a745"/></svg>`,
+    "all_buff": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#fd7e14"/><polygon points="50,15 60,35 85,25 75,55 90,75 65,70 50,90 35,70 10,75 25,55 15,25 40,35" fill="#ffd700"/></svg>`
   };
 
-  function getCharacterSpriteSvg(card) {
-    if (!card) return SPECIES_SVGS["ドラゴン"];
-    if (card.spriteSvg && card.spriteSvg.includes("<svg")) {
-      return card.spriteSvg;
+  function generateCharacterSvg(species, element = "火", rarity = "N") {
+    const pal = ELEMENT_PALETTES[element] || ELEMENT_PALETTES["火"];
+    const idSuffix = `${Math.floor(Math.random() * 100000)}`;
+
+    let bgDefs = "";
+    let bgSvg = "";
+
+    if (rarity === "SSR") {
+      bgDefs = `
+        <radialGradient id="b-ssr-glow-${idSuffix}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="${pal.glowStart}" stop-opacity="0.95"/>
+          <stop offset="35%" stop-color="#ffd700" stop-opacity="0.8"/>
+          <stop offset="70%" stop-color="${pal.glowMid}" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="${pal.glowEnd}" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="b-gold-beam-${idSuffix}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="50%" stop-color="#ffe600"/>
+          <stop offset="100%" stop-color="#ff7700"/>
+        </linearGradient>
+      `;
+      bgSvg = `
+        <circle cx="70" cy="70" r="66" fill="url(#b-ssr-glow-${idSuffix})"/>
+        <polygon points="70,4 74,48 116,24 88,58 136,70 88,82 116,116 74,92 70,136 66,92 24,116 52,82 4,70 52,58 24,24 66,48" fill="url(#b-gold-beam-${idSuffix})" opacity="0.65"/>
+        <polygon points="70,16 73,54 108,32 82,62 124,70 82,78 108,108 73,86 70,124 67,86 32,108 58,78 16,70 58,62 32,32 67,54" fill="#ffffff" opacity="0.45"/>
+        <circle cx="70" cy="70" r="54" stroke="#ffd700" stroke-width="2" fill="none" opacity="0.85"/>
+        <circle cx="70" cy="70" r="48" stroke="#ffe600" stroke-width="1.5" stroke-dasharray="6,4" fill="none" opacity="0.9"/>
+        <circle cx="70" cy="70" r="42" stroke="${pal.accent}" stroke-width="1" stroke-dasharray="3,3" fill="none" opacity="0.75"/>
+        <polygon points="28,28 32,38 42,42 32,46 28,56 24,46 14,42 24,38" fill="#ffffff"/>
+        <polygon points="112,24 115,31 122,34 115,37 112,44 109,37 102,34 109,31" fill="#ffffff"/>
+        <polygon points="22,104 24,109 29,111 24,113 22,118 20,113 15,111 20,109" fill="#ffe600"/>
+        <polygon points="118,98 121,104 127,107 121,110 118,116 115,110 109,107 115,104" fill="#ffe600"/>
+        <circle cx="38" cy="85" r="2.5" fill="#ffffff"/>
+        <circle cx="102" cy="55" r="2" fill="#ffffff"/>
+        <circle cx="70" cy="18" r="3" fill="#ffffff"/>
+      `;
+    } else if (rarity === "SR") {
+      bgDefs = `
+        <radialGradient id="b-sr-glow-${idSuffix}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#b066ff" stop-opacity="0.65"/>
+          <stop offset="60%" stop-color="${pal.glowMid}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+        </radialGradient>
+      `;
+      bgSvg = `
+        <circle cx="70" cy="70" r="60" fill="url(#b-sr-glow-${idSuffix})"/>
+        <polygon points="70,15 115,40 115,100 70,125 25,100 25,40" stroke="#b066ff" stroke-width="2" fill="none" opacity="0.75"/>
+        <circle cx="70" cy="70" r="48" stroke="${pal.accent}" stroke-width="1.5" stroke-dasharray="6,4" fill="none" opacity="0.8"/>
+        <polygon points="30,30 33,37 40,39 33,41 30,48 27,41 20,39 27,37" fill="#ffffff"/>
+        <polygon points="110,30 113,37 120,39 113,41 110,48 107,41 100,39 107,37" fill="#ffffff"/>
+      `;
+    } else if (rarity === "R") {
+      bgDefs = `
+        <radialGradient id="b-r-glow-${idSuffix}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="${pal.glowStart}" stop-opacity="0.45"/>
+          <stop offset="70%" stop-color="${pal.glowMid}" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+        </radialGradient>
+      `;
+      bgSvg = `
+        <circle cx="70" cy="70" r="56" fill="url(#b-r-glow-${idSuffix})"/>
+        <circle cx="70" cy="70" r="54" stroke="${pal.accent}" stroke-width="2" stroke-dasharray="8,6" fill="none" opacity="0.85"/>
+        <circle cx="35" cy="40" r="2.5" fill="#ffffff"/>
+        <circle cx="105" cy="40" r="2.5" fill="#ffffff"/>
+      `;
+    } else {
+      bgSvg = `
+        <circle cx="70" cy="70" r="54" fill="#14182a" stroke="#2e3656" stroke-width="2"/>
+      `;
     }
-    const nameStr = card.name || card.species || "";
-    for (let baseName of BASE_NAMES) {
-      if (nameStr.includes(baseName)) {
-        return SPECIES_SVGS[baseName];
-      }
+
+    let bodySvg = "";
+    switch (species) {
+      case "ドラゴン":
+        bodySvg = `
+          <path d="M70 30 Q85 45 100 35 Q95 55 110 60 Q90 75 95 100 Q70 90 45 100 Q50 75 30 60 Q45 55 40 35 Q55 45 70 30 Z" fill="${pal.primary}"/>
+          <path d="M55 50 L65 45 L60 60 Z" fill="${pal.secondary}"/>
+          <path d="M85 50 L75 45 L80 60 Z" fill="${pal.secondary}"/>
+          <circle cx="58" cy="55" r="4.5" fill="${pal.eye}"/>
+          <circle cx="82" cy="55" r="4.5" fill="${pal.eye}"/>
+          <circle cx="58" cy="55" r="1.8" fill="${pal.pupil}"/>
+          <circle cx="82" cy="55" r="1.8" fill="${pal.pupil}"/>
+        `;
+        break;
+      case "ゴーレム":
+        bodySvg = `
+          <rect x="40" y="32" width="60" height="46" rx="8" fill="${pal.primary}"/>
+          <rect x="30" y="42" width="18" height="50" rx="6" fill="${pal.dark}"/>
+          <rect x="92" y="42" width="18" height="50" rx="6" fill="${pal.dark}"/>
+          <rect x="45" y="78" width="20" height="35" rx="5" fill="${pal.dark}"/>
+          <rect x="75" y="78" width="20" height="35" rx="5" fill="${pal.dark}"/>
+          <rect x="50" y="45" width="40" height="12" fill="#000000"/>
+          <circle cx="60" cy="51" r="4" fill="${pal.eye}"/>
+          <circle cx="80" cy="51" r="4" fill="${pal.eye}"/>
+        `;
+        break;
+      case "ナイト":
+        bodySvg = `
+          <path d="M70 24 L98 42 L98 70 Q98 102 70 114 Q42 102 42 70 L42 42 Z" fill="${pal.primary}"/>
+          <rect x="52" y="50" width="36" height="10" rx="3" fill="${pal.secondary}"/>
+          <line x1="70" y1="36" x2="70" y2="102" stroke="${pal.secondary}" stroke-width="4"/>
+          <path d="M98 58 L118 36 L108 80 Z" fill="${pal.dark}"/>
+        `;
+        break;
+      case "フェニックス":
+        bodySvg = `
+          <path d="M70 24 C48 38 26 28 18 55 C38 57 48 72 62 94 C65 104 70 114 70 114 C70 114 75 104 78 94 C92 72 102 57 122 55 C114 28 92 38 70 24 Z" fill="${pal.primary}"/>
+          <path d="M65 38 Q70 16 75 38" stroke="${pal.secondary}" stroke-width="4" fill="none"/>
+          <circle cx="63" cy="41" r="3.5" fill="${pal.eye}"/>
+          <circle cx="77" cy="41" r="3.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "タイガー":
+        bodySvg = `
+          <path d="M38 38 L58 50 L70 34 L82 50 L102 38 L96 76 L106 108 L34 108 L44 76 Z" fill="${pal.primary}"/>
+          <path d="M48 60 L60 65 L48 70" fill="none" stroke="${pal.secondary}" stroke-width="3"/>
+          <path d="M92 60 L80 65 L92 70" fill="none" stroke="${pal.secondary}" stroke-width="3"/>
+          <circle cx="56" cy="60" r="4" fill="${pal.eye}"/>
+          <circle cx="84" cy="60" r="4" fill="${pal.eye}"/>
+        `;
+        break;
+      case "スライム":
+        bodySvg = `
+          <path d="M70 32 C38 32 26 70 26 92 C26 112 48 116 70 116 C92 116 114 112 114 92 C114 70 102 32 70 32 Z" fill="${pal.primary}"/>
+          <circle cx="53" cy="70" r="8" fill="#ffffff"/>
+          <circle cx="87" cy="70" r="8" fill="#ffffff"/>
+          <circle cx="55" cy="70" r="4" fill="${pal.pupil}"/>
+          <circle cx="89" cy="70" r="4" fill="${pal.pupil}"/>
+          <path d="M58 92 Q70 104 82 92" stroke="${pal.secondary}" stroke-width="3.5" fill="none"/>
+        `;
+        break;
+      case "ベア":
+        bodySvg = `
+          <circle cx="42" cy="42" r="16" fill="${pal.dark}"/>
+          <circle cx="98" cy="42" r="16" fill="${pal.dark}"/>
+          <path d="M36 58 Q70 42 104 58 L110 108 C110 108 70 118 30 108 Z" fill="${pal.primary}"/>
+          <ellipse cx="70" cy="86" rx="20" ry="14" fill="${pal.secondary}"/>
+          <circle cx="70" cy="80" r="6" fill="#000000"/>
+          <circle cx="56" cy="68" r="4.5" fill="${pal.eye}"/>
+          <circle cx="84" cy="68" r="4.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "ロボ":
+        bodySvg = `
+          <rect x="42" y="38" width="56" height="50" rx="6" fill="${pal.primary}"/>
+          <line x1="70" y1="20" x2="70" y2="38" stroke="${pal.secondary}" stroke-width="4"/>
+          <circle cx="70" cy="20" r="6" fill="${pal.accent}"/>
+          <rect x="50" y="50" width="40" height="14" fill="#000000"/>
+          <circle cx="60" cy="57" r="4.5" fill="${pal.eye}"/>
+          <circle cx="80" cy="57" r="4.5" fill="${pal.eye}"/>
+          <rect x="36" y="94" width="68" height="24" rx="4" fill="${pal.dark}"/>
+        `;
+        break;
+      case "ウルフ":
+        bodySvg = `
+          <path d="M70 26 L90 52 L114 58 L92 84 L100 114 L70 98 L40 114 L48 84 L26 58 L50 52 Z" fill="${pal.primary}"/>
+          <polygon points="70,64 60,82 80,82" fill="${pal.secondary}"/>
+          <circle cx="57" cy="58" r="4.5" fill="${pal.eye}"/>
+          <circle cx="83" cy="58" r="4.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "ライオン":
+        bodySvg = `
+          <circle cx="70" cy="70" r="44" fill="${pal.dark}"/>
+          <path d="M48 48 Q70 26 92 48 Q114 70 92 92 Q70 114 48 92 Q26 70 48 48 Z" fill="${pal.accent}"/>
+          <circle cx="70" cy="72" r="24" fill="${pal.primary}"/>
+          <circle cx="59" cy="65" r="4.5" fill="${pal.eye}"/>
+          <circle cx="81" cy="65" r="4.5" fill="${pal.eye}"/>
+          <polygon points="70,76 64,85 76,85" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "イエティ":
+        bodySvg = `
+          <path d="M70 26 C38 36 32 70 32 112 L108 112 C108 70 102 36 70 26 Z" fill="${pal.primary}"/>
+          <ellipse cx="70" cy="62" rx="28" ry="20" fill="#000000"/>
+          <circle cx="58" cy="60" r="5" fill="${pal.eye}"/>
+          <circle cx="82" cy="60" r="5" fill="${pal.eye}"/>
+          <polygon points="64,74 70,68 76,74" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "グリフォン":
+        bodySvg = `
+          <path d="M70 26 L92 48 L118 42 L102 76 L112 112 L70 98 L28 112 L38 76 L22 42 L48 48 Z" fill="${pal.primary}"/>
+          <path d="M70 48 L86 70 L54 70 Z" fill="${pal.secondary}"/>
+          <circle cx="59" cy="50" r="4.5" fill="${pal.eye}"/>
+          <circle cx="81" cy="50" r="4.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "バトロボ":
+        bodySvg = `
+          <polygon points="48,26 92,26 108,60 98,114 42,114 32,60" fill="${pal.primary}"/>
+          <rect x="42" y="48" width="56" height="18" fill="#000000"/>
+          <circle cx="56" cy="57" r="5" fill="${pal.eye}"/>
+          <circle cx="84" cy="57" r="5" fill="${pal.eye}"/>
+          <rect x="25" y="65" width="14" height="38" rx="3" fill="${pal.secondary}"/>
+          <rect x="101" y="65" width="14" height="38" rx="3" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "クラーケン":
+        bodySvg = `
+          <circle cx="70" cy="50" r="30" fill="${pal.primary}"/>
+          <path d="M42 72 Q25 94 36 116 M57 78 Q48 100 53 116 M70 80 Q70 102 70 116 M83 78 Q92 100 87 116 M98 72 Q115 94 104 116" stroke="${pal.accent}" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+          <circle cx="57" cy="47" r="5.5" fill="${pal.eye}"/>
+          <circle cx="83" cy="47" r="5.5" fill="${pal.eye}"/>
+          <circle cx="57" cy="47" r="2.5" fill="${pal.pupil}"/>
+          <circle cx="83" cy="47" r="2.5" fill="${pal.pupil}"/>
+        `;
+        break;
+      case "ペガサス":
+        bodySvg = `
+          <path d="M70 30 Q52 42 42 70 Q42 102 64 108 Q86 102 98 70 Q88 42 70 30 Z" fill="${pal.primary}"/>
+          <path d="M42 52 Q18 35 18 64 Q36 70 48 76" fill="${pal.secondary}"/>
+          <path d="M98 52 Q122 35 122 64 Q104 70 92 76" fill="${pal.secondary}"/>
+          <polygon points="70,18 64,34 76,34" fill="${pal.secondary}"/>
+          <circle cx="58" cy="58" r="4.5" fill="${pal.eye}"/>
+          <circle cx="82" cy="58" r="4.5" fill="${pal.eye}"/>
+        `;
+        break;
+      case "キマイラ":
+        bodySvg = `
+          <circle cx="48" cy="48" r="20" fill="${pal.dark}"/>
+          <circle cx="92" cy="48" r="20" fill="${pal.dark}"/>
+          <circle cx="70" cy="86" r="26" fill="${pal.primary}"/>
+          <path d="M36 92 Q70 120 104 92" fill="${pal.accent}"/>
+          <circle cx="45" cy="45" r="4" fill="${pal.eye}"/>
+          <circle cx="95" cy="45" r="4" fill="${pal.eye}"/>
+          <circle cx="70" cy="83" r="5" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "デーモン":
+        bodySvg = `
+          <path d="M70 35 Q90 25 100 20 Q95 45 100 65 Q85 100 70 105 Q55 100 40 65 Q45 45 40 20 Q50 25 70 35 Z" fill="${pal.dark}"/>
+          <polygon points="40,20 50,37 35,40" fill="${pal.secondary}"/>
+          <polygon points="100,20 90,37 105,40" fill="${pal.secondary}"/>
+          <circle cx="56" cy="57" r="5.5" fill="${pal.primary}"/>
+          <circle cx="84" cy="57" r="5.5" fill="${pal.primary}"/>
+          <circle cx="56" cy="57" r="2.5" fill="${pal.eye}"/>
+          <circle cx="84" cy="57" r="2.5" fill="${pal.eye}"/>
+          <path d="M58 84 Q70 96 82 84" stroke="${pal.secondary}" stroke-width="3.5" fill="none"/>
+        `;
+        break;
+      case "レヴィアタン":
+        bodySvg = `
+          <path d="M30 100 Q48 35 70 70 Q92 105 108 35 Q118 80 92 108 Q64 80 46 112 Z" fill="${pal.primary}"/>
+          <circle cx="102" cy="42" r="5" fill="${pal.eye}"/>
+          <polygon points="96,30 108,24 114,36" fill="${pal.secondary}"/>
+        `;
+        break;
+      case "ネクロマンサー":
+        bodySvg = `
+          <path d="M70 26 Q104 38 98 94 L42 94 Q36 38 70 26 Z" fill="${pal.dark}"/>
+          <circle cx="70" cy="60" r="20" fill="#000000"/>
+          <circle cx="61" cy="58" r="4.5" fill="${pal.eye}"/>
+          <circle cx="79" cy="58" r="4.5" fill="${pal.eye}"/>
+          <path d="M58 94 L70 120 L82 94 Z" fill="${pal.primary}"/>
+        `;
+        break;
+      case "ファントム":
+      default:
+        bodySvg = `
+          <path d="M70 26 C42 26 36 60 36 88 Q42 104 54 94 Q65 109 70 94 Q76 109 86 94 Q98 104 104 88 C104 60 98 26 70 26 Z" fill="${pal.primary}"/>
+          <ellipse cx="57" cy="58" rx="6" ry="9" fill="#000000"/>
+          <ellipse cx="83" cy="58" rx="6" ry="9" fill="#000000"/>
+          <circle cx="57" cy="56" r="3" fill="${pal.eye}"/>
+          <circle cx="83" cy="56" r="3" fill="${pal.eye}"/>
+        `;
+        break;
     }
-    return SPECIES_SVGS["ドラゴン"];
+
+    return `
+      <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <defs>${bgDefs}</defs>
+        ${bgSvg}
+        ${bodySvg}
+      </svg>
+    `.trim();
   }
 
+  function getCharacterSpriteSvg(card) {
+    if (!card) return generateCharacterSvg("ドラゴン", "火", "N");
+    if (card.type === 'item') {
+      return ITEM_ICONS[card.effectType] || ITEM_ICONS["heal"];
+    }
+    const species = card.species || "ドラゴン";
+    const element = card.element || "火";
+    const rarity = card.rarity || "N";
+    return generateCharacterSvg(species, element, rarity);
+  }
+
+  // ==========================================
+  // 2. Barcode Engine
+  // ==========================================
   class BarcodeEngine {
     static hashBarcode(codeStr) {
       let cleaned = (codeStr || "4901234567890").replace(/\D/g, '') || "4901234567890";
@@ -102,7 +393,6 @@
       const hash = this.hashBarcode(cleaned);
       const isItemCard = (hash % 5 === 0);
 
-      // ★新レアリティ確率分布: SSR: 3%, SR: 12%, R: 25%, N: 60%
       const rarityScore = (hash % 100);
       let rarity = "N";
       let charMult = 1.0;
@@ -140,7 +430,6 @@
 
         const itemBase = baseItemTypes[hash % baseItemTypes.length];
         const finalValue = Math.round(itemBase.baseVal * itemMult);
-        const itemSvg = ITEM_SVGS[itemBase.type] || ITEM_SVGS["heal"];
 
         return {
           id: `item_${cleaned}_${hash}`,
@@ -151,13 +440,11 @@
           value: finalValue,
           desc: itemBase.getDesc(finalValue),
           rarity: rarity,
-          spriteSvg: itemSvg,
           memo: customMemo || "バーコードアイテム",
           createdAt: new Date().toISOString()
         };
       }
 
-      // 決定論的ステータス
       const baseHp = 900 + ((digits[9] || 7) * 80) + ((digits[10] || 8) * 10);
       const baseAtk = 90 + ((digits[7] || 5) * 15) + (digits[8] || 6);
       const baseDef = 40 + ((digits[5] || 3) * 8) + (digits[6] || 4);
@@ -171,14 +458,13 @@
       const elements = ["火", "水", "木"];
       const element = elements[(digits[12] || 0) % 3];
 
-      // ★20種族決定論的マッピング
       const pIdx = hash % PREFIXES.length;
-      const bIdx = (hash + 1) % BASE_NAMES.length; // 20種族
+      const bIdx = (hash + 1) % BASE_NAMES.length;
       const sIdx = (hash + 2) % SUFFIXES.length;
 
       const baseSpeciesName = BASE_NAMES[bIdx];
       const name = `${PREFIXES[pIdx]}${baseSpeciesName}${SUFFIXES[sIdx]}`;
-      const spriteSvg = SPECIES_SVGS[baseSpeciesName] || SPECIES_SVGS["ドラゴン"];
+      const spriteSvg = generateCharacterSvg(baseSpeciesName, element, rarity);
 
       return {
         id: `char_${cleaned}_${hash}`,
@@ -201,7 +487,9 @@
     }
   }
 
-  // --- 2. StorageManager (3 Items Support) ---
+  // ==========================================
+  // 3. Storage Manager (3 アイテム対応)
+  // ==========================================
   const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
   const STORAGE_KEY_DECK = "barcode_battler_deck";
 
@@ -210,7 +498,9 @@
       try {
         const data = localStorage.getItem(STORAGE_KEY_COLLECTION);
         return data ? JSON.parse(data) : [];
-      } catch (e) { return []; }
+      } catch (e) {
+        return [];
+      }
     }
 
     static migrateCollectionData() {
@@ -238,7 +528,9 @@
       if (existingIndex >= 0) {
         collection[existingIndex] = card;
       } else {
-        if (collection.length >= 100) collection.shift(); // 100枚FIFO
+        if (collection.length >= 100) {
+          collection.shift();
+        }
         collection.push(card);
       }
       try {
@@ -256,7 +548,6 @@
         localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
       } catch (e) {}
 
-      // デッキにセットされていたら解除 (3アイテム対応)
       const deck = this.getDeck();
       let deckChanged = false;
       if (deck.mainChar && deck.mainChar.id === cardId) { deck.mainChar = null; deckChanged = true; }
@@ -335,11 +626,9 @@
       const itemSlots = ['itemCard1', 'itemCard2', 'itemCard3'];
 
       if (charSlots.includes(slotType) && card.type !== 'character') {
-        alert("⚠️ キャラクター枠には アイテムカードを セットできません！");
         return false;
       }
       if (itemSlots.includes(slotType) && card.type !== 'item') {
-        alert("⚠️ アイテム枠には キャラクターを セットできません！");
         return false;
       }
 
@@ -354,7 +643,9 @@
     }
   }
 
-  // --- 3. BattleEngine (3 Items Choice Support) ---
+  // ==========================================
+  // 4. Battle Engine (3 アイテム選択使用)
+  // ==========================================
   class BattleEngine {
     constructor(playerTeam, playerItems, enemyTeam, enemyItems, mode = '1p') {
       this.mode = mode;
@@ -363,7 +654,6 @@
       this.playerIndex = 0;
       this.enemyIndex = 0;
 
-      // 3アイテムの配列管理
       const pItemsRaw = Array.isArray(playerItems) ? playerItems : [playerItems];
       this.playerItems = pItemsRaw.filter(Boolean);
       this.playerItemUsed = this.playerItems.map(() => false);
@@ -376,6 +666,13 @@
       this.maxTurns = (mode === '3p') ? 20 : 10;
       this.isOver = false;
       this.winner = null;
+    }
+
+    static getElementMultiplier(attackerElement, defenderElement) {
+      if (attackerElement === '火' && defenderElement === '木') return 1.5;
+      if (attackerElement === '木' && defenderElement === '水') return 1.5;
+      if (attackerElement === '水' && defenderElement === '火') return 1.5;
+      return 1.0;
     }
 
     get playerItemUsesLeft() {
@@ -399,13 +696,14 @@
       const atk = Math.max(10, Number(c?.atk) || 180);
       const def = Math.max(0, Number(c?.def) || 80);
       const spd = Math.max(5, Number(c?.spd) || 50);
-      const spriteSvg = getCharacterSpriteSvg(c);
 
       return {
         id: c?.id || `char_${Math.random()}`,
         name: c?.name || (isPlayer ? "爆炎ドラゴン" : "アクアタイガー"),
         element: c?.element || "火",
         rarity: c?.rarity || "R",
+        species: c?.species || "ドラゴン",
+        spriteSvg: c?.spriteSvg || null,
         hp: hp,
         maxHp: hp,
         currentHp: hp,
@@ -413,7 +711,6 @@
         def: def,
         spd: spd,
         skill: c?.skill || { name: "ギガブレイク", desc: "大ダメージ" },
-        spriteSvg: spriteSvg,
         sp: 0,
         isGuarding: false,
         isPlayer: isPlayer
@@ -431,7 +728,6 @@
         if (this.enemy.sp >= 100) opts.push('skill');
         if (this.enemyItemUsesLeft > 0 && Math.random() < 0.35) {
           opts.push('item');
-          // 敵の未消費アイテムを探す
           for (let i = 0; i < this.enemyItems.length; i++) {
             if (!this.enemyItemUsed[i]) { eItemIdx = i; break; }
           }
@@ -444,14 +740,12 @@
       this.player.isGuarding = (pAction === 'guard');
       this.enemy.isGuarding = (eAction === 'guard');
 
-      // プレイヤーのアイテム発動
       if (pAction === 'item' && this.playerItems[pItemIdx] && !this.playerItemUsed[pItemIdx]) {
         this.playerItemUsed[pItemIdx] = true;
         const item = this.playerItems[pItemIdx];
         this._applyItemEffect(item, this.player, this.enemy, 'player', turnLog);
       }
 
-      // 敵のアイテム発動
       if (eAction === 'item' && this.enemyItems[eItemIdx] && !this.enemyItemUsed[eItemIdx]) {
         this.enemyItemUsed[eItemIdx] = true;
         const item = this.enemyItems[eItemIdx];
@@ -545,10 +839,7 @@
       const minGuaranteed = self.atk * 0.50;
       let raw = Math.max(minGuaranteed, baseDamage);
 
-      let mult = (self.element === '火' && target.element === '木') ? 1.5 : 1.0;
-      if (self.element === '木' && target.element === '水') mult = 1.5;
-      if (self.element === '水' && target.element === '火') mult = 1.5;
-
+      let mult = BattleEngine.getElementMultiplier(self.element, target.element);
       let rand = 0.95 + Math.random() * 0.10;
       let dmg = Math.max(1, Math.round(raw * mult * rand));
 
@@ -606,403 +897,198 @@
     }
   }
 
-  // --- 4. NetworkManager ---
-  class NetworkManager {
-    constructor() {
-      this.roomCode = null;
-      this.isHost = false;
-      this.peer = null;
-      this.connection = null;
-      this.onMessageCallback = null;
-      this.isConnected = false;
-    }
+  // ==========================================
+  // 5. アプリケーション状態管理 & UI
+  // ==========================================
+  let appState = {
+    currentScreen: 'SCR-01',
+    scannedCard: null,
+    selectedCard: null,
+    collectionSubTab: 'all',
+    battleMode: '1p',
+    battleEngine: null,
+    peer: null,
+    peerConn: null,
+    isHost: false
+  };
 
-    static generateRoomCode() {
-      return Math.floor(1000 + Math.random() * 9000).toString();
-    }
+  let scanVideo = null;
+  let scanCanvas = null;
+  let scanAnimationId = null;
 
-    createRoom(code, myDeck, onSuccess, onError) {
-      this.roomCode = code;
-      this.isHost = true;
-      this.myDeck = myDeck;
-      this.disconnect();
-
-      const peerId = `bcbtl_room_${code}`;
-
-      if (typeof window.Peer !== 'undefined') {
-        try {
-          this.peer = new window.Peer(peerId, { debug: 1 });
-          this.peer.on('open', (id) => { if (onSuccess) onSuccess(id); });
-          this.peer.on('connection', (conn) => {
-            this.connection = conn;
-            this.isConnected = true;
-            this._setupConn(conn);
-          });
-          this.peer.on('error', () => {
-            if (onError) onError("すでに使われているコードです。");
-          });
-        } catch (e) {}
-      }
-    }
-
-    joinRoom(code, myDeck, onSuccess, onError) {
-      this.roomCode = code;
-      this.isHost = false;
-      this.myDeck = myDeck;
-      this.disconnect();
-
-      const peerId = `bcbtl_room_${code}`;
-      let hasConn = false;
-
-      const timeoutId = setTimeout(() => {
-        if (!hasConn && !this.isConnected) {
-          this.disconnect();
-          if (onError) onError("へやが見つかりませんでした。ルームコードを確認してください。");
-        }
-      }, 5000);
-
-      if (typeof window.Peer !== 'undefined') {
-        try {
-          this.peer = new window.Peer({ debug: 1 });
-          this.peer.on('open', () => {
-            const conn = this.peer.connect(peerId, { reliable: true });
-            this.connection = conn;
-
-            conn.on('open', () => {
-              hasConn = true;
-              clearTimeout(timeoutId);
-              this.isConnected = true;
-              this._setupConn(conn);
-              this.send({ type: 'JOIN_REQUEST', guestDeck: myDeck });
-              if (onSuccess) onSuccess();
-            });
-
-            conn.on('error', () => {
-              clearTimeout(timeoutId);
-              this.disconnect();
-              if (onError) onError("へやが見つかりませんでした。");
-            });
-          });
-          this.peer.on('error', () => {
-            clearTimeout(timeoutId);
-            this.disconnect();
-            if (onError) onError("へやが見つかりませんでした。");
-          });
-        } catch (e) {}
-      }
-    }
-
-    _setupConn(conn) {
-      conn.on('data', (data) => {
-        if (data.type === 'JOIN_REQUEST' && this.isHost) {
-          this.send({ type: 'JOIN_ACCEPT', hostDeck: this.myDeck });
-        }
-        if (this.onMessageCallback) this.onMessageCallback(data);
-      });
-    }
-
-    send(data) {
-      if (this.connection && this.connection.open) {
-        this.connection.send(data);
-      }
-    }
-
-    disconnect() {
-      if (this.connection) { try { this.connection.close(); } catch(e){} this.connection = null; }
-      if (this.peer) { try { this.peer.destroy(); } catch(e){} this.peer = null; }
-      this.isConnected = false;
-    }
-  }
-
-  // --- 5. App State & Router & Handlers ---
-  let currentScreen = 'SCR-01';
-  let activeBattle = null;
-  let scannedCard = null;
-  let selectedCardForDetail = null;
-  let matchMode = '1p';
-  let isOnlineMatch = false;
-  let myTurnAction = null;
-  let myTurnItemIndex = 0;
-  let oppTurnAction = null;
-  let oppTurnItemIndex = 0;
-  let collectionSubTab = 'all';
-  let network = new NetworkManager();
-
-  let mediaStream = null;
-  let scanIntervalId = null;
-  let barcodeDetector = null;
-
-  if ('BarcodeDetector' in window) {
-    try {
-      barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'qr_code'] });
-    } catch (e) {}
-  }
-
-  function switchScreen(screenId, isFromPopstate = false) {
-    if (screenId !== 'SCR-02') {
+  function switchScreen(targetId) {
+    if (appState.currentScreen === 'SCR-02' && targetId !== 'SCR-02') {
       stopCamera();
     }
 
-    currentScreen = screenId;
+    document.querySelectorAll('.screen').forEach(el => {
+      el.classList.remove('active');
+    });
 
-    if (!isFromPopstate) {
-      try {
-        history.pushState({ screen: screenId }, "", "");
-      } catch (e) {}
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      targetEl.classList.add('active');
+      appState.currentScreen = targetId;
+      window.scrollTo(0, 0);
+
+      if (targetId === 'SCR-01') renderHome();
+      if (targetId === 'SCR-04') renderCollection();
+      if (targetId === 'SCR-05') renderLobby();
     }
-
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const target = document.getElementById(screenId);
-    if (target) {
-      target.classList.add('active');
-    }
-
-    if (screenId === 'SCR-01') renderHome();
-    else if (screenId === 'SCR-02') startCamera();
-    else if (screenId === 'SCR-04') renderCollection();
-    else if (screenId === 'SCR-05') renderLobby();
-  }
-
-  window.appSwitchScreen = switchScreen;
-
-  window.addEventListener('popstate', (event) => {
-    if (currentScreen === 'SCR-01') {
-      const exitConfirm = confirm("⚡ バーコードバトラーを しゅうりょうしますか？");
-      if (!exitConfirm) {
-        try { history.pushState({ screen: 'SCR-01' }, "", ""); } catch (e) {}
-      }
-    } else {
-      const prevScreen = (event.state && event.state.screen) ? event.state.screen : 'SCR-01';
-      switchScreen(prevScreen, true);
-    }
-  });
-
-  async function startCamera() {
-    const video = document.getElementById('scan-video');
-    const statusMsg = document.getElementById('camera-status-msg');
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      if (statusMsg) statusMsg.textContent = "※ お使いのブラウザは カメラに 対応していません（下のテストボタンをご利用ください）";
-      return;
-    }
-
-    try {
-      if (statusMsg) statusMsg.textContent = "カメラを き動しています...";
-      const constraints = {
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false
-      };
-
-      mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (video) {
-        video.srcObject = mediaStream;
-        await video.play();
-      }
-
-      if (statusMsg) statusMsg.textContent = "バーコードを わくの中に あわせよう！";
-      startScanLoop();
-
-    } catch (err) {
-      console.error("Camera error:", err);
-      if (statusMsg) statusMsg.textContent = "⚠️ カメラのきょかが ありません。下のテストボタンをご利用ください。";
-    }
-  }
-
-  window.appStartCamera = startCamera;
-
-  function stopCamera() {
-    if (scanIntervalId) {
-      clearInterval(scanIntervalId);
-      scanIntervalId = null;
-    }
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-      mediaStream = null;
-    }
-    const video = document.getElementById('scan-video');
-    if (video) video.srcObject = null;
-  }
-
-  function startScanLoop() {
-    const video = document.getElementById('scan-video');
-    if (!video) return;
-
-    scanIntervalId = setInterval(async () => {
-      if (!video.videoWidth || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-
-      if (barcodeDetector) {
-        try {
-          const barcodes = await barcodeDetector.detect(video);
-          if (barcodes && barcodes.length > 0) {
-            const detectedCode = barcodes[0].rawValue;
-            stopCamera();
-            processScanResult(detectedCode);
-          }
-        } catch (e) {}
-      }
-    }, 300);
-  }
-
-  function processScanResult(codeStr) {
-    scannedCard = BarcodeEngine.generateFromBarcode(codeStr);
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-    const resultBox = document.getElementById('scan-result-card');
-    if (resultBox) {
-      if (scannedCard.type === 'character') {
-        const svg = getCharacterSpriteSvg(scannedCard);
-        resultBox.innerHTML = `
-          <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
-            ✨ ${scannedCard.rarity} ゲット！
-          </div>
-          <div class="sprite-container" style="color: var(--element-${scannedCard.element})">
-            ${svg}
-          </div>
-          <div class="char-name">${scannedCard.name}</div>
-          <div><span class="element-tag element-${scannedCard.element}">${scannedCard.element}</span> <span class="rarity-tag">${scannedCard.rarity}</span></div>
-          <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text-muted); margin-top: 4px;">
-            HP: ${scannedCard.hp} / ATK: ${scannedCard.atk} / DEF: ${scannedCard.def} / SPD: ${scannedCard.spd}<br>
-            ✨ 必殺技: 【${scannedCard.skill.name}】
-          </div>
-        `;
-      } else {
-        resultBox.innerHTML = `
-          <div style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 900; margin-bottom: 4px;">
-            🎁 きょうかアイテム ゲット！ (${scannedCard.rarity})
-          </div>
-          <div style="width:70px; height:70px; margin: 4px auto;">
-            ${scannedCard.spriteSvg}
-          </div>
-          <div class="char-name" style="color: var(--accent-gold);">${scannedCard.name}</div>
-          <div style="font-size: 0.85rem; margin-top: 4px; color: var(--text-muted);">${scannedCard.desc}</div>
-        `;
-      }
-    }
-
-    const memoInput = document.getElementById('scanned-memo-input');
-    if (memoInput) memoInput.value = "";
-
-    switchScreen('SCR-03');
   }
 
   function renderHome() {
-    const col = StorageManager.getCollection();
-    const badge = document.getElementById('home-count-badge');
-    if (badge) badge.textContent = `しょじ ${col.length}/100`;
+    const deck = StorageManager.getDeck();
+    const collection = StorageManager.getCollection();
+    const mainChar = deck.mainChar;
+
+    const countBadge = document.getElementById('home-count-badge');
+    if (countBadge) {
+      countBadge.textContent = `しょじ ${collection.length}/100`;
+    }
 
     const showcase = document.getElementById('home-showcase');
-    const deck = StorageManager.getDeck();
-    const mainChar = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : col.find(c => c && c.type === 'character');
+    if (!showcase) return;
 
-    if (mainChar && showcase) {
-      const svg = getCharacterSpriteSvg(mainChar);
+    if (mainChar) {
+      const spriteSvg = getCharacterSpriteSvg(mainChar);
       showcase.innerHTML = `
-        <div class="sprite-container" style="color: var(--element-${mainChar.element})">${svg}</div>
-        <div class="char-name">${mainChar.name}</div>
-        <div><span class="element-tag element-${mainChar.element}">${mainChar.element}</span> <span class="rarity-tag">${mainChar.rarity}</span></div>
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">HP: ${mainChar.hp} / ATK: ${mainChar.atk} / DEF: ${mainChar.def} / SPD: ${mainChar.spd}</div>
+        <div class="sprite-container" style="width:140px; height:140px;">
+          ${spriteSvg}
+        </div>
+        <div class="char-name" style="font-weight:900;">
+          <span class="rarity-tag" style="color:var(--accent-gold); font-size:1.1rem;">[${mainChar.rarity || 'N'}]</span>
+          ${mainChar.name}
+        </div>
+        <div style="margin: 4px 0;">
+          <span class="element-tag element-${mainChar.element}">属性: ${mainChar.element}</span>
+          <span style="font-size:0.8rem; color:var(--text-muted); margin-left:6px;">種族: ${mainChar.species || 'ドラゴン'}</span>
+        </div>
+        <div style="display:flex; gap:12px; font-size:0.88rem; font-weight:800; margin-top:6px;">
+          <span style="color:#00ff88;">HP: ${mainChar.hp}</span>
+          <span style="color:#ff3366;">ATK: ${mainChar.atk}</span>
+          <span style="color:#00e5ff;">DEF: ${mainChar.def}</span>
+          <span style="color:#ffd700;">SPD: ${mainChar.spd}</span>
+        </div>
       `;
-    } else if (showcase) {
-      showcase.innerHTML = `<div style="color: var(--text-muted); padding: 20px 0;">バーコードを スキャンして<br>キャラを ゲットしよう！</div>`;
+    } else {
+      showcase.innerHTML = `
+        <div style="color: var(--text-muted); padding: 20px 0; text-align:center;">
+          バーコードを スキャンして<br>キャラを ゲットしよう！
+        </div>
+      `;
     }
   }
 
-  /**
-   * ⭐【改善】図鑑での「アイテム3種類」同時ハイライト表示
-   */
   function renderCollection() {
+    const collection = StorageManager.getCollection();
+    const deck = StorageManager.getDeck();
     const grid = document.getElementById('collection-grid-container');
     if (!grid) return;
-    const rawCol = StorageManager.getCollection();
-    const deck = StorageManager.getDeck();
-    grid.innerHTML = "";
 
-    let col = rawCol;
-    if (collectionSubTab === 'char') {
-      col = rawCol.filter(c => c && c.type === 'character');
-    } else if (collectionSubTab === 'item') {
-      col = rawCol.filter(c => c && c.type === 'item');
+    let filtered = collection;
+    if (appState.collectionSubTab === 'char') {
+      filtered = collection.filter(c => c.type === 'character');
+    } else if (appState.collectionSubTab === 'item') {
+      filtered = collection.filter(c => c.type === 'item');
     }
 
-    if (col.length === 0) {
-      grid.innerHTML = `<div style="grid-column: 1/3; text-align: center; color: var(--text-muted); padding: 40px 0;">
-        ${collectionSubTab === 'char' ? 'キャラカードが ありません。' : collectionSubTab === 'item' ? 'アイテムカードが ありません。' : 'カードが ありません。スキャンしよう！'}
-      </div>`;
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px 10px; color:var(--text-muted);">カードがありません。バーコードをスキャンして登録しよう！</div>`;
+      renderDeckView();
       return;
     }
 
-    col.forEach(c => {
-      if (!c) return;
-      const div = document.createElement('div');
-      let slotBadgeHtml = "";
+    grid.innerHTML = filtered.map(card => {
+      let badges = "";
       let isSet = false;
 
-      // ★3つのアイテムスロットすべてを判定・ハイライト
-      if (deck.mainChar && deck.mainChar.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-main">⚔️ メイン</span>`;
-        isSet = true;
-      } else if (deck.subChar1 && deck.subChar1.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-sub1">🛡️ サブ1</span>`;
-        isSet = true;
-      } else if (deck.subChar2 && deck.subChar2.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-sub2">🛡️ サブ2</span>`;
-        isSet = true;
-      } else if (deck.itemCard1 && deck.itemCard1.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-item">💊 アイテム1</span>`;
-        isSet = true;
-      } else if (deck.itemCard2 && deck.itemCard2.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-item">💊 アイテム2</span>`;
-        isSet = true;
-      } else if (deck.itemCard3 && deck.itemCard3.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-item">💊 アイテム3</span>`;
-        isSet = true;
-      }
+      if (deck.mainChar && deck.mainChar.id === card.id) { badges += `<span class="slot-badge badge-main">⚔️ メイン</span>`; isSet = true; }
+      if (deck.subChar1 && deck.subChar1.id === card.id) { badges += `<span class="slot-badge badge-sub1">🛡️ サブ1</span>`; isSet = true; }
+      if (deck.subChar2 && deck.subChar2.id === card.id) { badges += `<span class="slot-badge badge-sub2">🛡️ サブ2</span>`; isSet = true; }
+      if (deck.itemCard1 && deck.itemCard1.id === card.id) { badges += `<span class="slot-badge badge-item">💊 アイテム1</span>`; isSet = true; }
+      if (deck.itemCard2 && deck.itemCard2.id === card.id) { badges += `<span class="slot-badge badge-item">💊 アイテム2</span>`; isSet = true; }
+      if (deck.itemCard3 && deck.itemCard3.id === card.id) { badges += `<span class="slot-badge badge-item">💊 アイテム3</span>`; isSet = true; }
 
-      div.className = `card-item ${c.type === 'item' ? 'item-card' : ''} ${isSet ? 'is-deck-set' : ''}`;
-      
-      const sprite = (c.type === 'character') ? getCharacterSpriteSvg(c) : (c.spriteSvg || '🎁');
+      const spriteSvg = getCharacterSpriteSvg(card);
+      const isItem = (card.type === 'item');
+      const rarityClass = `rarity-${card.rarity || 'N'}`;
 
-      div.innerHTML = `
-        ${slotBadgeHtml}
-        <div class="mini-sprite" style="color: var(--element-${c.element || '火'})">${sprite}</div>
-        <div style="font-weight: 800; font-size: 0.8rem; margin-top: 4px;">${c.name}</div>
-        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">
-          ${c.type === 'character' ? `[${c.rarity}] HP:${c.hp}<br>A:${c.atk} D:${c.def}` : c.desc}
+      return `
+        <div class="card-item ${isItem ? 'item-card' : ''} ${isSet ? 'is-deck-set' : ''} ${rarityClass}" onclick="window.appOpenCardDetail('${card.id}')">
+          ${badges}
+          <div class="mini-sprite">
+            ${spriteSvg}
+          </div>
+          <div style="font-weight:800; font-size:0.82rem; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;">
+            <span style="color:var(--accent-gold); font-size:0.75rem;">[${card.rarity || 'N'}]</span> ${card.name}
+          </div>
+          <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+            ${isItem ? `<span style="color:var(--accent-gold);">${card.desc}</span>` : `<span class="element-tag element-${card.element}" style="padding:1px 4px; font-size:0.65rem;">${card.element}</span> HP:${card.hp} ATK:${card.atk}`}
+          </div>
         </div>
       `;
+    }).join('');
 
-      div.onclick = function() {
-        window.appOpenDetailModal(c);
-      };
-
-      grid.appendChild(div);
-    });
-
-    renderDeckSlots();
+    renderDeckView();
   }
 
-  window.appSelectSubTab = function(subType) {
-    collectionSubTab = subType;
-    const btnAll = document.getElementById('sub-tab-all');
-    const btnChar = document.getElementById('sub-tab-char');
-    const btnItem = document.getElementById('sub-tab-item');
+  function renderDeckView() {
+    const deck = StorageManager.getDeck();
 
-    btnAll?.classList.remove('active');
-    btnChar?.classList.remove('active');
-    btnItem?.classList.remove('active');
+    const mainEl = document.getElementById('slot-content-main');
+    const sub1El = document.getElementById('slot-content-sub1');
+    const sub2El = document.getElementById('slot-content-sub2');
+    const item1El = document.getElementById('slot-content-item1');
+    const item2El = document.getElementById('slot-content-item2');
+    const item3El = document.getElementById('slot-content-item3');
 
-    if (subType === 'char') btnChar?.classList.add('active');
-    else if (subType === 'item') btnItem?.classList.add('active');
-    else btnAll?.classList.add('active');
+    if (mainEl) mainEl.innerHTML = deck.mainChar ? `<span style="color:#00ff88;">[${deck.mainChar.rarity || 'N'}] ${deck.mainChar.name} (HP:${deck.mainChar.hp} ATK:${deck.mainChar.atk})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
+    if (sub1El) sub1El.innerHTML = deck.subChar1 ? `<span style="color:#00e5ff;">[${deck.subChar1.rarity || 'N'}] ${deck.subChar1.name} (HP:${deck.subChar1.hp} ATK:${deck.subChar1.atk})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
+    if (sub2El) sub2El.innerHTML = deck.subChar2 ? `<span style="color:#ff0055;">[${deck.subChar2.rarity || 'N'}] ${deck.subChar2.name} (HP:${deck.subChar2.hp} ATK:${deck.subChar2.atk})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
+    if (item1El) item1El.innerHTML = deck.itemCard1 ? `<span style="color:var(--accent-gold);">[${deck.itemCard1.rarity || 'N'}] ${deck.itemCard1.name} (${deck.itemCard1.desc})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
+    if (item2El) item2El.innerHTML = deck.itemCard2 ? `<span style="color:var(--accent-gold);">[${deck.itemCard2.rarity || 'N'}] ${deck.itemCard2.name} (${deck.itemCard2.desc})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
+    if (item3El) item3El.innerHTML = deck.itemCard3 ? `<span style="color:var(--accent-gold);">[${deck.itemCard3.rarity || 'N'}] ${deck.itemCard3.name} (${deck.itemCard3.desc})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
+  }
 
-    renderCollection();
-  };
-
-  function openDetailModal(card) {
+  function openCardDetail(cardId) {
+    const collection = StorageManager.getCollection();
+    const card = collection.find(c => c.id === cardId);
     if (!card) return;
-    selectedCardForDetail = card;
-    const content = document.getElementById('detail-card-content');
+
+    appState.selectedCard = card;
     const modal = document.getElementById('detail-modal');
+    const content = document.getElementById('detail-card-content');
+    if (!modal || !content) return;
+
+    const isItem = (card.type === 'item');
+    const spriteSvg = getCharacterSpriteSvg(card);
+
+    content.innerHTML = `
+      <div class="sprite-container" style="width:130px; height:130px; margin: 0 auto;">
+        ${spriteSvg}
+      </div>
+      <div style="font-size:1.1rem; font-weight:900; margin: 6px 0;">
+        <span style="color:var(--accent-gold);">[${card.rarity || 'N'}]</span> ${card.name}
+      </div>
+      ${isItem ? `
+        <div style="color:var(--accent-gold); font-size:0.9rem; font-weight:800; margin: 4px 0;">${card.desc}</div>
+      ` : `
+        <div style="margin: 4px 0;">
+          <span class="element-tag element-${card.element}">属性: ${card.element}</span>
+          <span style="font-size:0.8rem; color:var(--text-muted); margin-left:6px;">種族: ${card.species || 'ドラゴン'}</span>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:0.85rem; font-weight:800; margin: 8px 0; background:rgba(0,0,0,0.3); padding:8px; border-radius:10px;">
+          <div style="color:#00ff88;">HP: ${card.hp}</div>
+          <div style="color:#ff3366;">ATK: ${card.atk}</div>
+          <div style="color:#00e5ff;">DEF: ${card.def}</div>
+          <div style="color:#ffd700;">SPD: ${card.spd}</div>
+        </div>
+      `}
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
+        📝 メモ: ${card.memo || 'なし'} (JAN: ${card.barcode || '---'})
+      </div>
+    `;
 
     const btnMain = document.getElementById('btn-set-main');
     const btnSub1 = document.getElementById('btn-set-sub1');
@@ -1011,308 +1097,174 @@
     const btnItem2 = document.getElementById('btn-set-item2');
     const btnItem3 = document.getElementById('btn-set-item3');
 
-    if (card.type === 'character') {
-      if (btnMain) btnMain.style.display = 'block';
-      if (btnSub1) btnSub1.style.display = 'block';
-      if (btnSub2) btnSub2.style.display = 'block';
-      if (btnItem1) btnItem1.style.display = 'none';
-      if (btnItem2) btnItem2.style.display = 'none';
-      if (btnItem3) btnItem3.style.display = 'none';
-
-      const svg = getCharacterSpriteSvg(card);
-      content.innerHTML = `
-        <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【キャラ能力詳細】</div>
-        <div class="sprite-container" style="color: var(--element-${card.element}); margin: 0 auto 6px auto; width: 70px; height: 70px;">${svg}</div>
-        <div style="font-size: 1.05rem; font-weight: 800;">${card.name}</div>
-        <div style="margin: 4px 0;"><span class="element-tag element-${card.element}">${card.element}</span> <span class="rarity-tag">${card.rarity}</span></div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: var(--surface-card); padding: 8px; border-radius: 8px; line-height: 1.4;">
-          ❤️ 体力 (HP): ${card.hp}<br>
-          ⚔️ 攻撃力 (ATK): ${card.atk}<br>
-          🛡️ 防御力 (DEF): ${card.def}<br>
-          ⚡ 素早さ (SPD): ${card.spd}<br>
-          ✨ 必殺技: 【${card.skill?.name || "ギガブレイク"}】<br>
-          📝 メモ: ${card.memo || "メモなし"}
-        </div>
-      `;
-    } else {
+    if (isItem) {
       if (btnMain) btnMain.style.display = 'none';
       if (btnSub1) btnSub1.style.display = 'none';
       if (btnSub2) btnSub2.style.display = 'none';
       if (btnItem1) btnItem1.style.display = 'block';
       if (btnItem2) btnItem2.style.display = 'block';
       if (btnItem3) btnItem3.style.display = 'block';
+    } else {
+      if (btnMain) btnMain.style.display = 'block';
+      if (btnSub1) btnSub1.style.display = 'block';
+      if (btnSub2) btnSub2.style.display = 'block';
+      if (btnItem1) btnItem1.style.display = 'none';
+      if (btnItem2) btnItem2.style.display = 'none';
+      if (btnItem3) btnItem3.style.display = 'none';
+    }
 
-      content.innerHTML = `
-        <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【アイテム効果詳細】</div>
-        <div style="width: 70px; height: 70px; margin: 4px auto;">${card.spriteSvg || '🎁'}</div>
-        <div style="font-size: 1.05rem; font-weight: 800; color: var(--accent-gold);">${card.name} (${card.rarity})</div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: var(--surface-card); padding: 8px; border-radius: 8px; margin-top: 6px; line-height: 1.4;">
-          💊 効果: ${card.desc}<br>
-          📝 メモ: ${card.memo || "メモなし"}
+    modal.classList.add('active');
+  }
+
+  function handleScanBarcode(codeStr) {
+    if (!codeStr) return;
+    const card = BarcodeEngine.generateFromBarcode(codeStr);
+    appState.scannedCard = card;
+
+    const resCard = document.getElementById('scan-result-card');
+    if (resCard) {
+      const isItem = (card.type === 'item');
+      const spriteSvg = getCharacterSpriteSvg(card);
+
+      resCard.innerHTML = `
+        <div class="sprite-container" style="width:140px; height:140px; margin: 0 auto;">
+          ${spriteSvg}
         </div>
+        <div class="char-name" style="font-weight:900;">
+          <span style="color:var(--accent-gold);">[${card.rarity || 'N'}]</span> ${card.name}
+        </div>
+        ${isItem ? `
+          <div style="color:var(--accent-gold); font-size:0.95rem; font-weight:800;">${card.desc}</div>
+        ` : `
+          <div style="margin: 4px 0;">
+            <span class="element-tag element-${card.element}">属性: ${card.element}</span>
+            <span style="font-size:0.8rem; color:var(--text-muted); margin-left:6px;">種族: ${card.species || 'ドラゴン'}</span>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:0.88rem; font-weight:800; margin: 8px 0; background:rgba(0,0,0,0.3); padding:8px; border-radius:10px;">
+            <span style="color:#00ff88;">HP: ${card.hp}</span>
+            <span style="color:#ff3366;">ATK: ${card.atk}</span>
+            <span style="color:#00e5ff;">DEF: ${card.def}</span>
+            <span style="color:#ffd700;">SPD: ${card.spd}</span>
+          </div>
+        `}
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">JANコード: ${card.barcode}</div>
       `;
     }
 
-    if (modal) modal.classList.add('active');
+    const memoInput = document.getElementById('scanned-memo-input');
+    if (memoInput) memoInput.value = "";
+
+    switchScreen('SCR-03');
   }
 
-  window.appOpenDetailModal = openDetailModal;
+  function startCamera() {
+    scanVideo = document.getElementById('scan-video');
+    scanCanvas = document.getElementById('scan-canvas');
+    const msg = document.getElementById('camera-status-msg');
 
-  function renderDeckSlots() {
-    const deck = StorageManager.getDeck();
-    const m = document.getElementById('slot-content-main');
-    const s1 = document.getElementById('slot-content-sub1');
-    const s2 = document.getElementById('slot-content-sub2');
-    const item1 = document.getElementById('slot-content-item1');
-    const item2 = document.getElementById('slot-content-item2');
-    const item3 = document.getElementById('slot-content-item3');
-
-    if (m) m.textContent = deck.mainChar ? `${deck.mainChar.name} (HP:${deck.mainChar.hp} ATK:${deck.mainChar.atk} DEF:${deck.mainChar.def})` : "未セット";
-    if (s1) s1.textContent = deck.subChar1 ? `${deck.subChar1.name} (HP:${deck.subChar1.hp} ATK:${deck.subChar1.atk} DEF:${deck.subChar1.def})` : "未セット";
-    if (s2) s2.textContent = deck.subChar2 ? `${deck.subChar2.name} (HP:${deck.subChar2.hp} ATK:${deck.subChar2.atk} DEF:${deck.subChar2.def})` : "未セット";
-    if (item1) item1.textContent = deck.itemCard1 ? `${deck.itemCard1.name} (${deck.itemCard1.desc})` : "未セット";
-    if (item2) item2.textContent = deck.itemCard2 ? `${deck.itemCard2.name} (${deck.itemCard2.desc})` : "未セット";
-    if (item3) item3.textContent = deck.itemCard3 ? `${deck.itemCard3.name} (${deck.itemCard3.desc})` : "未セット";
-  }
-
-  function renderLobby() {
-    const selectView = document.getElementById('lobby-select-view');
-    const waitView = document.getElementById('lobby-host-wait-view');
-    if (selectView) selectView.style.display = 'block';
-    if (waitView) waitView.style.display = 'none';
-  }
-
-  window.appSelectTab = function(type) {
-    const tabCol = document.getElementById('tab-btn-collection');
-    const tabDeck = document.getElementById('tab-btn-deck');
-    const viewCol = document.getElementById('view-collection-tab');
-    const viewDeck = document.getElementById('view-deck-tab');
-
-    if (type === 'col') {
-      tabCol?.classList.add('active');
-      tabDeck?.classList.remove('active');
-      if (viewCol) viewCol.style.display = 'flex';
-      if (viewDeck) viewDeck.style.display = 'none';
-      renderCollection();
-    } else {
-      tabDeck?.classList.add('active');
-      tabCol?.classList.remove('active');
-      if (viewDeck) viewDeck.style.display = 'flex';
-      if (viewCol) viewCol.style.display = 'none';
-      renderDeckSlots();
-    }
-  };
-
-  window.appSetMode = function(mode) {
-    matchMode = mode;
-    const btn1p = document.getElementById('btn-mode-1p');
-    const btn3p = document.getElementById('btn-mode-3p');
-    if (mode === '1p') {
-      btn1p?.classList.add('active');
-      btn3p?.classList.remove('active');
-    } else {
-      btn3p?.classList.add('active');
-      btn1p?.classList.remove('active');
-    }
-  };
-
-  window.appCreateRoom = function() {
-    const code = NetworkManager.generateRoomCode();
-    const deck = StorageManager.getDeck();
-    isOnlineMatch = true;
-
-    const selectView = document.getElementById('lobby-select-view');
-    const waitView = document.getElementById('lobby-host-wait-view');
-    if (selectView) selectView.style.display = 'none';
-    if (waitView) waitView.style.display = 'block';
-
-    const codeDisp = document.getElementById('host-room-code');
-    if (codeDisp) codeDisp.textContent = code;
-
-    network.createRoom(code, deck, () => {}, (err) => { alert(err); renderLobby(); });
-    
-    network.onMessageCallback = (data) => {
-      if (data.type === 'JOIN_REQUEST') {
-        startBattle(false, data.guestDeck);
-      } else if (data.type === 'TURN_ACTION') {
-        oppTurnAction = data.action;
-        oppTurnItemIndex = data.itemIndex || 0;
-        checkAndExecuteOnlineTurn();
-      }
-    };
-  };
-
-  window.appCancelHost = function() {
-    network.disconnect();
-    isOnlineMatch = false;
-    renderLobby();
-  };
-
-  window.appJoinRoom = function() {
-    const input = document.getElementById('input-guest-code');
-    const codeStr = input ? input.value.trim() : "";
-    const deck = StorageManager.getDeck();
-
-    if (!codeStr || codeStr.length !== 4) {
-      alert("⚠️ 4けたの ルームコードを 正しく入力してください (例: 7821)");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (msg) msg.textContent = "お使いのブラウザはカメラに対応していません。テストボタンをご利用ください。";
       return;
     }
 
-    const btnJoin = document.getElementById('btn-join-room');
-    if (btnJoin) { btnJoin.disabled = true; btnJoin.textContent = "🌀 せつぞく中..."; }
-
-    isOnlineMatch = true;
-
-    network.joinRoom(codeStr, deck, () => {}, (errMsg) => {
-      if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
-      alert(`❌ ${errMsg}`);
-      isOnlineMatch = false;
-    });
-
-    network.onMessageCallback = (data) => {
-      if (data.type === 'JOIN_ACCEPT') {
-        if (btnJoin) { btnJoin.disabled = false; btnJoin.textContent = "さんかする"; }
-        startBattle(false, data.hostDeck);
-      } else if (data.type === 'TURN_RESULT') {
-        applyHostTurnResultToGuest(data);
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    }).then(stream => {
+      if (scanVideo) {
+        scanVideo.srcObject = stream;
+        scanVideo.play();
+        if (msg) msg.textContent = "カメラをバーコードに合わせてください...";
+        scanBarcodeLoop();
       }
-    };
-  };
-
-  function setBattleButtonsDisabled(disabled) {
-    const ids = ['btn-cmd-attack', 'btn-cmd-skill', 'btn-cmd-guard', 'btn-cmd-item'];
-    ids.forEach(id => {
-      const b = document.getElementById(id);
-      if (b) b.disabled = disabled;
+    }).catch(err => {
+      if (msg) msg.textContent = "カメラの起動に失敗しました。下のテストコードをお試しください。";
     });
   }
 
-  function checkAndExecuteOnlineTurn() {
-    if (!isOnlineMatch || !activeBattle || activeBattle.isOver) return;
-
-    if (network.isHost && myTurnAction && oppTurnAction) {
-      const turnLog = activeBattle.processTurn(myTurnAction, myTurnItemIndex, oppTurnAction, oppTurnItemIndex);
-      
-      myTurnAction = null;
-      oppTurnAction = null;
-
-      renderBattle();
-      appendBattleLog(turnLog);
-
-      const resultPayload = {
-        type: 'TURN_RESULT',
-        turnLog: turnLog,
-        hostHp: activeBattle.player.currentHp,
-        hostMaxHp: activeBattle.player.maxHp,
-        hostSp: activeBattle.player.sp,
-        guestHp: activeBattle.enemy.currentHp,
-        guestMaxHp: activeBattle.enemy.maxHp,
-        guestSp: activeBattle.enemy.sp,
-        isOver: activeBattle.isOver,
-        winner: activeBattle.winner
-      };
-
-      network.send(resultPayload);
-
-      if (activeBattle.isOver) {
-        setTimeout(() => {
-          alert(activeBattle.winner === 'player' ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
-          isOnlineMatch = false;
-          network.disconnect();
-          switchScreen('SCR-05');
-        }, 1000);
-      } else {
-        setBattleButtonsDisabled(false);
-      }
+  function stopCamera() {
+    if (scanAnimationId) {
+      cancelAnimationFrame(scanAnimationId);
+      scanAnimationId = null;
+    }
+    if (scanVideo && scanVideo.srcObject) {
+      const tracks = scanVideo.srcObject.getTracks();
+      tracks.forEach(t => t.stop());
+      scanVideo.srcObject = null;
     }
   }
 
-  function applyHostTurnResultToGuest(data) {
-    if (!activeBattle) return;
+  function scanBarcodeLoop() {
+    if (!scanVideo || scanVideo.readyState !== scanVideo.HAVE_ENOUGH_DATA) {
+      scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+      return;
+    }
 
-    activeBattle.player.currentHp = data.guestHp;
-    activeBattle.player.sp = data.guestSp;
-    activeBattle.enemy.currentHp = data.hostHp;
-    activeBattle.enemy.sp = data.hostSp;
-    activeBattle.isOver = data.isOver;
-
-    renderBattle();
-    appendBattleLog(data.turnLog);
-    setBattleButtonsDisabled(false);
-
-    if (data.isOver) {
-      const isGuestWin = (data.winner === 'enemy');
-      setTimeout(() => {
-        alert(isGuestWin ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
-        isOnlineMatch = false;
-        network.disconnect();
-        switchScreen('SCR-05');
-      }, 1000);
+    if ('BarcodeDetector' in window) {
+      const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code', 'code_128'] });
+      detector.detect(scanVideo).then(barcodes => {
+        if (barcodes && barcodes.length > 0) {
+          const raw = barcodes[0].rawValue;
+          stopCamera();
+          handleScanBarcode(raw);
+        } else {
+          scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+        }
+      }).catch(() => {
+        scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+      });
+    } else {
+      scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
     }
   }
 
-  window.appStartCpuBattle = function() {
-    isOnlineMatch = false;
-    startBattle(true, null);
-  };
-
-  function startBattle(isCpu = true, oppDeck = null) {
+  // ==========================================
+  // 6. バトル制御 & アイテム選択モーダル
+  // ==========================================
+  function startCpuBattle() {
     const deck = StorageManager.getDeck();
-    const defaultChar1 = BarcodeEngine.generateFromBarcode("4901234567890");
-
-    let playerMain = (deck.mainChar && deck.mainChar.type === 'character') ? deck.mainChar : defaultChar1;
-    let playerTeam = [playerMain];
-
-    if (matchMode === '3p') {
-      playerTeam.push((deck.subChar1 && deck.subChar1.type === 'character') ? deck.subChar1 : BarcodeEngine.generateFromBarcode("4901111111111"));
-      playerTeam.push((deck.subChar2 && deck.subChar2.type === 'character') ? deck.subChar2 : BarcodeEngine.generateFromBarcode("4902222222222"));
+    let playerTeam = [];
+    if (appState.battleMode === '3p') {
+      playerTeam = [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean);
+    } else {
+      playerTeam = [deck.mainChar].filter(Boolean);
     }
 
-    // ★3つのアイテムを配列で渡す
+    if (playerTeam.length === 0) {
+      alert("デッキにキャラクターがセットされていません。図鑑からセットしてください。");
+      switchScreen('SCR-04');
+      return;
+    }
+
     const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
 
-    let enemyTeam = [];
-    let enemyItems = [];
-
-    if (isCpu) {
-      enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
-      if (matchMode === '3p') {
-        enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
-        enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
+    const enemyTeam = [];
+    const teamCount = (appState.battleMode === '3p') ? 3 : 1;
+    for (let i = 0; i < teamCount; i++) {
+      const randCode = BarcodeEngine.getRandomBarcode();
+      const enemyChar = BarcodeEngine.generateFromBarcode(randCode);
+      if (enemyChar.type === 'character') {
+        enemyTeam.push(enemyChar);
+      } else {
+        enemyTeam.push(BarcodeEngine.generateFromBarcode("4901234567890"));
       }
-      // 敵CPUのアイテム3つ生成
-      enemyItems.push(BarcodeEngine.generateFromBarcode("4908888777766"));
-      enemyItems.push(BarcodeEngine.generateFromBarcode("4908888777777"));
-      enemyItems.push(BarcodeEngine.generateFromBarcode("4908888777788"));
-
-    } else if (oppDeck) {
-      let oppMain = (oppDeck.mainChar && oppDeck.mainChar.type === 'character') ? oppDeck.mainChar : BarcodeEngine.generateFromBarcode("4909876543210");
-      enemyTeam.push(oppMain);
-      if (matchMode === '3p') {
-        enemyTeam.push((oppDeck.subChar1 && oppDeck.subChar1.type === 'character') ? oppDeck.subChar1 : BarcodeEngine.generateFromBarcode("4905555555555"));
-        enemyTeam.push((oppDeck.subChar2 && oppDeck.subChar2.type === 'character') ? oppDeck.subChar2 : BarcodeEngine.generateFromBarcode("4906666666666"));
-      }
-      enemyItems = [oppDeck.itemCard1, oppDeck.itemCard2, oppDeck.itemCard3].filter(Boolean);
-    } else {
-      enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
     }
 
-    activeBattle = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, matchMode);
-    myTurnAction = null;
-    oppTurnAction = null;
+    const enemyItems = [
+      BarcodeEngine.generateFromBarcode("4900000000001"),
+      BarcodeEngine.generateFromBarcode("4900000000006")
+    ];
 
-    const logBox = document.getElementById('battle-log');
-    if (logBox) logBox.innerHTML = `<div>⚔️ ${isOnlineMatch ? '対戦相手と' : 'CPUとの'} バトルが はじまった！ (${matchMode === '3p' ? '3Pチーム戦 [20ターン]' : '1P勝負 [10ターン]'})</div>`;
-
-    renderBattle();
+    appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, appState.battleMode);
     switchScreen('SCR-06');
+    renderBattleUI();
   }
 
-  function renderBattle() {
-    if (!activeBattle) return;
-    const b = activeBattle;
-    const p = b.player;
-    const e = b.enemy;
+  function renderBattleUI() {
+    const be = appState.battleEngine;
+    if (!be) return;
+
+    const p = be.player;
+    const e = be.enemy;
 
     const pName = document.getElementById('p-name');
     const pHpNum = document.getElementById('p-hp-num');
@@ -1320,14 +1272,11 @@
     const pSpBar = document.getElementById('p-sp-bar');
     const pSprite = document.getElementById('p-sprite');
 
-    if (pName) pName.textContent = p.name;
+    if (pName) pName.innerHTML = `<span style="color:var(--accent-gold);">[${p.rarity || 'N'}]</span> ${p.name} (${p.element})`;
     if (pHpNum) pHpNum.textContent = `${Math.max(0, p.currentHp)}/${p.maxHp}`;
     if (pHpBar) pHpBar.style.width = `${Math.max(0, (p.currentHp / p.maxHp) * 100)}%`;
-    if (pSpBar) pSpBar.style.width = `${p.sp}%`;
-    if (pSprite) {
-      pSprite.innerHTML = getCharacterSpriteSvg(p);
-      pSprite.style.color = `var(--element-${p.element})`;
-    }
+    if (pSpBar) pSpBar.style.width = `${Math.min(100, p.sp)}%`;
+    if (pSprite) pSprite.innerHTML = getCharacterSpriteSvg(p);
 
     const eName = document.getElementById('e-name');
     const eHpNum = document.getElementById('e-hp-num');
@@ -1335,277 +1284,366 @@
     const eSpBar = document.getElementById('e-sp-bar');
     const eSprite = document.getElementById('e-sprite');
 
-    if (eName) eName.textContent = e.name;
+    if (eName) eName.innerHTML = `<span style="color:var(--accent-gold);">[${e.rarity || 'N'}]</span> ${e.name} (${e.element})`;
     if (eHpNum) eHpNum.textContent = `${Math.max(0, e.currentHp)}/${e.maxHp}`;
     if (eHpBar) eHpBar.style.width = `${Math.max(0, (e.currentHp / e.maxHp) * 100)}%`;
-    if (eSpBar) eSpBar.style.width = `${e.sp}%`;
-    if (eSprite) {
-      eSprite.innerHTML = getCharacterSpriteSvg(e);
-      eSprite.style.color = `var(--element-${e.element})`;
-    }
-
-    const btnAttack = document.getElementById('btn-cmd-attack');
-    const btnGuard = document.getElementById('btn-cmd-guard');
-    if (btnAttack) { btnAttack.disabled = false; btnAttack.style.opacity = "1.0"; }
-    if (btnGuard) { btnGuard.disabled = false; btnGuard.style.opacity = "1.0"; }
+    if (eSpBar) eSpBar.style.width = `${Math.min(100, e.sp)}%`;
+    if (eSprite) eSprite.innerHTML = getCharacterSpriteSvg(e);
 
     const btnSkill = document.getElementById('btn-cmd-skill');
     if (btnSkill) {
-      btnSkill.disabled = (p.sp < 100);
-      btnSkill.style.opacity = (p.sp < 100) ? "0.4" : "1.0";
+      btnSkill.disabled = (p.sp < 100 || be.isOver);
     }
 
     const btnItem = document.getElementById('btn-cmd-item');
     if (btnItem) {
-      const uses = b.playerItemUsesLeft;
-      const isItemUsable = (uses > 0);
-      btnItem.disabled = !isItemUsable;
-      btnItem.style.opacity = isItemUsable ? "1.0" : "0.4";
-      btnItem.textContent = isItemUsable ? `💊 アイテム (${uses}/3)` : `💊 アイテム (終了)`;
+      const left = be.playerItemUsesLeft;
+      const total = be.playerItems.length;
+      btnItem.textContent = `💊 アイテム (${left}/${total})`;
+      btnItem.disabled = (left <= 0 || be.isOver);
     }
+
+    const btnAtk = document.getElementById('btn-cmd-attack');
+    const btnGrd = document.getElementById('btn-cmd-guard');
+    if (btnAtk) btnAtk.disabled = be.isOver;
+    if (btnGrd) btnGrd.disabled = be.isOver;
   }
 
-  // ★バトル中アイテム選択モーダルのオープン
   function openBattleItemSelectModal() {
-    if (!activeBattle || activeBattle.playerItemUsesLeft <= 0) return;
-    const modal = document.getElementById('battle-item-modal');
-    const listContainer = document.getElementById('battle-item-list');
-    if (!modal || !listContainer) return;
+    const be = appState.battleEngine;
+    if (!be || be.isOver) return;
 
-    listContainer.innerHTML = "";
-    activeBattle.playerItems.forEach((item, idx) => {
-      const isUsed = activeBattle.playerItemUsed[idx];
-      const btn = document.createElement('button');
-      btn.className = `btn ${isUsed ? 'btn-dark' : 'btn-gold'}`;
-      btn.disabled = isUsed;
-      btn.style.margin = "4px 0";
-      btn.style.minHeight = "44px";
-      btn.style.fontSize = "0.85rem";
-      btn.innerHTML = `${isUsed ? '❌ (使用済) ' : '💊 '}${item.name} <br><span style="font-size:0.75rem;">${item.desc}</span>`;
-      btn.onclick = () => {
-        modal.classList.remove('active');
-        executePlayerAction('item', idx);
-      };
-      listContainer.appendChild(btn);
-    });
+    const modal = document.getElementById('battle-item-modal');
+    const list = document.getElementById('battle-item-list');
+    if (!modal || !list) return;
+
+    if (be.playerItems.length === 0) {
+      list.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">セットされたアイテムがありません。</div>`;
+    } else {
+      list.innerHTML = be.playerItems.map((item, idx) => {
+        const isUsed = be.playerItemUsed[idx];
+        return `
+          <button class="btn ${isUsed ? 'btn-dark' : 'btn-gold'}" style="margin:0; min-height:44px; font-size:0.85rem;" ${isUsed ? 'disabled' : ''} onclick="window.appExecutePlayerAction('item', ${idx})">
+            ${item.name} (${item.desc}) ${isUsed ? '【使用済】' : '【つかう】'}
+          </button>
+        `;
+      }).join('');
+    }
 
     modal.classList.add('active');
   }
 
-  function handleAction(act) {
-    if (!activeBattle || activeBattle.isOver) return;
+  function executePlayerAction(action, itemIdx = 0) {
+    const itemModal = document.getElementById('battle-item-modal');
+    if (itemModal) itemModal.classList.remove('active');
 
-    if (act === 'item') {
-      if (activeBattle.playerItems.length === 0) {
-        alert("⚠️ デッキに アイテムカードが セットされていません！");
-        return;
-      }
-      if (activeBattle.playerItemUsesLeft <= 0) {
-        alert("⚠️ アイテムはすべて 使用済みです！");
-        return;
-      }
-      openBattleItemSelectModal();
+    const be = appState.battleEngine;
+    if (!be || be.isOver) return;
+
+    const result = be.processTurn(action, itemIdx);
+    if (!result) return;
+
+    const logBox = document.getElementById('battle-log');
+    if (logBox) {
+      result.actions.forEach(act => {
+        const div = document.createElement('div');
+        div.style.margin = '2px 0';
+        div.textContent = act.message;
+        logBox.appendChild(div);
+      });
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    renderBattleUI();
+
+    if (be.isOver) {
+      const winner = be.winner;
+      setTimeout(() => {
+        alert(winner === 'player' ? '🎉 あなたの勝利です！' : '💧 敗北しました...');
+      }, 500);
+    }
+  }
+
+  function renderLobby() {
+    const viewLobby = document.getElementById('lobby-select-view');
+    const viewWait = document.getElementById('lobby-host-wait-view');
+    if (viewLobby) viewLobby.style.display = 'block';
+    if (viewWait) viewWait.style.display = 'none';
+
+    const btn1p = document.getElementById('btn-mode-1p');
+    const btn3p = document.getElementById('btn-mode-3p');
+    if (btn1p) btn1p.className = (appState.battleMode === '1p') ? 'mode-btn active' : 'mode-btn';
+    if (btn3p) btn3p.className = (appState.battleMode === '3p') ? 'mode-btn active' : 'mode-btn';
+  }
+
+  function createRoom() {
+    const deck = StorageManager.getDeck();
+    if (!deck.mainChar) {
+      alert("デッキにキャラクターがセットされていません。");
+      switchScreen('SCR-04');
       return;
     }
 
-    if (act === 'skill') {
-      if (activeBattle.player.sp < 100) {
-        alert("⚠️ ひっさつ技は SPゲージが 100% になってから つかえます！");
-        return;
-      }
-    }
+    const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+    appState.isHost = true;
 
-    executePlayerAction(act, 0);
-  }
+    const hostCodeEl = document.getElementById('host-room-code');
+    if (hostCodeEl) hostCodeEl.textContent = roomCode;
 
-  function executePlayerAction(act, itemIndex = 0) {
-    if (isOnlineMatch) {
-      myTurnAction = act;
-      myTurnItemIndex = itemIndex;
-      setBattleButtonsDisabled(true);
+    const viewLobby = document.getElementById('lobby-select-view');
+    const viewWait = document.getElementById('lobby-host-wait-view');
+    if (viewLobby) viewLobby.style.display = 'none';
+    if (viewWait) viewWait.style.display = 'block';
 
-      const logBox = document.getElementById('battle-log');
-      if (logBox) {
-        const div = document.createElement('div');
-        div.style.color = "var(--secondary-cyan)";
-        div.textContent = "🌀 あいての コマンド選択を まっています...";
-        logBox.appendChild(div);
-        logBox.scrollTop = logBox.scrollHeight;
-      }
-
-      if (network.isHost) {
-        checkAndExecuteOnlineTurn();
-      } else {
-        network.send({ type: 'TURN_ACTION', action: act, itemIndex: itemIndex });
-      }
-
-    } else {
-      const turnLog = activeBattle.processTurn(act, itemIndex);
-      renderBattle();
-      appendBattleLog(turnLog);
-
-      if (activeBattle.isOver) {
-        setTimeout(() => {
-          alert(activeBattle.winner === 'player' ? '🎉 あなたの しょうり！' : '💧 あなたの まけ...');
-          switchScreen('SCR-05');
-        }, 800);
-      }
-    }
-  }
-
-  function appendBattleLog(turnLog) {
-    const logBox = document.getElementById('battle-log');
-    if (!logBox || !turnLog) return;
-    turnLog.actions.forEach(a => {
-      const d = document.createElement('div');
-      d.textContent = a.message;
-      logBox.appendChild(d);
-    });
-    logBox.scrollTop = logBox.scrollHeight;
-  }
-
-  function initApp() {
-    console.log("Initializing Barcode Battler v2.3.0 Official Edition...");
     try {
-      StorageManager.migrateCollectionData();
+      const peer = new Peer(`bb-v23-${roomCode}`, { debug: 1 });
+      appState.peer = peer;
+
+      peer.on('connection', conn => {
+        appState.peerConn = conn;
+        conn.on('data', data => {
+          if (data && data.type === 'JOIN') {
+            const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
+            const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
+            const enemyTeam = data.team || [];
+            const enemyItems = data.items || [];
+
+            conn.send({
+              type: 'START',
+              team: playerTeam,
+              items: playerItems,
+              mode: appState.battleMode
+            });
+
+            appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, appState.battleMode);
+            switchScreen('SCR-06');
+            renderBattleUI();
+          }
+        });
+      });
     } catch (e) {
-      console.error("Data migration error:", e);
+      console.warn("PeerJS host initialization failed:", e);
+    }
+  }
+
+  function joinRoom() {
+    const codeInput = document.getElementById('input-guest-code');
+    const code = codeInput ? codeInput.value.trim() : "";
+    if (!code || code.length !== 4) {
+      alert("4桁のルームコードを入力してください。");
+      return;
+    }
+
+    const deck = StorageManager.getDeck();
+    if (!deck.mainChar) {
+      alert("デッキにキャラクターがセットされていません。");
+      switchScreen('SCR-04');
+      return;
     }
 
     try {
-      history.replaceState({ screen: 'SCR-01' }, "", "");
-    } catch (e) {}
+      const peer = new Peer();
+      appState.peer = peer;
 
-    document.getElementById('btn-nav-scan')?.addEventListener('click', () => switchScreen('SCR-02'));
-    document.getElementById('btn-nav-deck')?.addEventListener('click', () => switchScreen('SCR-04'));
-    document.getElementById('btn-nav-battle')?.addEventListener('click', () => switchScreen('SCR-05'));
+      peer.on('open', () => {
+        const conn = peer.connect(`bb-v23-${code}`);
+        appState.peerConn = conn;
 
-    document.querySelectorAll('.btn-back-home').forEach(b => {
-      b.addEventListener('click', () => switchScreen('SCR-01'));
+        conn.on('open', () => {
+          const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
+          const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
+
+          conn.send({
+            type: 'JOIN',
+            team: playerTeam,
+            items: playerItems
+          });
+        });
+
+        conn.on('data', data => {
+          if (data && data.type === 'START') {
+            const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
+            const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
+            const enemyTeam = data.team || [];
+            const enemyItems = data.items || [];
+
+            appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, data.mode || appState.battleMode);
+            switchScreen('SCR-06');
+            renderBattleUI();
+          }
+        });
+      });
+    } catch (e) {
+      console.warn("PeerJS guest join failed:", e);
+    }
+  }
+
+  function cancelHost() {
+    if (appState.peer) {
+      appState.peer.destroy();
+      appState.peer = null;
+    }
+    renderLobby();
+  }
+
+  // ==========================================
+  // 7. グローバル公開 & 初期化バインド
+  // ==========================================
+  window.appSwitchScreen = switchScreen;
+  window.appStartCamera = startCamera;
+  window.appOpenCardDetail = openCardDetail;
+  window.appSelectTab = function(tab) {
+    const colTab = document.getElementById('view-collection-tab');
+    const deckTab = document.getElementById('view-deck-tab');
+    const btnCol = document.getElementById('tab-btn-collection');
+    const btnDeck = document.getElementById('tab-btn-deck');
+
+    if (tab === 'col') {
+      if (colTab) colTab.style.display = 'flex';
+      if (deckTab) deckTab.style.display = 'none';
+      if (btnCol) btnCol.classList.add('active');
+      if (btnDeck) btnDeck.classList.remove('active');
+      renderCollection();
+    } else {
+      if (colTab) colTab.style.display = 'none';
+      if (deckTab) deckTab.style.display = 'flex';
+      if (btnCol) btnCol.classList.remove('active');
+      if (btnDeck) btnDeck.classList.add('active');
+      renderDeckView();
+    }
+  };
+
+  window.appSelectSubTab = function(subTab) {
+    appState.collectionSubTab = subTab;
+    document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById(`sub-tab-${subTab}`);
+    if (activeBtn) activeBtn.classList.add('active');
+    renderCollection();
+  };
+
+  window.appSetMode = function(mode) {
+    appState.battleMode = mode;
+    renderLobby();
+  };
+
+  window.appStartCpuBattle = startCpuBattle;
+  window.appCreateRoom = createRoom;
+  window.appJoinRoom = joinRoom;
+  window.appCancelHost = cancelHost;
+  window.appExecutePlayerAction = executePlayerAction;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    StorageManager.migrateCollectionData();
+
+    // デモ用バーコードボタン
+    document.querySelectorAll('.btn-demo-barcode').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.getAttribute('data-code');
+        handleScanBarcode(code);
+      });
     });
 
-    document.getElementById('btn-start-camera')?.addEventListener('click', () => startCamera());
-    document.getElementById('btn-manual-scan')?.addEventListener('click', () => {
-      const input = document.getElementById('input-manual-barcode');
-      if (input && input.value) {
-        stopCamera();
-        processScanResult(input.value);
-      }
-    });
+    // 手動入力ボタン
+    const btnManual = document.getElementById('btn-manual-scan');
+    const inputManual = document.getElementById('input-manual-barcode');
+    if (btnManual && inputManual) {
+      btnManual.addEventListener('click', () => {
+        const code = inputManual.value.trim();
+        if (code) handleScanBarcode(code);
+      });
+    }
 
-    document.getElementById('btn-save-scanned')?.addEventListener('click', () => {
-      if (scannedCard) {
-        const memoInput = document.getElementById('scanned-memo-input');
-        if (memoInput && memoInput.value) scannedCard.memo = memoInput.value;
-        StorageManager.saveToCollection(scannedCard);
-        alert(`【${scannedCard.name}】を ずかんに ほぞんしました！`);
-        switchScreen('SCR-04');
-      }
-    });
+    // 保存ボタン
+    const btnSave = document.getElementById('btn-save-scanned');
+    if (btnSave) {
+      btnSave.addEventListener('click', () => {
+        if (appState.scannedCard) {
+          const memo = document.getElementById('scanned-memo-input')?.value || "";
+          appState.scannedCard.memo = memo;
+          StorageManager.saveToCollection(appState.scannedCard);
+          alert(`「${appState.scannedCard.name}」を ずかんに ほぞんしました！`);
+          switchScreen('SCR-04');
+        }
+      });
+    }
 
-    document.getElementById('btn-edit-memo')?.addEventListener('click', () => {
-      if (!selectedCardForDetail) return;
-      const newMemo = prompt("このカードのメモをへんしゅう (例: おかしの箱):", selectedCardForDetail.memo || "");
-      if (newMemo !== null) {
-        StorageManager.updateMemo(selectedCardForDetail.id, newMemo);
-        selectedCardForDetail.memo = newMemo;
-        alert("メモを こうしんしました！");
-        renderCollection();
-        openDetailModal(selectedCardForDetail);
-      }
-    });
-
-    document.getElementById('btn-delete-card')?.addEventListener('click', () => {
-      if (!selectedCardForDetail) return;
-      const cardName = selectedCardForDetail.name;
-      const delConfirm = confirm(`⚠️ ほんとうに【${cardName}】を ずかんから さくじょしますか？\n（※セット中の場合は デッキからも かいじょされます）`);
-      if (delConfirm) {
-        StorageManager.deleteFromCollection(selectedCardForDetail.id);
-        alert(`【${cardName}】を さくじょしました！`);
-        document.getElementById('detail-modal')?.classList.remove('active');
-        renderCollection();
-        renderHome();
-      }
-    });
-
-    // キャラクター枠セット
+    // デッキセットボタン
     document.getElementById('btn-set-main')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('mainChar', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を メインにセットしました！`);
+      if (appState.selectedCard) {
+        StorageManager.setDeckSlot('mainChar', appState.selectedCard);
         document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
         renderCollection();
-        renderHome();
       }
     });
     document.getElementById('btn-set-sub1')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('subChar1', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を サブ1にセットしました！`);
+      if (appState.selectedCard) {
+        StorageManager.setDeckSlot('subChar1', appState.selectedCard);
         document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
         renderCollection();
       }
     });
     document.getElementById('btn-set-sub2')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('subChar2', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を サブ2にセットしました！`);
+      if (appState.selectedCard) {
+        StorageManager.setDeckSlot('subChar2', appState.selectedCard);
         document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
         renderCollection();
       }
     });
-
-    // ★アイテム3枠セット
     document.getElementById('btn-set-item1')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('itemCard1', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を アイテム1にセットしました！`);
+      if (appState.selectedCard) {
+        StorageManager.setDeckSlot('itemCard1', appState.selectedCard);
         document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
         renderCollection();
       }
     });
     document.getElementById('btn-set-item2')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('itemCard2', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を アイテム2にセットしました！`);
+      if (appState.selectedCard) {
+        StorageManager.setDeckSlot('itemCard2', appState.selectedCard);
         document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
         renderCollection();
       }
     });
     document.getElementById('btn-set-item3')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('itemCard3', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を アイテム3にセットしました！`);
+      if (appState.selectedCard) {
+        StorageManager.setDeckSlot('itemCard3', appState.selectedCard);
         document.getElementById('detail-modal')?.classList.remove('active');
-        renderDeckSlots();
         renderCollection();
       }
     });
 
-    document.querySelectorAll('.btn-demo-barcode').forEach(b => {
-      b.addEventListener('click', (e) => {
-        const code = e.target.getAttribute('data-code');
-        stopCamera();
-        processScanResult(code);
-      });
+    // メモ編集
+    document.getElementById('btn-edit-memo')?.addEventListener('click', () => {
+      if (!appState.selectedCard) return;
+      const current = appState.selectedCard.memo || "";
+      const updated = prompt("カードのメモを入力してください:", current);
+      if (updated !== null) {
+        StorageManager.updateMemo(appState.selectedCard.id, updated);
+        appState.selectedCard.memo = updated;
+        openCardDetail(appState.selectedCard.id);
+        renderCollection();
+      }
     });
 
-    document.getElementById('btn-cmd-attack')?.addEventListener('click', () => handleAction('attack'));
-    document.getElementById('btn-cmd-skill')?.addEventListener('click', () => handleAction('skill'));
-    document.getElementById('btn-cmd-guard')?.addEventListener('click', () => handleAction('guard'));
-    document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
+    // カード削除
+    document.getElementById('btn-delete-card')?.addEventListener('click', () => {
+      if (!appState.selectedCard) return;
+      if (confirm(`「${appState.selectedCard.name}」を 本当に 削除しますか？`)) {
+        StorageManager.deleteFromCollection(appState.selectedCard.id);
+        document.getElementById('detail-modal')?.classList.remove('active');
+        renderCollection();
+      }
+    });
 
+    // バトルコマンドボタン
+    document.getElementById('btn-cmd-attack')?.addEventListener('click', () => executePlayerAction('attack'));
+    document.getElementById('btn-cmd-skill')?.addEventListener('click', () => executePlayerAction('skill'));
+    document.getElementById('btn-cmd-guard')?.addEventListener('click', () => executePlayerAction('guard'));
+    document.getElementById('btn-cmd-item')?.addEventListener('click', openBattleItemSelectModal);
     document.getElementById('btn-close-battle-item')?.addEventListener('click', () => {
       document.getElementById('battle-item-modal')?.classList.remove('active');
     });
 
     renderHome();
-    console.log("Barcode Battler v2.3.0 Ready!");
-  }
-
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(initApp, 1);
-  } else {
-    document.addEventListener('DOMContentLoaded', initApp);
-  }
+  });
 
 })();

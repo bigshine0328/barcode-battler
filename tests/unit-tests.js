@@ -1,8 +1,8 @@
 /**
- * Unit Tests for Barcode Battler Engine (v2.3.0)
+ * Unit Tests for Barcode Battler Engine (v2.4.0)
  */
 
-import { BarcodeEngine, BASE_NAMES } from '../src/js/barcode-engine.js';
+import { BarcodeEngine, BASE_NAMES, ELEMENT_PALETTES } from '../src/js/barcode-engine.js';
 import { StorageManager } from '../src/js/storage.js';
 import { BattleEngine } from '../src/js/battle-engine.js';
 
@@ -37,7 +37,30 @@ export function runAllTests() {
   }
   assert(generatedSpecies.size >= 10, "20種族生成: 多様な種族が決定論的に生成されること");
 
-  // 3. 新レアリティ分布テスト
+  // 3. 属性別マルチカラーパレット & SVGレンダリングテスト (v2.4.0)
+  assert(ELEMENT_PALETTES["火"] && ELEMENT_PALETTES["水"] && ELEMENT_PALETTES["木"], "属性パレット: 火・水・木の3属性パレットが定義されていること");
+  
+  const fireSvg = BarcodeEngine.generateCharacterSvg("ドラゴン", "火", "N");
+  const waterSvg = BarcodeEngine.generateCharacterSvg("ドラゴン", "水", "N");
+  const woodSvg = BarcodeEngine.generateCharacterSvg("ドラゴン", "木", "N");
+
+  assert(fireSvg.includes(ELEMENT_PALETTES["火"].primary), "属性カラー: 火属性ドラゴンにフレイムレッドの体色が反映されること");
+  assert(waterSvg.includes(ELEMENT_PALETTES["水"].primary), "属性カラー: 水属性ドラゴンにアクアブルーの体色が反映されること");
+  assert(woodSvg.includes(ELEMENT_PALETTES["木"].primary), "属性カラー: 木属性ドラゴンにエメラルドグリーンの体色が反映されること");
+
+  // 4. 超ド派手 SSR 背景演出 & レアリティ別SVGテスト (v2.4.0)
+  const ssrSvg = BarcodeEngine.generateCharacterSvg("ドラゴン", "火", "SSR");
+  const srSvg = BarcodeEngine.generateCharacterSvg("ドラゴン", "火", "SR");
+  const rSvg = BarcodeEngine.generateCharacterSvg("ドラゴン", "火", "R");
+  const nSvg = BarcodeEngine.generateCharacterSvg("ドラゴン", "火", "N");
+
+  assert(ssrSvg.includes("polygon points=\"70,4"), "超ド派手SSR: 16芒サンバースト大光槍がSVG内に生成されること");
+  assert(ssrSvg.includes("stroke=\"#ffd700\""), "超ド派手SSR: 黄金ルーン魔方陣が生成されること");
+  assert(srSvg.includes("stroke=\"#b066ff\""), "SR背景: サイバーヘックスグリッドが生成されること");
+  assert(rSvg.includes("stroke-dasharray=\"8,6\""), "R背景: クリスタルリングが生成されること");
+  assert(nSvg.includes("fill=\"#14182a\""), "N背景: シンプルサークルベースが生成されること");
+
+  // 5. 新レアリティ分布テスト
   const rarityCounts = { SSR: 0, SR: 0, R: 0, N: 0 };
   const totalSamples = 1000;
   for (let i = 0; i < totalSamples; i++) {
@@ -48,13 +71,13 @@ export function runAllTests() {
   assert(rarityCounts.SSR > 0, "レアリティ分布: SSRが生成されること (期待値 ~3%)");
   assert(rarityCounts.N > rarityCounts.R, "レアリティ分布: Nが最大比率 (期待値 ~60%) であること");
 
-  // 4. 属性相性テスト
+  // 6. 属性相性テスト
   assert(BattleEngine.getElementMultiplier("火", "木") === 1.5, "属性相性: 火 > 木 で1.5倍補正となること");
   assert(BattleEngine.getElementMultiplier("水", "火") === 1.5, "属性相性: 水 > 火 で1.5倍補正となること");
   assert(BattleEngine.getElementMultiplier("木", "水") === 1.5, "属性相性: 木 > 水 で1.5倍補正となること");
   assert(BattleEngine.getElementMultiplier("火", "水") === 1.0, "属性相性: 等倍判定であること");
 
-  // 5. ストレージ100体保存制限 (FIFO) テスト
+  // 7. ストレージ100体保存制限 (FIFO) テスト
   localStorage.clear();
   for (let i = 0; i < 105; i++) {
     const testChar = BarcodeEngine.generateFromBarcode(`4900000000${i.toString().padStart(3, '0')}`);
@@ -63,7 +86,7 @@ export function runAllTests() {
   const collection = StorageManager.getCollection();
   assert(collection.length === 100, "ストレージ保存制限: 100体超過時に古いカードが削除され上限100体に維持されること (FIFO)");
 
-  // 6. デッキ3アイテムスロット管理テスト
+  // 8. デッキ3アイテムスロット管理テスト
   const item1 = BarcodeEngine.generateFromBarcode("4900000000001");
   const item2 = BarcodeEngine.generateFromBarcode("4900000000006");
   const item3 = BarcodeEngine.generateFromBarcode("4900000000010");
@@ -85,13 +108,13 @@ export function runAllTests() {
   assert(deck.itemCard2 && deck.itemCard2.id === item2.id, "デッキ編成: アイテム2が正しくセットされること");
   assert(deck.itemCard3 && deck.itemCard3.id === item3.id, "デッキ編成: アイテム3が正しくセットされること");
 
-  // 7. アイテム削除時のカスケード解除テスト
+  // 9. アイテム削除時のカスケード解除テスト
   StorageManager.deleteFromCollection(item2.id);
   const rawDeck = JSON.parse(localStorage.getItem("barcode_battler_deck") || "{}");
   assert(rawDeck.itemCard2 === null, "カスケード保護: アイテム2削除時にLocalStorage内の該当スロットが自動解除されること");
   assert(rawDeck.itemCard1 && rawDeck.itemCard1.id === item1.id, "カスケード保護: 他のアイテムスロットは影響を受けないこと");
 
-  // 8. バトルエンジン 3アイテム選択使用テスト
+  // 10. バトルエンジン 3アイテム選択使用テスト
   const charDiff = BarcodeEngine.generateFromBarcode("4909876543210");
   const bEngine = new BattleEngine([char1], [item1, item3], [charDiff], [item1], '1p');
   assert(bEngine.playerItemUsesLeft === 2, "バトルアイテム: 所持アイテム残数が2個と正しく認識されること");
