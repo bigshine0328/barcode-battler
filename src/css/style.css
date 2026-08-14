@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Barcode Battler - Cyber Arctic Arcade Theme Stylesheet (v2.4.3)
+   Barcode Battler - Cyber Arctic Arcade Theme Stylesheet (v2.4.4)
    ========================================================================== */
 
 :root {
@@ -164,13 +164,13 @@ h1.logo {
 }
 
 /* ==========================================================================
-   図鑑カードアイテム (v2.4.3: レアリティ発光 ＆ デッキ外枠囲み ＆ 高視認性トレイ)
+   図鑑カードアイテム (v2.4.4: 縦完全フィット・能力値常時表示・レアリティ発光＆デッキ外枠)
    ========================================================================== */
 .card-item {
   background: var(--surface-color);
   border: 1.5px solid #2e3656;
-  border-radius: 14px;
-  padding: 8px 6px;
+  border-radius: 16px;
+  padding: 10px 8px 8px 8px;
   text-align: center;
   position: relative;
   cursor: pointer;
@@ -182,23 +182,24 @@ h1.logo {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  min-height: 168px;
+  height: auto;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 .card-item:hover {
   transform: translateY(-2px);
 }
 
-/* ① レアリティ別【発光エフェクト (Aura & Glow)】 */
+/* ① レアリティ別【発光オーラエフェクト】 */
 .card-item.rarity-SSR {
   box-shadow: 0 0 16px rgba(255, 215, 0, 0.75), inset 0 0 10px rgba(255, 215, 0, 0.3) !important;
-  background: radial-gradient(circle at top, rgba(255, 215, 0, 0.15) 0%, #161b30 85%) !important;
+  background: radial-gradient(circle at top, rgba(255, 215, 0, 0.16) 0%, #161b30 85%) !important;
 }
 
 .card-item.rarity-SR {
   box-shadow: 0 0 14px rgba(176, 102, 255, 0.65), inset 0 0 8px rgba(176, 102, 255, 0.25) !important;
-  background: radial-gradient(circle at top, rgba(176, 102, 255, 0.12) 0%, #161b30 85%) !important;
+  background: radial-gradient(circle at top, rgba(176, 102, 255, 0.14) 0%, #161b30 85%) !important;
 }
 
 .card-item.rarity-R {
@@ -210,7 +211,7 @@ h1.logo {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* ② デッキ選択中【外枠をしっかり囲う】 */
+/* ② デッキ選択中【外枠をしっかり太く囲う】 */
 .card-item.is-deck-set {
   border: 2.5px solid var(--secondary-cyan) !important;
 }
@@ -218,8 +219,8 @@ h1.logo {
 /* 左上「✅ DECK」インジケータータグ */
 .deck-ribbon {
   position: absolute;
-  top: 4px;
-  left: 4px;
+  top: 5px;
+  left: 5px;
   background: var(--secondary-cyan);
   color: #000;
   font-size: 0.62rem;
@@ -234,8 +235,8 @@ h1.logo {
 /* 右上 役職バッジ（カード内側右上隅に完全格納） */
 .slot-badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 5px;
+  right: 5px;
   font-size: 0.64rem;
   font-weight: 900;
   padding: 2px 6px;
@@ -255,44 +256,44 @@ h1.logo {
 .card-name-box {
   font-weight: 900;
   font-size: 0.8rem;
-  margin: 4px 0 3px 0;
+  margin: 5px 0 4px 0;
   line-height: 1.25;
   width: 100%;
-  word-break: break-word;
   text-align: center;
   color: #ffffff;
-  min-height: 2em;
+  min-height: 2.4em;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .card-stat-tray {
-  background: rgba(0, 0, 0, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  padding: 3px 6px;
+  padding: 4px 6px;
   width: 100%;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   font-weight: 900;
-  margin-top: 3px;
+  margin-top: auto;
   box-sizing: border-box;
 }
 
 .card-item-tray {
-  background: rgba(0, 0, 0, 0.65);
-  border: 1px solid rgba(255, 215, 0, 0.35);
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 215, 0, 0.4);
   border-radius: 8px;
-  padding: 3px 6px;
+  padding: 4px 6px;
   width: 100%;
   color: var(--accent-gold);
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: 0.74rem;
+  font-weight: 900;
   text-align: center;
-  margin-top: 3px;
+  margin-top: auto;
   line-height: 1.3;
   word-break: break-word;
   box-sizing: border-box;
@@ -531,24 +532,25 @@ h1.logo {
   box-sizing: border-box;
 }
 
-/* 図鑑一覧グリッド (横見切れ・横スクロール完全防止) */
+/* 図鑑一覧グリッド (横見切れゼロ・縦スクロール完全対応) */
 .collection-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 10px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px 2px;
+  padding: 6px 4px 40px 4px;
   width: 100%;
   box-sizing: border-box;
 }
 
 .card-item .mini-sprite {
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-top: 4px;
 }
 
 .card-item .mini-sprite svg {

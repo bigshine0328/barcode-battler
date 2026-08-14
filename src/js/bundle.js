@@ -1,5 +1,5 @@
 /**
- * Barcode Battler - Complete Standalone Bundle (v2.4.3 Rarity Glow & Deck Outline & High-Contrast Tray)
+ * Barcode Battler - Complete Standalone Bundle (v2.4.4 Vertical Fit & Guaranteed Text Visibility)
  */
 
 (function() {
@@ -1023,8 +1023,8 @@
             ${spriteSvg}
           </div>
           <div class="card-name-box">
-            <span style="color:var(--accent-gold); font-size:0.75rem; margin-right:3px; font-weight:900;">[${card.rarity || 'N'}]</span>
-            <span style="font-weight:900;">${card.name}</span>
+            <span style="color:var(--accent-gold); font-size:0.75rem; margin-right:4px; font-weight:900; white-space:nowrap;">[${card.rarity || 'N'}]</span>
+            <span style="font-weight:900; color:#ffffff;">${card.name}</span>
           </div>
           ${isItem ? `
             <div class="card-item-tray">
