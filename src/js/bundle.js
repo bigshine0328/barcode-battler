@@ -1,5 +1,5 @@
 /**
- * Barcode Battler - Complete Standalone Bundle (v2.4.1 Horizontal Overflow Fix & Distinct Deck Sets)
+ * Barcode Battler - Complete Standalone Bundle (v2.4.2 Text Visibility & Stat Chip Formatting)
  */
 
 (function() {
@@ -1022,11 +1022,17 @@
           <div class="mini-sprite">
             ${spriteSvg}
           </div>
-          <div style="font-weight:800; font-size:0.8rem; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">
-            <span style="color:var(--accent-gold); font-size:0.72rem;">[${card.rarity || 'N'}]</span> ${card.name}
+          <div class="card-name-box">
+            <span style="color:var(--accent-gold); font-size:0.72rem; margin-right:3px; white-space:nowrap;">[${card.rarity || 'N'}]</span>${card.name}
           </div>
-          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">
-            ${isItem ? `<span style="color:var(--accent-gold);">${card.desc}</span>` : `<span class="element-tag element-${card.element}" style="padding:1px 4px; font-size:0.62rem;">${card.element}</span> HP:${card.hp} ATK:${card.atk}`}
+          <div class="card-stats-box">
+            ${isItem ? `
+              <div class="stat-chip stat-chip-item" style="width:100%; justify-content:center;">${card.desc}</div>
+            ` : `
+              <span class="element-tag element-${card.element}" style="padding:1px 5px; font-size:0.62rem; line-height:1.2;">${card.element}</span>
+              <span class="stat-chip stat-chip-hp">HP:${card.hp}</span>
+              <span class="stat-chip stat-chip-atk">ATK:${card.atk}</span>
+            `}
           </div>
         </div>
       `;

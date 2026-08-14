@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Barcode Battler - Cyber Arctic Arcade Theme Stylesheet (v2.4.1)
+   Barcode Battler - Cyber Arctic Arcade Theme Stylesheet (v2.4.2)
    ========================================================================== */
 
 :root {
@@ -163,7 +163,7 @@ h1.logo {
   transform: scale(0.98);
 }
 
-/* 図鑑カードアイテム (横見切れ完全抑止 & 案A レアリティ枠維持＋インナーグロー) */
+/* 図鑑カードアイテム (完全視認性 & 横見切れ防止 & 案A レアリティ枠維持＋インナーグロー) */
 .card-item {
   background: var(--surface-color);
   border: 1.5px solid #2e3656;
@@ -248,6 +248,65 @@ h1.logo {
 .badge-sub1 { background: #b066ff; color: #fff; }
 .badge-sub2 { background: var(--primary-pink); color: #fff; }
 .badge-item { background: var(--accent-gold); color: #000; }
+
+/* カード内テキスト・ステータス表示（見切れ防止・完全視認性） */
+.card-item .card-name-box {
+  font-weight: 900;
+  font-size: 0.78rem;
+  margin-top: 4px;
+  line-height: 1.25;
+  width: 100%;
+  word-break: break-word;
+  text-align: center;
+  min-height: 2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-item .card-stats-box {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  margin-top: 3px;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.stat-chip-hp {
+  background: rgba(0, 255, 136, 0.15);
+  color: #00ff88;
+  border: 1px solid rgba(0, 255, 136, 0.35);
+}
+
+.stat-chip-atk {
+  background: rgba(255, 51, 102, 0.15);
+  color: #ff6b8b;
+  border: 1px solid rgba(255, 51, 102, 0.35);
+}
+
+.stat-chip-item {
+  background: rgba(255, 215, 0, 0.12);
+  color: var(--accent-gold);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  line-height: 1.25;
+  word-break: break-word;
+  text-align: center;
+  font-size: 0.68rem;
+  padding: 2px 4px;
+}
 
 /* モード選択ボタン */
 .mode-btn {
