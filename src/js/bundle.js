@@ -1,16 +1,31 @@
 /**
- * Barcode Battler - Official Release JS (v2.2.0 History Popstate, Delete Card, & Collection Subtabs)
- * ブラウザ「戻る」ボタンフック・終了確認、カード削除機能、図鑑キャラ/アイテム表示切替タブ
+ * Barcode Battler - Official Release JS (v2.3.0 20 Species, New Rarity, 3 Item Slots)
+ * 20種族生成、新レアリティ確率分布(3%/12%/25%/60%)、アイテム3スロット編成・図鑑ハイライト
  */
 
 (function() {
   "use strict";
-  console.log("Barcode Battler v2.2.0 initializing...");
+  console.log("Barcode Battler v2.3.0 initializing...");
 
-  // --- 1. Monster Visual System ---
-  const PREFIXES = ["ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー", "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの", "ごうけんの", "しんぴの"];
-  const BASE_NAMES = ["ドラゴン", "ゴーレム", "ナイト", "フェニックス", "タイガー", "スライム", "ベア", "ロボ", "ウルフ", "ライオン", "イエティ", "グリフォン"];
-  const SUFFIXES = ["バトラー", "キング", "マスター", "ヒーロー", "ビースト", "ガード", "ファイター", "ロード", "カイザー", "エンペラー"];
+  // --- 1. Monster Visual System (20 Species) ---
+  const PREFIXES = [
+    "ばくえんの", "そうかいの", "しっぷうの", "でんせつの", "すーぱー",
+    "はらぺこ", "むてきの", "きらめく", "あくまの", "てんしの",
+    "ごうけんの", "しんぴの", "いかずちの", "ふぶきの", "ごうきゅうの",
+    "のんびり", "ハイパー", "まぼろしの", "やみのおう", "ひかりの"
+  ];
+
+  const BASE_NAMES = [
+    "ドラゴン", "ゴーレム", "ナイト", "フェニックス", "タイガー",
+    "スライム", "ベア", "ロボ", "ウルフ", "ライオン",
+    "イエティ", "グリフォン", "バトロボ", "クラーケン", "ペガサス",
+    "キマイラ", "デーモン", "レヴィアタン", "ネクロマンサー", "ファントム"
+  ];
+
+  const SUFFIXES = [
+    "バトラー", "キング", "マスター", "ヒーロー", "ビースト",
+    "ガード", "ファイター", "ロード", "カイザー", "エンペラー"
+  ];
 
   const SPECIES_SVGS = {
     "ドラゴン": `<svg viewBox="0 0 100 100"><path d="M50 10 Q65 25 80 15 Q75 35 90 40 Q70 55 75 80 Q50 70 25 80 Q30 55 10 40 Q25 35 20 15 Q35 25 50 10 Z" fill="currentColor"/><path d="M35 30 L45 25 L40 40 Z" fill="#fff"/><path d="M65 30 L55 25 L60 40 Z" fill="#fff"/><circle cx="38" cy="35" r="4" fill="#ff0055"/><circle cx="62" cy="35" r="4" fill="#ff0055"/></svg>`,
@@ -24,7 +39,15 @@
     "ウルフ": `<svg viewBox="0 0 100 100"><path d="M50 10 L68 35 L90 40 L70 65 L78 92 L50 78 L22 92 L30 65 L10 40 L32 35 Z" fill="currentColor"/><polygon points="50,45 42,60 58,60" fill="#fff"/><circle cx="38" cy="40" r="4" fill="#ffea00"/><circle cx="62" cy="40" r="4" fill="#ffea00"/></svg>`,
     "ライオン": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="currentColor"/><path d="M30 30 Q50 10 70 30 Q90 50 70 70 Q50 90 30 70 Q10 50 30 30 Z" fill="#ff9900"/><circle cx="50" cy="52" r="22" fill="currentColor"/><circle cx="40" cy="45" r="4" fill="#fff"/><circle cx="60" cy="45" r="4" fill="#fff"/><polygon points="50,55 45,63 55,63" fill="#fff"/></svg>`,
     "イエティ": `<svg viewBox="0 0 100 100"><path d="M50 10 C20 20 15 50 15 88 L85 88 C85 50 80 20 50 10 Z" fill="currentColor"/><ellipse cx="50" cy="42" rx="25" ry="18" fill="#000"/><circle cx="40" cy="40" r="5" fill="#00e5ff"/><circle cx="60" cy="40" r="5" fill="#00e5ff"/><polygon points="45,52 50,47 55,52" fill="#fff"/></svg>`,
-    "グリフォン": `<svg viewBox="0 0 100 100"><path d="M50 10 L70 30 L95 25 L80 55 L90 88 L50 75 L10 88 L20 55 L5 25 L30 30 Z" fill="currentColor"/><path d="M50 30 L65 50 L35 50 Z" fill="#fff"/><circle cx="40" cy="32" r="4" fill="#ff0055"/><circle cx="60" cy="32" r="4" fill="#ff0055"/></svg>`
+    "グリフォン": `<svg viewBox="0 0 100 100"><path d="M50 10 L70 30 L95 25 L80 55 L90 88 L50 75 L10 88 L20 55 L5 25 L30 30 Z" fill="currentColor"/><path d="M50 30 L65 50 L35 50 Z" fill="#fff"/><circle cx="40" cy="32" r="4" fill="#ff0055"/><circle cx="60" cy="32" r="4" fill="#ff0055"/></svg>`,
+    "バトロボ": `<svg viewBox="0 0 100 100"><polygon points="30,10 70,10 85,40 75,90 25,90 15,40" fill="currentColor"/><rect x="25" y="30" width="50" height="15" fill="#000"/><circle cx="38" cy="37" r="5" fill="#ff0055"/><circle cx="62" cy="37" r="5" fill="#ff0055"/><rect x="10" y="45" width="12" height="35" rx="3" fill="#ffea00"/><rect x="78" y="45" width="12" height="35" rx="3" fill="#ffea00"/></svg>`,
+    "クラーケン": `<svg viewBox="0 0 100 100"><circle cx="50" cy="35" r="28" fill="currentColor"/><path d="M25 55 Q10 75 20 95 M38 60 Q30 80 35 95 M50 62 Q50 82 50 95 M62 60 Q70 80 65 95 M75 55 Q90 75 80 95" stroke="currentColor" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="38" cy="32" r="5" fill="#ffea00"/><circle cx="62" cy="32" r="5" fill="#ffea00"/><circle cx="38" cy="32" r="2" fill="#000"/><circle cx="62" cy="32" r="2" fill="#000"/></svg>`,
+    "ペガサス": `<svg viewBox="0 0 100 100"><path d="M50 15 Q35 25 25 50 Q25 80 45 85 Q65 80 75 50 Q65 25 50 15 Z" fill="currentColor"/><path d="M25 35 Q5 20 5 45 Q20 50 30 55" fill="#fff"/><path d="M75 35 Q95 20 95 45 Q80 50 70 55" fill="#fff"/><polygon points="50,5 45,20 55,20" fill="#ffea00"/><circle cx="40" cy="40" r="4" fill="#00e5ff"/><circle cx="60" cy="40" r="4" fill="#00e5ff"/></svg>`,
+    "キマイラ": `<svg viewBox="0 0 100 100"><circle cx="30" cy="30" r="18" fill="currentColor"/><circle cx="70" cy="30" r="18" fill="currentColor"/><circle cx="50" cy="65" r="24" fill="currentColor"/><path d="M20 70 Q50 95 80 70" fill="currentColor"/><circle cx="28" cy="28" r="3" fill="#ff0055"/><circle cx="72" cy="28" r="3" fill="#ffea00"/><circle cx="50" cy="62" r="4" fill="#00e5ff"/></svg>`,
+    "デーモン": `<svg viewBox="0 0 100 100"><path d="M50 20 Q70 10 80 5 Q75 30 80 50 Q65 85 50 90 Q35 85 20 50 Q25 30 20 5 Q30 10 50 20 Z" fill="currentColor"/><polygon points="20,5 30,22 15,25" fill="#ff0055"/><polygon points="80,5 70,22 85,25" fill="#ff0055"/><circle cx="36" cy="42" r="5" fill="#ffea00"/><circle cx="64" cy="42" r="5" fill="#ffea00"/><path d="M40 68 Q50 80 60 68" stroke="#fff" stroke-width="3" fill="none"/></svg>`,
+    "レヴィアタン": `<svg viewBox="0 0 100 100"><path d="M15 80 Q30 20 50 50 Q70 80 85 20 Q95 60 70 85 Q45 60 30 90 Z" fill="currentColor"/><circle cx="80" cy="25" r="4" fill="#ff0055"/><polygon points="75,15 85,10 90,20" fill="#00e5ff"/></svg>`,
+    "ネクロマンサー": `<svg viewBox="0 0 100 100"><path d="M50 10 Q80 20 75 70 L25 70 Q20 20 50 10 Z" fill="currentColor"/><circle cx="50" cy="42" r="18" fill="#000"/><circle cx="42" cy="40" r="4" fill="#00e5ff"/><circle cx="58" cy="40" r="4" fill="#00e5ff"/><path d="M40 70 L50 95 L60 70 Z" fill="currentColor"/></svg>`,
+    "ファントム": `<svg viewBox="0 0 100 100"><path d="M50 10 C25 10 20 40 20 65 Q25 80 35 70 Q45 85 50 70 Q55 85 65 70 Q75 80 80 65 C80 40 75 10 50 10 Z" fill="currentColor"/><ellipse cx="38" cy="38" rx="5" ry="8" fill="#000"/><ellipse cx="62" cy="38" rx="5" ry="8" fill="#000"/><circle cx="38" cy="36" r="2" fill="#00e5ff"/><circle cx="62" cy="36" r="2" fill="#00e5ff"/></svg>`
   };
 
   const ITEM_SVGS = {
@@ -79,16 +102,31 @@
       const hash = this.hashBarcode(cleaned);
       const isItemCard = (hash % 5 === 0);
 
+      // ★新レアリティ確率分布: SSR: 3%, SR: 12%, R: 25%, N: 60%
+      const rarityScore = (hash % 100);
+      let rarity = "N";
+      let charMult = 1.0;
+      let itemMult = 1.0;
+
+      if (rarityScore < 3) {
+        rarity = "SSR";
+        charMult = 1.60;
+        itemMult = 2.50;
+      } else if (rarityScore < 15) {
+        rarity = "SR";
+        charMult = 1.35;
+        itemMult = 1.70;
+      } else if (rarityScore < 40) {
+        rarity = "R";
+        charMult = 1.15;
+        itemMult = 1.25;
+      } else {
+        rarity = "N";
+        charMult = 1.00;
+        itemMult = 1.00;
+      }
+
       if (isItemCard) {
-        const rarityScore = (hash % 100);
-        let rarity = "N";
-        let mult = 1.0;
-
-        if (rarityScore < 3) { rarity = "SSR"; mult = 2.5; }
-        else if (rarityScore < 15) { rarity = "SR"; mult = 1.7; }
-        else if (rarityScore < 50) { rarity = "R"; mult = 1.25; }
-        else { rarity = "N"; mult = 1.0; }
-
         const baseItemTypes = [
           { name: "えりくさー", type: "heal", baseVal: 300, getDesc: (v) => `HPを ${v} かいふく！` },
           { name: "はかいのつるぎ", type: "buff_atk", baseVal: 60, getDesc: (v) => `ATKを +${v} アップ！` },
@@ -101,7 +139,7 @@
         ];
 
         const itemBase = baseItemTypes[hash % baseItemTypes.length];
-        const finalValue = Math.round(itemBase.baseVal * mult);
+        const finalValue = Math.round(itemBase.baseVal * itemMult);
         const itemSvg = ITEM_SVGS[itemBase.type] || ITEM_SVGS["heal"];
 
         return {
@@ -119,39 +157,23 @@
         };
       }
 
-      const rarityScore = (hash % 100);
-      let rarity = "N";
-      let rarityMultiplier = 1.0;
-
-      if (rarityScore < 3) {
-        rarity = "SSR";
-        rarityMultiplier = 1.60;
-      } else if (rarityScore < 15) {
-        rarity = "SR";
-        rarityMultiplier = 1.35;
-      } else if (rarityScore < 50) {
-        rarity = "R";
-        rarityMultiplier = 1.15;
-      } else {
-        rarity = "N";
-        rarityMultiplier = 1.00;
-      }
-
+      // 決定論的ステータス
       const baseHp = 900 + ((digits[9] || 7) * 80) + ((digits[10] || 8) * 10);
       const baseAtk = 90 + ((digits[7] || 5) * 15) + (digits[8] || 6);
       const baseDef = 40 + ((digits[5] || 3) * 8) + (digits[6] || 4);
       const baseSpd = 10 + ((digits[3] || 1) * 4) + (digits[4] || 2);
 
-      const hp = Math.round(baseHp * rarityMultiplier);
-      const atk = Math.round(baseAtk * rarityMultiplier);
-      const def = Math.round(baseDef * rarityMultiplier);
-      const spd = Math.round(baseSpd * rarityMultiplier);
+      const hp = Math.round(baseHp * charMult);
+      const atk = Math.round(baseAtk * charMult);
+      const def = Math.round(baseDef * charMult);
+      const spd = Math.round(baseSpd * charMult);
 
       const elements = ["火", "水", "木"];
       const element = elements[(digits[12] || 0) % 3];
 
+      // ★20種族決定論的マッピング
       const pIdx = hash % PREFIXES.length;
-      const bIdx = (hash + 1) % BASE_NAMES.length;
+      const bIdx = (hash + 1) % BASE_NAMES.length; // 20種族
       const sIdx = (hash + 2) % SUFFIXES.length;
 
       const baseSpeciesName = BASE_NAMES[bIdx];
@@ -179,7 +201,7 @@
     }
   }
 
-  // --- 2. StorageManager ---
+  // --- 2. StorageManager (3 Items Support) ---
   const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
   const STORAGE_KEY_DECK = "barcode_battler_deck";
 
@@ -216,7 +238,7 @@
       if (existingIndex >= 0) {
         collection[existingIndex] = card;
       } else {
-        if (collection.length >= 100) collection.shift();
+        if (collection.length >= 100) collection.shift(); // 100枚FIFO
         collection.push(card);
       }
       try {
@@ -224,7 +246,6 @@
       } catch (e) {}
     }
 
-    // ⭐【改善3】カード削除機能（デッキセット中なら自動解除）
     static deleteFromCollection(cardId) {
       let collection = this.getCollection();
       const target = collection.find(c => c.id === cardId);
@@ -235,13 +256,15 @@
         localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
       } catch (e) {}
 
-      // デッキにセットされていたら解除
+      // デッキにセットされていたら解除 (3アイテム対応)
       const deck = this.getDeck();
       let deckChanged = false;
       if (deck.mainChar && deck.mainChar.id === cardId) { deck.mainChar = null; deckChanged = true; }
       if (deck.subChar1 && deck.subChar1.id === cardId) { deck.subChar1 = null; deckChanged = true; }
       if (deck.subChar2 && deck.subChar2.id === cardId) { deck.subChar2 = null; deckChanged = true; }
-      if (deck.itemCard && deck.itemCard.id === cardId) { deck.itemCard = null; deckChanged = true; }
+      if (deck.itemCard1 && deck.itemCard1.id === cardId) { deck.itemCard1 = null; deckChanged = true; }
+      if (deck.itemCard2 && deck.itemCard2.id === cardId) { deck.itemCard2 = null; deckChanged = true; }
+      if (deck.itemCard3 && deck.itemCard3.id === cardId) { deck.itemCard3 = null; deckChanged = true; }
 
       if (deckChanged) {
         try {
@@ -264,10 +287,25 @@
     }
 
     static getDeck() {
-      let deck = { mainChar: null, subChar1: null, subChar2: null, itemCard: null };
+      let deck = {
+        mainChar: null,
+        subChar1: null,
+        subChar2: null,
+        itemCard1: null,
+        itemCard2: null,
+        itemCard3: null
+      };
       try {
         const data = localStorage.getItem(STORAGE_KEY_DECK);
-        if (data) deck = JSON.parse(data);
+        if (data) {
+          const parsed = JSON.parse(data);
+          deck.mainChar = parsed.mainChar || null;
+          deck.subChar1 = parsed.subChar1 || null;
+          deck.subChar2 = parsed.subChar2 || null;
+          deck.itemCard1 = parsed.itemCard1 || parsed.itemCard || null;
+          deck.itemCard2 = parsed.itemCard2 || null;
+          deck.itemCard3 = parsed.itemCard3 || null;
+        }
       } catch (e) {}
 
       const collection = this.getCollection();
@@ -277,23 +315,30 @@
       if (deck.mainChar && deck.mainChar.type !== 'character') deck.mainChar = null;
       if (deck.subChar1 && deck.subChar1.type !== 'character') deck.subChar1 = null;
       if (deck.subChar2 && deck.subChar2.type !== 'character') deck.subChar2 = null;
-      if (deck.itemCard && deck.itemCard.type !== 'item') deck.itemCard = null;
+      if (deck.itemCard1 && deck.itemCard1.type !== 'item') deck.itemCard1 = null;
+      if (deck.itemCard2 && deck.itemCard2.type !== 'item') deck.itemCard2 = null;
+      if (deck.itemCard3 && deck.itemCard3.type !== 'item') deck.itemCard3 = null;
 
       if (!deck.mainChar && validChars.length > 0) deck.mainChar = validChars[0];
       if (!deck.subChar1 && validChars.length > 1) deck.subChar1 = validChars[1];
       if (!deck.subChar2 && validChars.length > 2) deck.subChar2 = validChars[2];
-      if (!deck.itemCard && validItems.length > 0) deck.itemCard = validItems[0];
+      if (!deck.itemCard1 && validItems.length > 0) deck.itemCard1 = validItems[0];
+      if (!deck.itemCard2 && validItems.length > 1) deck.itemCard2 = validItems[1];
+      if (!deck.itemCard3 && validItems.length > 2) deck.itemCard3 = validItems[2];
 
       return deck;
     }
 
     static setDeckSlot(slotType, card) {
       if (!card) return false;
-      if ((slotType === 'mainChar' || slotType === 'subChar1' || slotType === 'subChar2') && card.type !== 'character') {
+      const charSlots = ['mainChar', 'subChar1', 'subChar2'];
+      const itemSlots = ['itemCard1', 'itemCard2', 'itemCard3'];
+
+      if (charSlots.includes(slotType) && card.type !== 'character') {
         alert("⚠️ キャラクター枠には アイテムカードを セットできません！");
         return false;
       }
-      if (slotType === 'itemCard' && card.type !== 'item') {
+      if (itemSlots.includes(slotType) && card.type !== 'item') {
         alert("⚠️ アイテム枠には キャラクターを セットできません！");
         return false;
       }
@@ -309,24 +354,44 @@
     }
   }
 
-  // --- 3. BattleEngine ---
+  // --- 3. BattleEngine (3 Items Choice Support) ---
   class BattleEngine {
-    constructor(playerTeam, playerItem, enemyTeam, enemyItem, mode = '1p') {
+    constructor(playerTeam, playerItems, enemyTeam, enemyItems, mode = '1p') {
       this.mode = mode;
       this.playerTeam = (Array.isArray(playerTeam) ? playerTeam : [playerTeam]).map(c => this._normalize(c, true));
       this.enemyTeam = (Array.isArray(enemyTeam) ? enemyTeam : [enemyTeam]).map(c => this._normalize(c, false));
       this.playerIndex = 0;
       this.enemyIndex = 0;
-      this.playerItem = playerItem;
-      this.enemyItem = enemyItem;
-      
-      this.playerItemUsesLeft = playerItem ? 3 : 0;
-      this.enemyItemUsesLeft = enemyItem ? 3 : 0;
+
+      // 3アイテムの配列管理
+      const pItemsRaw = Array.isArray(playerItems) ? playerItems : [playerItems];
+      this.playerItems = pItemsRaw.filter(Boolean);
+      this.playerItemUsed = this.playerItems.map(() => false);
+
+      const eItemsRaw = Array.isArray(enemyItems) ? enemyItems : [enemyItems];
+      this.enemyItems = eItemsRaw.filter(Boolean);
+      this.enemyItemUsed = this.enemyItems.map(() => false);
 
       this.turn = 1;
       this.maxTurns = (mode === '3p') ? 20 : 10;
       this.isOver = false;
       this.winner = null;
+    }
+
+    get playerItemUsesLeft() {
+      let count = 0;
+      for (let i = 0; i < this.playerItems.length; i++) {
+        if (!this.playerItemUsed[i]) count++;
+      }
+      return count;
+    }
+
+    get enemyItemUsesLeft() {
+      let count = 0;
+      for (let i = 0; i < this.enemyItems.length; i++) {
+        if (!this.enemyItemUsed[i]) count++;
+      }
+      return count;
     }
 
     _normalize(c, isPlayer) {
@@ -358,12 +423,19 @@
     get player() { return this.playerTeam[this.playerIndex]; }
     get enemy() { return this.enemyTeam[this.enemyIndex]; }
 
-    processTurn(pAction, pQte = false, eAction = null, eQte = false) {
+    processTurn(pAction, pItemIdx = 0, eAction = null, eItemIdx = 0) {
       if (this.isOver) return null;
+
       if (!eAction) {
         const opts = ['attack', 'attack', 'guard'];
         if (this.enemy.sp >= 100) opts.push('skill');
-        if (this.enemyItemUsesLeft > 0 && Math.random() < 0.25) opts.push('item');
+        if (this.enemyItemUsesLeft > 0 && Math.random() < 0.35) {
+          opts.push('item');
+          // 敵の未消費アイテムを探す
+          for (let i = 0; i < this.enemyItems.length; i++) {
+            if (!this.enemyItemUsed[i]) { eItemIdx = i; break; }
+          }
+        }
         eAction = opts[Math.floor(Math.random() * opts.length)];
       }
 
@@ -372,40 +444,18 @@
       this.player.isGuarding = (pAction === 'guard');
       this.enemy.isGuarding = (eAction === 'guard');
 
-      if (pAction === 'item' && this.playerItem && this.playerItemUsesLeft > 0) {
-        this.playerItemUsesLeft--;
-        const item = this.playerItem;
-        const type = item.effectType || "heal";
-        const val = item.value || 300;
+      // プレイヤーのアイテム発動
+      if (pAction === 'item' && this.playerItems[pItemIdx] && !this.playerItemUsed[pItemIdx]) {
+        this.playerItemUsed[pItemIdx] = true;
+        const item = this.playerItems[pItemIdx];
+        this._applyItemEffect(item, this.player, this.enemy, 'player', turnLog);
+      }
 
-        if (type === 'heal') {
-          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + val);
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> HP ${val} かいふく！` });
-        } else if (type === 'buff_atk') {
-          this.player.atk += val;
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> ATK +${val}！` });
-        } else if (type === 'buff_def') {
-          this.player.def += val;
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> DEF +${val}！` });
-        } else if (type === 'buff_spd') {
-          this.player.spd += val;
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> SPD +${val}！` });
-        } else if (type === 'charge_sp') {
-          this.player.sp = 100;
-          turnLog.actions.push({ actor: 'player', message: `✨ 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> SP 100% 充填！` });
-        } else if (type === 'bomb') {
-          this.enemy.currentHp = Math.max(0, this.enemy.currentHp - val);
-          turnLog.actions.push({ actor: 'player', message: `💥 【${item.name}】爆発！ (のこり${this.playerItemUsesLeft}回) -> 相手に ${val} ダメージ！` });
-        } else if (type === 'heal_def') {
-          this.player.currentHp = Math.min(this.player.maxHp, this.player.currentHp + val);
-          this.player.def += 40;
-          turnLog.actions.push({ actor: 'player', message: `💊 【${item.name}】をつかった！ (のこり${this.playerItemUsesLeft}回) -> HP ${val} 回復 & DEF +40！` });
-        } else if (type === 'all_buff') {
-          this.player.atk += val;
-          this.player.def += val;
-          this.player.spd += val;
-          turnLog.actions.push({ actor: 'player', message: `👑 【${item.name}】全能力アップ！ (のこり${this.playerItemUsesLeft}回) -> 全能力 +${val}！` });
-        }
+      // 敵のアイテム発動
+      if (eAction === 'item' && this.enemyItems[eItemIdx] && !this.enemyItemUsed[eItemIdx]) {
+        this.enemyItemUsed[eItemIdx] = true;
+        const item = this.enemyItems[eItemIdx];
+        this._applyItemEffect(item, this.enemy, this.player, 'enemy', turnLog);
       }
 
       if (this.player.isGuarding) {
@@ -417,15 +467,15 @@
         turnLog.actions.push({ actor: 'enemy', message: `🛡️ ${this.enemy.name} は ガード！ (被ダメ半減 & SP+35)` });
       }
 
-      const pPriority = this.player.spd * (0.85 + Math.random() * 0.3);
-      const ePriority = this.enemy.spd * (0.85 + Math.random() * 0.3);
+      const pPriority = this.player.isGuarding ? 9999 : this.player.spd * (0.85 + Math.random() * 0.3);
+      const ePriority = this.enemy.isGuarding ? 9999 : this.enemy.spd * (0.85 + Math.random() * 0.3);
 
       const first = (pPriority >= ePriority) ? 'player' : 'enemy';
       const second = (first === 'player') ? 'enemy' : 'player';
 
       const actMap = {
-        player: { action: pAction, qte: pQte, self: this.player, target: this.enemy },
-        enemy: { action: eAction, qte: eQte, self: this.enemy, target: this.player }
+        player: { action: pAction, self: this.player, target: this.enemy },
+        enemy: { action: eAction, self: this.enemy, target: this.player }
       };
 
       this._execAction(actMap[first], turnLog);
@@ -446,11 +496,47 @@
       return turnLog;
     }
 
-    _execAction({ action, qte, self, target }, turnLog) {
+    _applyItemEffect(item, user, opponent, actorRole, turnLog) {
+      const type = item.effectType || "heal";
+      const val = item.value || 300;
+      const actorLabel = (actorRole === 'player') ? "あなた" : "相手";
+      const leftCount = (actorRole === 'player') ? this.playerItemUsesLeft : this.enemyItemUsesLeft;
+
+      if (type === 'heal') {
+        user.currentHp = Math.min(user.maxHp, user.currentHp + val);
+        turnLog.actions.push({ actor: actorRole, message: `💊 ${actorLabel}は【${item.name}】をつかった！ (のこり${leftCount}回) -> HP ${val} かいふく！` });
+      } else if (type === 'buff_atk') {
+        user.atk += val;
+        turnLog.actions.push({ actor: actorRole, message: `⚔️ ${actorLabel}は【${item.name}】をつかった！ (のこり${leftCount}回) -> ATK +${val}！` });
+      } else if (type === 'buff_def') {
+        user.def += val;
+        turnLog.actions.push({ actor: actorRole, message: `🛡️ ${actorLabel}は【${item.name}】をつかった！ (のこり${leftCount}回) -> DEF +${val}！` });
+      } else if (type === 'buff_spd') {
+        user.spd += val;
+        turnLog.actions.push({ actor: actorRole, message: `⚡ ${actorLabel}は【${item.name}】をつかった！ (のこり${leftCount}回) -> SPD +${val}！` });
+      } else if (type === 'charge_sp') {
+        user.sp = 100;
+        turnLog.actions.push({ actor: actorRole, message: `✨ ${actorLabel}は【${item.name}】をつかった！ (のこり${leftCount}回) -> SP 100% 充填！` });
+      } else if (type === 'bomb') {
+        opponent.currentHp = Math.max(0, opponent.currentHp - val);
+        turnLog.actions.push({ actor: actorRole, message: `💥 【${item.name}】爆発！ (のこり${leftCount}回) -> ${opponent.name} に ${val} の固定ダメージ！` });
+      } else if (type === 'heal_def') {
+        user.currentHp = Math.min(user.maxHp, user.currentHp + val);
+        user.def += 40;
+        turnLog.actions.push({ actor: actorRole, message: `🧪 ${actorLabel}は【${item.name}】をつかった！ (のこり${leftCount}回) -> HP ${val} 回復 & DEF +40！` });
+      } else if (type === 'all_buff') {
+        user.atk += val;
+        user.def += val;
+        user.spd += val;
+        turnLog.actions.push({ actor: actorRole, message: `👑 【${item.name}】全能力アップ！ (のこり${leftCount}回) -> 全能力 +${val}！` });
+      }
+    }
+
+    _execAction({ action, self, target }, turnLog) {
       if (self.currentHp <= 0 || target.currentHp <= 0) return;
       if (action === 'guard' || action === 'item') return;
 
-      if (Math.random() < 0.04 && action !== 'qte') {
+      if (Math.random() < 0.04) {
         turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `${self.name} の こうげき！ しかし MISS!` });
         return;
       }
@@ -628,7 +714,7 @@
     }
   }
 
-  // --- 5. App State & Router & Camera & Handlers ---
+  // --- 5. App State & Router & Handlers ---
   let currentScreen = 'SCR-01';
   let activeBattle = null;
   let scannedCard = null;
@@ -636,8 +722,10 @@
   let matchMode = '1p';
   let isOnlineMatch = false;
   let myTurnAction = null;
+  let myTurnItemIndex = 0;
   let oppTurnAction = null;
-  let collectionSubTab = 'all'; // ⭐【改善4】図鑑サブタブ ('all' | 'char' | 'item')
+  let oppTurnItemIndex = 0;
+  let collectionSubTab = 'all';
   let network = new NetworkManager();
 
   let mediaStream = null;
@@ -650,9 +738,6 @@
     } catch (e) {}
   }
 
-  /**
-   * ⭐【改善1・2】画面切替 ＆ History API 連携（ブラウザの「戻る」制御）
-   */
   function switchScreen(screenId, isFromPopstate = false) {
     if (screenId !== 'SCR-02') {
       stopCamera();
@@ -680,21 +765,13 @@
 
   window.appSwitchScreen = switchScreen;
 
-  /**
-   * ⭐【改善1・2】ブラウザの「戻る」ボタン監視（popstate イベント）
-   */
   window.addEventListener('popstate', (event) => {
     if (currentScreen === 'SCR-01') {
-      // ホーム画面で戻るボタンが押された場合：アプリ終了確認ダイアログ
       const exitConfirm = confirm("⚡ バーコードバトラーを しゅうりょうしますか？");
       if (!exitConfirm) {
-        // いいえの場合：ホーム画面の履歴を再プッシュして留まる
-        try {
-          history.pushState({ screen: 'SCR-01' }, "", "");
-        } catch (e) {}
+        try { history.pushState({ screen: 'SCR-01' }, "", ""); } catch (e) {}
       }
     } else {
-      // ホーム画面以外の場合：アプリ内の「← もどる」と同じ挙動（直前またはSCR-01へ移動）
       const prevScreen = (event.state && event.state.screen) ? event.state.screen : 'SCR-01';
       switchScreen(prevScreen, true);
     }
@@ -831,7 +908,7 @@
   }
 
   /**
-   * ⭐【改善4】図鑑画面での「キャラ」と「アイテム」のサブタブフィルタリング描画
+   * ⭐【改善】図鑑での「アイテム3種類」同時ハイライト表示
    */
   function renderCollection() {
     const grid = document.getElementById('collection-grid-container');
@@ -840,7 +917,6 @@
     const deck = StorageManager.getDeck();
     grid.innerHTML = "";
 
-    // サブタブフィルター
     let col = rawCol;
     if (collectionSubTab === 'char') {
       col = rawCol.filter(c => c && c.type === 'character');
@@ -861,6 +937,7 @@
       let slotBadgeHtml = "";
       let isSet = false;
 
+      // ★3つのアイテムスロットすべてを判定・ハイライト
       if (deck.mainChar && deck.mainChar.id === c.id) {
         slotBadgeHtml = `<span class="slot-badge badge-main">⚔️ メイン</span>`;
         isSet = true;
@@ -870,8 +947,14 @@
       } else if (deck.subChar2 && deck.subChar2.id === c.id) {
         slotBadgeHtml = `<span class="slot-badge badge-sub2">🛡️ サブ2</span>`;
         isSet = true;
-      } else if (deck.itemCard && deck.itemCard.id === c.id) {
-        slotBadgeHtml = `<span class="slot-badge badge-item">💊 アイテム</span>`;
+      } else if (deck.itemCard1 && deck.itemCard1.id === c.id) {
+        slotBadgeHtml = `<span class="slot-badge badge-item">💊 アイテム1</span>`;
+        isSet = true;
+      } else if (deck.itemCard2 && deck.itemCard2.id === c.id) {
+        slotBadgeHtml = `<span class="slot-badge badge-item">💊 アイテム2</span>`;
+        isSet = true;
+      } else if (deck.itemCard3 && deck.itemCard3.id === c.id) {
+        slotBadgeHtml = `<span class="slot-badge badge-item">💊 アイテム3</span>`;
         isSet = true;
       }
 
@@ -898,9 +981,6 @@
     renderDeckSlots();
   }
 
-  /**
-   * ⭐【改善4】図鑑サブタブ切り替えハンドラー
-   */
   window.appSelectSubTab = function(subType) {
     collectionSubTab = subType;
     const btnAll = document.getElementById('sub-tab-all');
@@ -927,13 +1007,17 @@
     const btnMain = document.getElementById('btn-set-main');
     const btnSub1 = document.getElementById('btn-set-sub1');
     const btnSub2 = document.getElementById('btn-set-sub2');
-    const btnItem = document.getElementById('btn-set-item');
+    const btnItem1 = document.getElementById('btn-set-item1');
+    const btnItem2 = document.getElementById('btn-set-item2');
+    const btnItem3 = document.getElementById('btn-set-item3');
 
     if (card.type === 'character') {
       if (btnMain) btnMain.style.display = 'block';
       if (btnSub1) btnSub1.style.display = 'block';
       if (btnSub2) btnSub2.style.display = 'block';
-      if (btnItem) btnItem.style.display = 'none';
+      if (btnItem1) btnItem1.style.display = 'none';
+      if (btnItem2) btnItem2.style.display = 'none';
+      if (btnItem3) btnItem3.style.display = 'none';
 
       const svg = getCharacterSpriteSvg(card);
       content.innerHTML = `
@@ -954,7 +1038,9 @@
       if (btnMain) btnMain.style.display = 'none';
       if (btnSub1) btnSub1.style.display = 'none';
       if (btnSub2) btnSub2.style.display = 'none';
-      if (btnItem) btnItem.style.display = 'block';
+      if (btnItem1) btnItem1.style.display = 'block';
+      if (btnItem2) btnItem2.style.display = 'block';
+      if (btnItem3) btnItem3.style.display = 'block';
 
       content.innerHTML = `
         <div style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 4px;">【アイテム効果詳細】</div>
@@ -977,12 +1063,16 @@
     const m = document.getElementById('slot-content-main');
     const s1 = document.getElementById('slot-content-sub1');
     const s2 = document.getElementById('slot-content-sub2');
-    const item = document.getElementById('slot-content-item');
+    const item1 = document.getElementById('slot-content-item1');
+    const item2 = document.getElementById('slot-content-item2');
+    const item3 = document.getElementById('slot-content-item3');
 
     if (m) m.textContent = deck.mainChar ? `${deck.mainChar.name} (HP:${deck.mainChar.hp} ATK:${deck.mainChar.atk} DEF:${deck.mainChar.def})` : "未セット";
     if (s1) s1.textContent = deck.subChar1 ? `${deck.subChar1.name} (HP:${deck.subChar1.hp} ATK:${deck.subChar1.atk} DEF:${deck.subChar1.def})` : "未セット";
     if (s2) s2.textContent = deck.subChar2 ? `${deck.subChar2.name} (HP:${deck.subChar2.hp} ATK:${deck.subChar2.atk} DEF:${deck.subChar2.def})` : "未セット";
-    if (item) item.textContent = deck.itemCard ? `${deck.itemCard.name} (${deck.itemCard.desc})` : "未セット";
+    if (item1) item1.textContent = deck.itemCard1 ? `${deck.itemCard1.name} (${deck.itemCard1.desc})` : "未セット";
+    if (item2) item2.textContent = deck.itemCard2 ? `${deck.itemCard2.name} (${deck.itemCard2.desc})` : "未セット";
+    if (item3) item3.textContent = deck.itemCard3 ? `${deck.itemCard3.name} (${deck.itemCard3.desc})` : "未セット";
   }
 
   function renderLobby() {
@@ -1046,6 +1136,7 @@
         startBattle(false, data.guestDeck);
       } else if (data.type === 'TURN_ACTION') {
         oppTurnAction = data.action;
+        oppTurnItemIndex = data.itemIndex || 0;
         checkAndExecuteOnlineTurn();
       }
     };
@@ -1100,7 +1191,7 @@
     if (!isOnlineMatch || !activeBattle || activeBattle.isOver) return;
 
     if (network.isHost && myTurnAction && oppTurnAction) {
-      const turnLog = activeBattle.processTurn(myTurnAction, false, oppTurnAction, false);
+      const turnLog = activeBattle.processTurn(myTurnAction, myTurnItemIndex, oppTurnAction, oppTurnItemIndex);
       
       myTurnAction = null;
       oppTurnAction = null;
@@ -1177,13 +1268,23 @@
       playerTeam.push((deck.subChar2 && deck.subChar2.type === 'character') ? deck.subChar2 : BarcodeEngine.generateFromBarcode("4902222222222"));
     }
 
+    // ★3つのアイテムを配列で渡す
+    const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
+
     let enemyTeam = [];
+    let enemyItems = [];
+
     if (isCpu) {
       enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
       if (matchMode === '3p') {
         enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
         enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
       }
+      // 敵CPUのアイテム3つ生成
+      enemyItems.push(BarcodeEngine.generateFromBarcode("4908888777766"));
+      enemyItems.push(BarcodeEngine.generateFromBarcode("4908888777777"));
+      enemyItems.push(BarcodeEngine.generateFromBarcode("4908888777788"));
+
     } else if (oppDeck) {
       let oppMain = (oppDeck.mainChar && oppDeck.mainChar.type === 'character') ? oppDeck.mainChar : BarcodeEngine.generateFromBarcode("4909876543210");
       enemyTeam.push(oppMain);
@@ -1191,11 +1292,12 @@
         enemyTeam.push((oppDeck.subChar1 && oppDeck.subChar1.type === 'character') ? oppDeck.subChar1 : BarcodeEngine.generateFromBarcode("4905555555555"));
         enemyTeam.push((oppDeck.subChar2 && oppDeck.subChar2.type === 'character') ? oppDeck.subChar2 : BarcodeEngine.generateFromBarcode("4906666666666"));
       }
+      enemyItems = [oppDeck.itemCard1, oppDeck.itemCard2, oppDeck.itemCard3].filter(Boolean);
     } else {
       enemyTeam.push(BarcodeEngine.generateFromBarcode(BarcodeEngine.getRandomBarcode()));
     }
 
-    activeBattle = new BattleEngine(playerTeam, deck.itemCard, enemyTeam, oppDeck?.itemCard || null, matchMode);
+    activeBattle = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, matchMode);
     myTurnAction = null;
     oppTurnAction = null;
 
@@ -1256,25 +1358,54 @@
     const btnItem = document.getElementById('btn-cmd-item');
     if (btnItem) {
       const uses = b.playerItemUsesLeft;
-      const isItemUsable = (b.playerItem && uses > 0);
+      const isItemUsable = (uses > 0);
       btnItem.disabled = !isItemUsable;
       btnItem.style.opacity = isItemUsable ? "1.0" : "0.4";
       btnItem.textContent = isItemUsable ? `💊 アイテム (${uses}/3)` : `💊 アイテム (終了)`;
     }
   }
 
+  // ★バトル中アイテム選択モーダルのオープン
+  function openBattleItemSelectModal() {
+    if (!activeBattle || activeBattle.playerItemUsesLeft <= 0) return;
+    const modal = document.getElementById('battle-item-modal');
+    const listContainer = document.getElementById('battle-item-list');
+    if (!modal || !listContainer) return;
+
+    listContainer.innerHTML = "";
+    activeBattle.playerItems.forEach((item, idx) => {
+      const isUsed = activeBattle.playerItemUsed[idx];
+      const btn = document.createElement('button');
+      btn.className = `btn ${isUsed ? 'btn-dark' : 'btn-gold'}`;
+      btn.disabled = isUsed;
+      btn.style.margin = "4px 0";
+      btn.style.minHeight = "44px";
+      btn.style.fontSize = "0.85rem";
+      btn.innerHTML = `${isUsed ? '❌ (使用済) ' : '💊 '}${item.name} <br><span style="font-size:0.75rem;">${item.desc}</span>`;
+      btn.onclick = () => {
+        modal.classList.remove('active');
+        executePlayerAction('item', idx);
+      };
+      listContainer.appendChild(btn);
+    });
+
+    modal.classList.add('active');
+  }
+
   function handleAction(act) {
     if (!activeBattle || activeBattle.isOver) return;
 
     if (act === 'item') {
-      if (!activeBattle.playerItem) {
+      if (activeBattle.playerItems.length === 0) {
         alert("⚠️ デッキに アイテムカードが セットされていません！");
         return;
       }
       if (activeBattle.playerItemUsesLeft <= 0) {
-        alert("⚠️ アイテムは 1バトルに 3回までしか つかえません！");
+        alert("⚠️ アイテムはすべて 使用済みです！");
         return;
       }
+      openBattleItemSelectModal();
+      return;
     }
 
     if (act === 'skill') {
@@ -1284,8 +1415,13 @@
       }
     }
 
+    executePlayerAction(act, 0);
+  }
+
+  function executePlayerAction(act, itemIndex = 0) {
     if (isOnlineMatch) {
       myTurnAction = act;
+      myTurnItemIndex = itemIndex;
       setBattleButtonsDisabled(true);
 
       const logBox = document.getElementById('battle-log');
@@ -1300,11 +1436,11 @@
       if (network.isHost) {
         checkAndExecuteOnlineTurn();
       } else {
-        network.send({ type: 'TURN_ACTION', action: act });
+        network.send({ type: 'TURN_ACTION', action: act, itemIndex: itemIndex });
       }
 
     } else {
-      const turnLog = activeBattle.processTurn(act);
+      const turnLog = activeBattle.processTurn(act, itemIndex);
       renderBattle();
       appendBattleLog(turnLog);
 
@@ -1329,14 +1465,13 @@
   }
 
   function initApp() {
-    console.log("Initializing Barcode Battler v2.2.0 Official Edition...");
+    console.log("Initializing Barcode Battler v2.3.0 Official Edition...");
     try {
       StorageManager.migrateCollectionData();
     } catch (e) {
       console.error("Data migration error:", e);
     }
 
-    // 初期履歴のプッシュ
     try {
       history.replaceState({ screen: 'SCR-01' }, "", "");
     } catch (e) {}
@@ -1380,7 +1515,6 @@
       }
     });
 
-    // ⭐【改善3】図鑑からのカード削除ボタンハンドラー (確認ダイアログ付き)
     document.getElementById('btn-delete-card')?.addEventListener('click', () => {
       if (!selectedCardForDetail) return;
       const cardName = selectedCardForDetail.name;
@@ -1394,6 +1528,7 @@
       }
     });
 
+    // キャラクター枠セット
     document.getElementById('btn-set-main')?.addEventListener('click', () => {
       if (selectedCardForDetail && StorageManager.setDeckSlot('mainChar', selectedCardForDetail) !== false) {
         alert(`【${selectedCardForDetail.name}】を メインにセットしました！`);
@@ -1419,9 +1554,27 @@
         renderCollection();
       }
     });
-    document.getElementById('btn-set-item')?.addEventListener('click', () => {
-      if (selectedCardForDetail && StorageManager.setDeckSlot('itemCard', selectedCardForDetail) !== false) {
-        alert(`【${selectedCardForDetail.name}】を アイテムにセットしました！`);
+
+    // ★アイテム3枠セット
+    document.getElementById('btn-set-item1')?.addEventListener('click', () => {
+      if (selectedCardForDetail && StorageManager.setDeckSlot('itemCard1', selectedCardForDetail) !== false) {
+        alert(`【${selectedCardForDetail.name}】を アイテム1にセットしました！`);
+        document.getElementById('detail-modal')?.classList.remove('active');
+        renderDeckSlots();
+        renderCollection();
+      }
+    });
+    document.getElementById('btn-set-item2')?.addEventListener('click', () => {
+      if (selectedCardForDetail && StorageManager.setDeckSlot('itemCard2', selectedCardForDetail) !== false) {
+        alert(`【${selectedCardForDetail.name}】を アイテム2にセットしました！`);
+        document.getElementById('detail-modal')?.classList.remove('active');
+        renderDeckSlots();
+        renderCollection();
+      }
+    });
+    document.getElementById('btn-set-item3')?.addEventListener('click', () => {
+      if (selectedCardForDetail && StorageManager.setDeckSlot('itemCard3', selectedCardForDetail) !== false) {
+        alert(`【${selectedCardForDetail.name}】を アイテム3にセットしました！`);
         document.getElementById('detail-modal')?.classList.remove('active');
         renderDeckSlots();
         renderCollection();
@@ -1441,8 +1594,12 @@
     document.getElementById('btn-cmd-guard')?.addEventListener('click', () => handleAction('guard'));
     document.getElementById('btn-cmd-item')?.addEventListener('click', () => handleAction('item'));
 
+    document.getElementById('btn-close-battle-item')?.addEventListener('click', () => {
+      document.getElementById('battle-item-modal')?.classList.remove('active');
+    });
+
     renderHome();
-    console.log("Barcode Battler v2.2.0 Ready!");
+    console.log("Barcode Battler v2.3.0 Ready!");
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {

@@ -1,10 +1,11 @@
 /**
- * Storage Manager Module (Bug Fix & Strict Character Filtering)
+ * Barcode Battler - Storage Manager Module (v2.3.0 3 Item Slots & FIFO)
  */
+
+import { BarcodeEngine } from './barcode-engine.js';
 
 const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
 const STORAGE_KEY_DECK = "barcode_battler_deck";
-const MAX_COLLECTION_SIZE = 100;
 
 export class StorageManager {
   static getCollection() {
@@ -12,9 +13,27 @@ export class StorageManager {
       const data = localStorage.getItem(STORAGE_KEY_COLLECTION);
       return data ? JSON.parse(data) : [];
     } catch (e) {
-      console.error("Failed to load collection:", e);
       return [];
     }
+  }
+
+  static migrateCollectionData() {
+    try {
+      const collection = this.getCollection();
+      if (!collection || collection.length === 0) return;
+
+      const updatedCollection = collection.map(card => {
+        if (card && card.barcode) {
+          const freshCard = BarcodeEngine.generateFromBarcode(card.barcode, card.memo || "");
+          freshCard.id = card.id;
+          freshCard.createdAt = card.createdAt || new Date().toISOString();
+          return freshCard;
+        }
+        return card;
+      });
+
+      localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
+    } catch (e) {}
   }
 
   static saveToCollection(card) {
@@ -23,19 +42,43 @@ export class StorageManager {
     if (existingIndex >= 0) {
       collection[existingIndex] = card;
     } else {
-      if (collection.length >= MAX_COLLECTION_SIZE) {
-        collection.shift();
+      if (collection.length >= 100) {
+        collection.shift(); // 100枚FIFO
       }
       collection.push(card);
     }
-
     try {
       localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
-      return { success: true, count: collection.length };
-    } catch (e) {
-      console.error("Failed to save card:", e);
-      return { success: false, error: e.message };
+    } catch (e) {}
+  }
+
+  static deleteFromCollection(cardId) {
+    let collection = this.getCollection();
+    const target = collection.find(c => c.id === cardId);
+    if (!target) return false;
+
+    collection = collection.filter(c => c.id !== cardId);
+    try {
+      localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+    } catch (e) {}
+
+    // デッキにセットされていたら解除 (3アイテム対応)
+    const deck = this.getDeck();
+    let deckChanged = false;
+    if (deck.mainChar && deck.mainChar.id === cardId) { deck.mainChar = null; deckChanged = true; }
+    if (deck.subChar1 && deck.subChar1.id === cardId) { deck.subChar1 = null; deckChanged = true; }
+    if (deck.subChar2 && deck.subChar2.id === cardId) { deck.subChar2 = null; deckChanged = true; }
+    if (deck.itemCard1 && deck.itemCard1.id === cardId) { deck.itemCard1 = null; deckChanged = true; }
+    if (deck.itemCard2 && deck.itemCard2.id === cardId) { deck.itemCard2 = null; deckChanged = true; }
+    if (deck.itemCard3 && deck.itemCard3.id === cardId) { deck.itemCard3 = null; deckChanged = true; }
+
+    if (deckChanged) {
+      try {
+        localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
+      } catch (e) {}
     }
+
+    return true;
   }
 
   static updateMemo(cardId, newMemo) {
@@ -43,77 +86,74 @@ export class StorageManager {
     const target = collection.find(c => c.id === cardId);
     if (target) {
       target.memo = newMemo;
-      localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
-      return true;
+      try {
+        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+      } catch (e) {}
     }
-    return false;
   }
 
-  /**
-   * 現在選択中のチームデッキを取得（キャラクター枠には絶対にアイテムカードを混ぜない厳密フィルタ）
-   */
   static getDeck() {
     let deck = {
       mainChar: null,
       subChar1: null,
       subChar2: null,
-      itemCard: null
+      itemCard1: null,
+      itemCard2: null,
+      itemCard3: null
     };
-
     try {
       const data = localStorage.getItem(STORAGE_KEY_DECK);
-      if (data) deck = JSON.parse(data);
-    } catch (e) {
-      console.error("Failed to load deck:", e);
-    }
+      if (data) {
+        const parsed = JSON.parse(data);
+        deck.mainChar = parsed.mainChar || null;
+        deck.subChar1 = parsed.subChar1 || null;
+        deck.subChar2 = parsed.subChar2 || null;
+        deck.itemCard1 = parsed.itemCard1 || parsed.itemCard || null;
+        deck.itemCard2 = parsed.itemCard2 || null;
+        deck.itemCard3 = parsed.itemCard3 || null;
+      }
+    } catch (e) {}
 
     const collection = this.getCollection();
-    
-    // 厳密にキャラクターのみを抽出 (type === 'character' かつ hpが存在するもの)
-    const validChars = collection.filter(c => c.type === 'character' && typeof c.hp === 'number');
-    const validItems = collection.filter(c => c.type === 'item');
+    const validChars = collection.filter(c => c && c.type === 'character' && typeof c.hp === 'number');
+    const validItems = collection.filter(c => c && c.type === 'item');
 
-    // 不正なカード（アイテムカードがキャラ枠に入っている等）が入っていた場合はクリア
     if (deck.mainChar && deck.mainChar.type !== 'character') deck.mainChar = null;
     if (deck.subChar1 && deck.subChar1.type !== 'character') deck.subChar1 = null;
     if (deck.subChar2 && deck.subChar2.type !== 'character') deck.subChar2 = null;
-    if (deck.itemCard && deck.itemCard.type !== 'item') deck.itemCard = null;
+    if (deck.itemCard1 && deck.itemCard1.type !== 'item') deck.itemCard1 = null;
+    if (deck.itemCard2 && deck.itemCard2.type !== 'item') deck.itemCard2 = null;
+    if (deck.itemCard3 && deck.itemCard3.type !== 'item') deck.itemCard3 = null;
 
-    // フォールバック割り当て
     if (!deck.mainChar && validChars.length > 0) deck.mainChar = validChars[0];
     if (!deck.subChar1 && validChars.length > 1) deck.subChar1 = validChars[1];
     if (!deck.subChar2 && validChars.length > 2) deck.subChar2 = validChars[2];
-    if (!deck.itemCard && validItems.length > 0) deck.itemCard = validItems[0];
+    if (!deck.itemCard1 && validItems.length > 0) deck.itemCard1 = validItems[0];
+    if (!deck.itemCard2 && validItems.length > 1) deck.itemCard2 = validItems[1];
+    if (!deck.itemCard3 && validItems.length > 2) deck.itemCard3 = validItems[2];
 
     return deck;
   }
 
   static setDeckSlot(slotType, card) {
-    const deck = this.getDeck();
-    
-    // バリデーション: キャラ枠にアイテムを入れない
-    if ((slotType === 'mainChar' || slotType === 'subChar1' || slotType === 'subChar2') && card.type !== 'character') {
-      alert("⚠️ キャラクター枠には アイテムカードを セットできません！");
+    if (!card) return false;
+    const charSlots = ['mainChar', 'subChar1', 'subChar2'];
+    const itemSlots = ['itemCard1', 'itemCard2', 'itemCard3'];
+
+    if (charSlots.includes(slotType) && card.type !== 'character') {
       return false;
     }
-    if (slotType === 'itemCard' && card.type !== 'item') {
-      alert("⚠️ アイテム枠には キャラクターを セットできません！");
+    if (itemSlots.includes(slotType) && card.type !== 'item') {
       return false;
     }
 
+    const deck = this.getDeck();
     deck[slotType] = card;
     try {
       localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
       return true;
     } catch (e) {
-      console.error("Failed to set deck slot:", e);
       return false;
     }
-  }
-
-  static removeCard(cardId) {
-    let collection = this.getCollection();
-    collection = collection.filter(c => c.id !== cardId);
-    localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
   }
 }
