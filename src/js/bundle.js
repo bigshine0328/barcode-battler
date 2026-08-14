@@ -1,5 +1,5 @@
 /**
- * Barcode Battler - Complete Standalone Bundle (v2.4.0 Multi-Element & Ultra SSR)
+ * Barcode Battler - Complete Standalone Bundle (v2.4.1 Horizontal Overflow Fix & Distinct Deck Sets)
  */
 
 (function() {
@@ -964,7 +964,7 @@
           <span class="element-tag element-${mainChar.element}">属性: ${mainChar.element}</span>
           <span style="font-size:0.8rem; color:var(--text-muted); margin-left:6px;">種族: ${mainChar.species || 'ドラゴン'}</span>
         </div>
-        <div style="display:flex; gap:12px; font-size:0.88rem; font-weight:800; margin-top:6px;">
+        <div style="display:flex; gap:10px; font-size:0.85rem; font-weight:800; margin-top:6px;">
           <span style="color:#00ff88;">HP: ${mainChar.hp}</span>
           <span style="color:#ff3366;">ATK: ${mainChar.atk}</span>
           <span style="color:#00e5ff;">DEF: ${mainChar.def}</span>
@@ -1000,31 +1000,33 @@
     }
 
     grid.innerHTML = filtered.map(card => {
-      let badges = "";
+      let roleBadge = "";
       let isSet = false;
 
-      if (deck.mainChar && deck.mainChar.id === card.id) { badges += `<span class="slot-badge badge-main">⚔️ メイン</span>`; isSet = true; }
-      if (deck.subChar1 && deck.subChar1.id === card.id) { badges += `<span class="slot-badge badge-sub1">🛡️ サブ1</span>`; isSet = true; }
-      if (deck.subChar2 && deck.subChar2.id === card.id) { badges += `<span class="slot-badge badge-sub2">🛡️ サブ2</span>`; isSet = true; }
-      if (deck.itemCard1 && deck.itemCard1.id === card.id) { badges += `<span class="slot-badge badge-item">💊 アイテム1</span>`; isSet = true; }
-      if (deck.itemCard2 && deck.itemCard2.id === card.id) { badges += `<span class="slot-badge badge-item">💊 アイテム2</span>`; isSet = true; }
-      if (deck.itemCard3 && deck.itemCard3.id === card.id) { badges += `<span class="slot-badge badge-item">💊 アイテム3</span>`; isSet = true; }
+      if (deck.mainChar && deck.mainChar.id === card.id) { roleBadge = `<span class="slot-badge badge-main">⚔️ メイン</span>`; isSet = true; }
+      else if (deck.subChar1 && deck.subChar1.id === card.id) { roleBadge = `<span class="slot-badge badge-sub1">🛡️ サブ1</span>`; isSet = true; }
+      else if (deck.subChar2 && deck.subChar2.id === card.id) { roleBadge = `<span class="slot-badge badge-sub2">🛡️ サブ2</span>`; isSet = true; }
+      else if (deck.itemCard1 && deck.itemCard1.id === card.id) { roleBadge = `<span class="slot-badge badge-item">💊 アイテム1</span>`; isSet = true; }
+      else if (deck.itemCard2 && deck.itemCard2.id === card.id) { roleBadge = `<span class="slot-badge badge-item">💊 アイテム2</span>`; isSet = true; }
+      else if (deck.itemCard3 && deck.itemCard3.id === card.id) { roleBadge = `<span class="slot-badge badge-item">💊 アイテム3</span>`; isSet = true; }
 
+      const deckRibbon = isSet ? `<span class="deck-ribbon">✅ DECK</span>` : '';
       const spriteSvg = getCharacterSpriteSvg(card);
       const isItem = (card.type === 'item');
       const rarityClass = `rarity-${card.rarity || 'N'}`;
 
       return `
         <div class="card-item ${isItem ? 'item-card' : ''} ${isSet ? 'is-deck-set' : ''} ${rarityClass}" onclick="window.appOpenCardDetail('${card.id}')">
-          ${badges}
+          ${deckRibbon}
+          ${roleBadge}
           <div class="mini-sprite">
             ${spriteSvg}
           </div>
-          <div style="font-weight:800; font-size:0.82rem; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;">
-            <span style="color:var(--accent-gold); font-size:0.75rem;">[${card.rarity || 'N'}]</span> ${card.name}
+          <div style="font-weight:800; font-size:0.8rem; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">
+            <span style="color:var(--accent-gold); font-size:0.72rem;">[${card.rarity || 'N'}]</span> ${card.name}
           </div>
-          <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
-            ${isItem ? `<span style="color:var(--accent-gold);">${card.desc}</span>` : `<span class="element-tag element-${card.element}" style="padding:1px 4px; font-size:0.65rem;">${card.element}</span> HP:${card.hp} ATK:${card.atk}`}
+          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">
+            ${isItem ? `<span style="color:var(--accent-gold);">${card.desc}</span>` : `<span class="element-tag element-${card.element}" style="padding:1px 4px; font-size:0.62rem;">${card.element}</span> HP:${card.hp} ATK:${card.atk}`}
           </div>
         </div>
       `;
