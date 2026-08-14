@@ -1,5 +1,5 @@
 /**
- * Barcode Battler - Complete Standalone Bundle (v2.4.2 Text Visibility & Stat Chip Formatting)
+ * Barcode Battler - Complete Standalone Bundle (v2.4.3 Rarity Glow & Deck Outline & High-Contrast Tray)
  */
 
 (function() {
@@ -1023,17 +1023,20 @@
             ${spriteSvg}
           </div>
           <div class="card-name-box">
-            <span style="color:var(--accent-gold); font-size:0.72rem; margin-right:3px; white-space:nowrap;">[${card.rarity || 'N'}]</span>${card.name}
+            <span style="color:var(--accent-gold); font-size:0.75rem; margin-right:3px; font-weight:900;">[${card.rarity || 'N'}]</span>
+            <span style="font-weight:900;">${card.name}</span>
           </div>
-          <div class="card-stats-box">
-            ${isItem ? `
-              <div class="stat-chip stat-chip-item" style="width:100%; justify-content:center;">${card.desc}</div>
-            ` : `
-              <span class="element-tag element-${card.element}" style="padding:1px 5px; font-size:0.62rem; line-height:1.2;">${card.element}</span>
-              <span class="stat-chip stat-chip-hp">HP:${card.hp}</span>
-              <span class="stat-chip stat-chip-atk">ATK:${card.atk}</span>
-            `}
-          </div>
+          ${isItem ? `
+            <div class="card-item-tray">
+              ${card.desc}
+            </div>
+          ` : `
+            <div class="card-stat-tray">
+              <span class="element-tag element-${card.element}" style="padding:1px 5px; font-size:0.65rem; border-radius:4px; font-weight:900;">${card.element}</span>
+              <span style="color:#00ff88; font-weight:900;">HP ${card.hp}</span>
+              <span style="color:#ff4570; font-weight:900;">ATK ${card.atk}</span>
+            </div>
+          `}
         </div>
       `;
     }).join('');

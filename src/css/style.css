@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Barcode Battler - Cyber Arctic Arcade Theme Stylesheet (v2.4.2)
+   Barcode Battler - Cyber Arctic Arcade Theme Stylesheet (v2.4.3)
    ========================================================================== */
 
 :root {
@@ -163,7 +163,9 @@ h1.logo {
   transform: scale(0.98);
 }
 
-/* 図鑑カードアイテム (完全視認性 & 横見切れ防止 & 案A レアリティ枠維持＋インナーグロー) */
+/* ==========================================================================
+   図鑑カードアイテム (v2.4.3: レアリティ発光 ＆ デッキ外枠囲み ＆ 高視認性トレイ)
+   ========================================================================== */
 .card-item {
   background: var(--surface-color);
   border: 1.5px solid #2e3656;
@@ -175,7 +177,8 @@ h1.logo {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -187,30 +190,29 @@ h1.logo {
   transform: translateY(-2px);
 }
 
-/* ① レアリティ別ボーダー（常時表示・セット中も保持） */
+/* ① レアリティ別【発光エフェクト (Aura & Glow)】 */
 .card-item.rarity-SSR {
-  border: 2px solid #ffd700 !important;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.75), inset 0 0 10px rgba(255, 215, 0, 0.3) !important;
+  background: radial-gradient(circle at top, rgba(255, 215, 0, 0.15) 0%, #161b30 85%) !important;
 }
 
 .card-item.rarity-SR {
-  border: 2px solid #b066ff !important;
-  box-shadow: 0 0 8px rgba(176, 102, 255, 0.3);
+  box-shadow: 0 0 14px rgba(176, 102, 255, 0.65), inset 0 0 8px rgba(176, 102, 255, 0.25) !important;
+  background: radial-gradient(circle at top, rgba(176, 102, 255, 0.12) 0%, #161b30 85%) !important;
 }
 
 .card-item.rarity-R {
-  border: 2px solid #00e5ff !important;
-  box-shadow: 0 0 6px rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important;
+  background: radial-gradient(circle at top, rgba(0, 229, 255, 0.1) 0%, #161b30 85%) !important;
 }
 
 .card-item.rarity-N {
-  border: 1.5px solid #3e4868 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* ② デッキセット中スタイル（案A: 枠線色はレアリティのまま、内側インナーグロー ＆ パルス） */
+/* ② デッキ選択中【外枠をしっかり囲う】 */
 .card-item.is-deck-set {
-  background: linear-gradient(180deg, rgba(0, 229, 255, 0.16) 0%, rgba(22, 27, 48, 0.95) 100%), var(--surface-color) !important;
-  box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.5), 0 0 12px rgba(0, 229, 255, 0.35) !important;
+  border: 2.5px solid var(--secondary-cyan) !important;
 }
 
 /* 左上「✅ DECK」インジケータータグ */
@@ -222,25 +224,25 @@ h1.logo {
   color: #000;
   font-size: 0.62rem;
   font-weight: 900;
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 5px;
-  z-index: 2;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  z-index: 3;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.6);
   line-height: 1.2;
 }
 
-/* 右上 役職バッジ（カード内側の右上隅に配置し、横はみ出しをゼロ化） */
+/* 右上 役職バッジ（カード内側右上隅に完全格納） */
 .slot-badge {
   position: absolute;
   top: 4px;
   right: 4px;
   font-size: 0.64rem;
   font-weight: 900;
-  padding: 2px 5px;
+  padding: 2px 6px;
   border-radius: 6px;
   color: #000;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.5);
-  z-index: 2;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.6);
+  z-index: 3;
   line-height: 1.2;
 }
 
@@ -249,63 +251,51 @@ h1.logo {
 .badge-sub2 { background: var(--primary-pink); color: #fff; }
 .badge-item { background: var(--accent-gold); color: #000; }
 
-/* カード内テキスト・ステータス表示（見切れ防止・完全視認性） */
-.card-item .card-name-box {
+/* カード内テキスト・ステータストレイ（黒ベース高コントラストで完全視認） */
+.card-name-box {
   font-weight: 900;
-  font-size: 0.78rem;
-  margin-top: 4px;
+  font-size: 0.8rem;
+  margin: 4px 0 3px 0;
   line-height: 1.25;
   width: 100%;
   word-break: break-word;
   text-align: center;
+  color: #ffffff;
   min-height: 2em;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.card-item .card-stats-box {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 3px;
+.card-stat-tray {
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 3px 6px;
   width: 100%;
-  margin-top: 3px;
-}
-
-.stat-chip {
-  display: inline-flex;
+  display: flex;
+  justify-content: space-around;
   align-items: center;
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  line-height: 1.2;
-  white-space: nowrap;
+  font-size: 0.74rem;
+  font-weight: 900;
+  margin-top: 3px;
+  box-sizing: border-box;
 }
 
-.stat-chip-hp {
-  background: rgba(0, 255, 136, 0.15);
-  color: #00ff88;
-  border: 1px solid rgba(0, 255, 136, 0.35);
-}
-
-.stat-chip-atk {
-  background: rgba(255, 51, 102, 0.15);
-  color: #ff6b8b;
-  border: 1px solid rgba(255, 51, 102, 0.35);
-}
-
-.stat-chip-item {
-  background: rgba(255, 215, 0, 0.12);
+.card-item-tray {
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 8px;
+  padding: 3px 6px;
+  width: 100%;
   color: var(--accent-gold);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  line-height: 1.25;
-  word-break: break-word;
+  font-size: 0.72rem;
+  font-weight: 800;
   text-align: center;
-  font-size: 0.68rem;
-  padding: 2px 4px;
+  margin-top: 3px;
+  line-height: 1.3;
+  word-break: break-word;
+  box-sizing: border-box;
 }
 
 /* モード選択ボタン */
