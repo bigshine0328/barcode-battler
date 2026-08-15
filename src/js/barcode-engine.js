@@ -360,15 +360,39 @@ export class BarcodeEngine {
     `.trim();
   }
 
+  static hashBarcode(codeStr, salt = "") {
+    let cleaned = (codeStr || "4901234567890").replace(/\D/g, '') || "4901234567890";
+    let str = salt ? `${cleaned}_${salt}` : cleaned;
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash);
+  }
+
+  static getRandomBarcode() {
+    let code = "49";
+    for (let i = 0; i < 11; i++) {
+      code += Math.floor(Math.random() * 10).toString();
+    }
+    return code;
+  }
+
   static generateFromBarcode(codeStr, customMemo = "") {
     const cleaned = (codeStr || "4901234567890").replace(/\D/g, '') || "4901234567890";
     const digits = cleaned.split('').map(Number);
     while (digits.length < 13) digits.push(0);
 
-    const hash = this.hashBarcode(cleaned);
-    const isItemCard = (hash % 5 === 0);
+    const baseHash = this.hashBarcode(cleaned);
+    const itemHash = this.hashBarcode(cleaned, "ITEM_SALT");
+    const speciesHash = this.hashBarcode(cleaned, "SPECIES_SALT");
+    const elemHash = this.hashBarcode(cleaned, "ELEM_SALT");
+    const rarityHash = this.hashBarcode(cleaned, "RARITY_SALT");
 
-    const rarityScore = (hash % 100);
+    const isItemCard = (itemHash % 5 === 0);
+
+    const rarityScore = (rarityHash % 100);
     let rarity = "N";
     let charMult = 1.0;
     let itemMult = 1.0;
@@ -403,11 +427,11 @@ export class BarcodeEngine {
         { name: "おうかんの輝き", type: "all_buff", baseVal: 30, getDesc: (v) => `ATK/DEF/SPD を +${v} アップ！` }
       ];
 
-      const itemBase = baseItemTypes[hash % baseItemTypes.length];
+      const itemBase = baseItemTypes[itemHash % baseItemTypes.length];
       const finalValue = Math.round(itemBase.baseVal * itemMult);
 
       return {
-        id: `item_${cleaned}_${hash}`,
+        id: `item_${cleaned}_${baseHash}`,
         barcode: cleaned,
         type: "item",
         name: `${rarity === 'SSR' ? '✨ [SSR] ' : rarity === 'SR' ? '🌟 [SR] ' : ''}${itemBase.name}`,
@@ -431,18 +455,18 @@ export class BarcodeEngine {
     const spd = Math.round(rawBaseSpd * charMult);
 
     const elements = ["火", "水", "木"];
-    const element = elements[Math.abs(hash) % 3];
+    const element = elements[elemHash % 3];
 
-    const pIdx = hash % PREFIXES.length;
-    const bIdx = (hash + 1) % BASE_NAMES.length;
-    const sIdx = (hash + 2) % SUFFIXES.length;
+    const pIdx = speciesHash % PREFIXES.length;
+    const bIdx = (speciesHash + 1) % BASE_NAMES.length;
+    const sIdx = (speciesHash + 2) % SUFFIXES.length;
 
     const baseSpeciesName = BASE_NAMES[bIdx];
     const name = `${PREFIXES[pIdx]}${baseSpeciesName}${SUFFIXES[sIdx]}`;
     const spriteSvg = this.generateCharacterSvg(baseSpeciesName, element, rarity);
 
     return {
-      id: `char_${cleaned}_${hash}`,
+      id: `char_${cleaned}_${baseHash}`,
       barcode: cleaned,
       type: "character",
       name: name,
