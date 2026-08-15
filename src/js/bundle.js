@@ -1539,12 +1539,32 @@
     if (btn3p) btn3p.className = (appState.battleMode === '3p') ? 'mode-btn active' : 'mode-btn';
   }
 
+  const PEER_CONFIG = {
+    debug: 1,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' }
+      ]
+    }
+  };
+
+  let p2pJoinInterval = null;
+
   function createRoom() {
     const deck = StorageManager.getDeck();
     if (!deck.mainChar) {
       alert("デッキにキャラクターがセットされていません。");
       switchScreen('SCR-04');
       return;
+    }
+
+    if (appState.peer) {
+      try { appState.peer.destroy(); } catch(e){}
+      appState.peer = null;
     }
 
     const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -1555,7 +1575,7 @@
     appState.waitingForOpponent = false;
 
     const hostCodeEl = document.getElementById('host-room-code');
-    if (hostCodeEl) hostCodeEl.textContent = roomCode;
+    if (hostCodeEl) hostCodeEl.textContent = "生成中...";
 
     const viewLobby = document.getElementById('lobby-select-view');
     const viewWait = document.getElementById('lobby-host-wait-view');
@@ -1563,11 +1583,29 @@
     if (viewWait) viewWait.style.display = 'block';
 
     try {
-      const peer = new Peer(`bb-v24-${roomCode}`, { debug: 1 });
+      const peerId = `bb-room-${roomCode}`;
+      const peer = new Peer(peerId, PEER_CONFIG);
       appState.peer = peer;
+
+      peer.on('open', (id) => {
+        if (hostCodeEl) hostCodeEl.textContent = roomCode;
+      });
+
+      peer.on('error', (err) => {
+        console.error("PeerJS host error:", err);
+        if (err.type === 'unavailable-id') {
+          createRoom();
+        } else {
+          alert(`通信エラーが発生しました: ${err.type || '接続失敗'}`);
+        }
+      });
 
       peer.on('connection', conn => {
         appState.peerConn = conn;
+
+        conn.on('open', () => {
+          console.log("Host connection opened with guest!");
+        });
 
         conn.on('data', data => {
           if (!data) return;
@@ -1585,9 +1623,11 @@
               mode: appState.battleMode
             });
 
-            appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, appState.battleMode);
-            switchScreen('SCR-06');
-            renderBattleUI();
+            if (appState.currentScreen !== 'SCR-06') {
+              appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, appState.battleMode);
+              switchScreen('SCR-06');
+              renderBattleUI();
+            }
           } else if (data.type === 'GUEST_ACTION') {
             appState.pendingGuestAction = { action: data.action, itemIdx: data.itemIdx };
             if (appState.pendingHostAction) {
@@ -1597,7 +1637,8 @@
         });
       });
     } catch (e) {
-      console.warn("PeerJS host initialization failed:", e);
+      console.error("PeerJS host initialization failed:", e);
+      alert("通信機能の初期化に失敗しました。ブラウザを再読み込みしてください。");
     }
   }
 
@@ -1616,43 +1657,105 @@
       return;
     }
 
+    if (appState.peer) {
+      try { appState.peer.destroy(); } catch(e){}
+      appState.peer = null;
+    }
+    if (p2pJoinInterval) {
+      clearInterval(p2pJoinInterval);
+      p2pJoinInterval = null;
+    }
+
+    const btnJoin = document.getElementById('btn-join-room');
+    if (btnJoin) {
+      btnJoin.disabled = true;
+      btnJoin.textContent = "⌛ 接続中...";
+    }
+
     appState.isP2P = true;
     appState.isHost = false;
     appState.waitingForOpponent = false;
 
+    let hasStarted = false;
+    let joinTimeout = setTimeout(() => {
+      if (!hasStarted) {
+        if (p2pJoinInterval) clearInterval(p2pJoinInterval);
+        if (btnJoin) {
+          btnJoin.disabled = false;
+          btnJoin.textContent = "さんかする";
+        }
+        alert("部屋への接続がタイムアウトしました。部屋番号が正しいか確認してください。");
+      }
+    }, 10000);
+
     try {
-      const peer = new Peer();
+      const peer = new Peer(PEER_CONFIG);
       appState.peer = peer;
 
+      peer.on('error', (err) => {
+        console.error("PeerJS guest error:", err);
+        clearTimeout(joinTimeout);
+        if (p2pJoinInterval) clearInterval(p2pJoinInterval);
+        if (btnJoin) {
+          btnJoin.disabled = false;
+          btnJoin.textContent = "さんかする";
+        }
+        alert(`部屋が見つからないか、接続できませんでした (${err.type || 'エラー'})`);
+      });
+
       peer.on('open', () => {
-        const conn = peer.connect(`bb-v24-${code}`);
+        const targetPeerId = `bb-room-${code}`;
+        const conn = peer.connect(targetPeerId, { reliable: true });
         appState.peerConn = conn;
 
-        conn.on('open', () => {
+        const sendJoinMessage = () => {
+          if (hasStarted) return;
           const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
           const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
 
-          conn.send({
-            type: 'JOIN',
-            team: playerTeam,
-            items: playerItems
-          });
+          try {
+            conn.send({
+              type: 'JOIN',
+              team: playerTeam,
+              items: playerItems
+            });
+          } catch(e){}
+        };
+
+        conn.on('open', () => {
+          sendJoinMessage();
+          p2pJoinInterval = setInterval(() => {
+            if (!hasStarted && conn.open) {
+              sendJoinMessage();
+            } else {
+              clearInterval(p2pJoinInterval);
+            }
+          }, 500);
         });
 
         conn.on('data', data => {
           if (!data) return;
 
           if (data.type === 'START') {
+            hasStarted = true;
+            clearTimeout(joinTimeout);
+            if (p2pJoinInterval) clearInterval(p2pJoinInterval);
+            if (btnJoin) {
+              btnJoin.disabled = false;
+              btnJoin.textContent = "さんかする";
+            }
+
             const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
             const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
             const enemyTeam = data.team || [];
             const enemyItems = data.items || [];
 
-            appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, data.mode || appState.battleMode);
-            switchScreen('SCR-06');
-            renderBattleUI();
+            if (appState.currentScreen !== 'SCR-06') {
+              appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, data.mode || appState.battleMode);
+              switchScreen('SCR-06');
+              renderBattleUI();
+            }
           } else if (data.type === 'STATE_SYNC') {
-            // ホストから届いた確定ステートを適用
             const be = appState.battleEngine;
             if (be && data.state) {
               be.applyGuestState(data.state);
@@ -1671,17 +1774,24 @@
         });
       });
     } catch (e) {
-      console.warn("PeerJS guest join failed:", e);
+      console.error("PeerJS guest initialization failed:", e);
+      clearTimeout(joinTimeout);
+      if (btnJoin) {
+        btnJoin.disabled = false;
+        btnJoin.textContent = "さんかする";
+      }
+      alert("通信の接続に失敗しました。");
     }
   }
 
   function cancelHost() {
     if (appState.peer) {
-      appState.peer.destroy();
+      try { appState.peer.destroy(); } catch(e){}
       appState.peer = null;
     }
     renderLobby();
   }
+
 
   // ==========================================
   // 7. グローバル公開 & 初期化バインド
