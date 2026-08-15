@@ -653,20 +653,23 @@
         localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
       } catch (e) {}
 
-      const deck = this.getDeck();
-      let deckChanged = false;
-      if (deck.mainChar && deck.mainChar.id === cardId) { deck.mainChar = null; deckChanged = true; }
-      if (deck.subChar1 && deck.subChar1.id === cardId) { deck.subChar1 = null; deckChanged = true; }
-      if (deck.subChar2 && deck.subChar2.id === cardId) { deck.subChar2 = null; deckChanged = true; }
-      if (deck.itemCard1 && deck.itemCard1.id === cardId) { deck.itemCard1 = null; deckChanged = true; }
-      if (deck.itemCard2 && deck.itemCard2.id === cardId) { deck.itemCard2 = null; deckChanged = true; }
-      if (deck.itemCard3 && deck.itemCard3.id === cardId) { deck.itemCard3 = null; deckChanged = true; }
-
-      if (deckChanged) {
-        try {
-          localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
-        } catch (e) {}
-      }
+      // デッキにセットされていたら解除 (生のLocalStorageデッキデータを更新)
+      try {
+        const rawData = localStorage.getItem(STORAGE_KEY_DECK);
+        if (rawData) {
+          const rawDeck = JSON.parse(rawData);
+          let changed = false;
+          if (rawDeck.mainChar && rawDeck.mainChar.id === cardId) { rawDeck.mainChar = null; changed = true; }
+          if (rawDeck.subChar1 && rawDeck.subChar1.id === cardId) { rawDeck.subChar1 = null; changed = true; }
+          if (rawDeck.subChar2 && rawDeck.subChar2.id === cardId) { rawDeck.subChar2 = null; changed = true; }
+          if (rawDeck.itemCard1 && rawDeck.itemCard1.id === cardId) { rawDeck.itemCard1 = null; changed = true; }
+          if (rawDeck.itemCard2 && rawDeck.itemCard2.id === cardId) { rawDeck.itemCard2 = null; changed = true; }
+          if (rawDeck.itemCard3 && rawDeck.itemCard3.id === cardId) { rawDeck.itemCard3 = null; changed = true; }
+          if (changed) {
+            localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(rawDeck));
+          }
+        }
+      } catch (e) {}
 
       return true;
     }
@@ -705,6 +708,21 @@
       } catch (e) {}
 
       const collection = this.getCollection();
+
+      // 各スロットのカードを collection の最新データ（レベル・成長ステータス）で完全同期
+      const syncCard = (card) => {
+        if (!card || !card.id) return null;
+        const found = collection.find(c => c.id === card.id);
+        return found || null;
+      };
+
+      deck.mainChar = syncCard(deck.mainChar);
+      deck.subChar1 = syncCard(deck.subChar1);
+      deck.subChar2 = syncCard(deck.subChar2);
+      deck.itemCard1 = syncCard(deck.itemCard1);
+      deck.itemCard2 = syncCard(deck.itemCard2);
+      deck.itemCard3 = syncCard(deck.itemCard3);
+
       const validChars = collection.filter(c => c && c.type === 'character' && typeof c.hp === 'number');
       const validItems = collection.filter(c => c && c.type === 'item');
 
@@ -1772,6 +1790,9 @@
       if (expCards.length > 0) {
         try {
           localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+          // 最新能力値で同期したデッキ情報も保存
+          const latestDeck = StorageManager.getDeck();
+          localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(latestDeck));
         } catch (e) {}
 
         expMessage = `\n\n━━━━━━━━━━━━━━━━━━━━\n⚔️ バトル参加ボーナス: +${expGained} EXP 獲得！\n(参加キャラ: ${expCards.map(c => c.name).join(', ')})`;
@@ -1784,24 +1805,7 @@
     setTimeout(() => {
       const title = isWin ? '🎉 あなたの勝利です！' : '💧 敗北しました...';
       alert(title + expMessage);
-      
-      // P2P通信およびバトルのクリーンアップ
-      if (appState.peerConn) {
-        try { appState.peerConn.close(); } catch(e){}
-        appState.peerConn = null;
-      }
-      if (appState.peer) {
-        try { appState.peer.destroy(); } catch(e){}
-        appState.peer = null;
-      }
-      appState.isP2P = false;
-      appState.isHost = false;
-      appState.waitingForOpponent = false;
-      appState.battleEngine = null;
-
-      // 対戦ロビーへ確実に戻る
-      switchScreen('SCR-05');
-      renderLobby();
+      cleanupP2PAndReturnToLobby();
     }, 400);
   }
 
@@ -1984,8 +1988,22 @@
           console.log("Host connection opened with guest!");
         });
 
+        conn.on('close', () => {
+          handlePeerDisconnect();
+        });
+
+        conn.on('error', (err) => {
+          console.error("Host conn error:", err);
+          handlePeerDisconnect();
+        });
+
         conn.on('data', data => {
           if (!data) return;
+
+          if (data.type === 'ESCAPE') {
+            handlePeerEscape();
+            return;
+          }
 
           if (data.type === 'JOIN') {
             const hostMode = appState.battleMode;
@@ -2120,8 +2138,22 @@
           }, 500);
         });
 
+        conn.on('close', () => {
+          handlePeerDisconnect();
+        });
+
+        conn.on('error', (err) => {
+          console.error("Guest conn error:", err);
+          handlePeerDisconnect();
+        });
+
         conn.on('data', data => {
           if (!data) return;
+
+          if (data.type === 'ESCAPE') {
+            handlePeerEscape();
+            return;
+          }
 
           if (data.type === 'START') {
             hasStarted = true;
@@ -2188,6 +2220,44 @@
     }
   }
 
+  function handlePeerDisconnect() {
+    if (appState.currentScreen === 'SCR-06') {
+      alert("相手との接続が切断されました。\nバトルを終了して対戦ロビーに戻ります。");
+      cleanupP2PAndReturnToLobby();
+    }
+  }
+
+  function handlePeerEscape() {
+    if (appState.currentScreen === 'SCR-06') {
+      alert("相手がバトルから逃げ出しました！\nバトルを終了して対戦ロビーに戻ります。");
+      cleanupP2PAndReturnToLobby();
+    }
+  }
+
+  function cleanupP2PAndReturnToLobby() {
+    if (p2pJoinInterval) {
+      clearInterval(p2pJoinInterval);
+      p2pJoinInterval = null;
+    }
+    if (appState.peerConn) {
+      try { appState.peerConn.close(); } catch(e){}
+      appState.peerConn = null;
+    }
+    if (appState.peer) {
+      try { appState.peer.destroy(); } catch(e){}
+      appState.peer = null;
+    }
+    appState.isP2P = false;
+    appState.isHost = false;
+    appState.waitingForOpponent = false;
+    appState.battleEngine = null;
+    appState.pendingHostAction = null;
+    appState.pendingGuestAction = null;
+
+    switchScreen('SCR-05');
+    renderLobby();
+  }
+
   function cancelHost() {
     if (appState.peer) {
       try { appState.peer.destroy(); } catch(e){}
@@ -2196,23 +2266,14 @@
     renderLobby();
   }
 
-
   function escapeBattle() {
     if (confirm("バトルを ちゅうだん して 対戦ロビーへ もどりますか？")) {
-      if (appState.peerConn) {
-        try { appState.peerConn.close(); } catch(e){}
-        appState.peerConn = null;
+      if (appState.isP2P && appState.peerConn && appState.peerConn.open) {
+        try {
+          appState.peerConn.send({ type: 'ESCAPE' });
+        } catch(e){}
       }
-      if (appState.peer) {
-        try { appState.peer.destroy(); } catch(e){}
-        appState.peer = null;
-      }
-      appState.isP2P = false;
-      appState.isHost = false;
-      appState.waitingForOpponent = false;
-      appState.battleEngine = null;
-      switchScreen('SCR-05');
-      renderLobby();
+      cleanupP2PAndReturnToLobby();
     }
   }
 

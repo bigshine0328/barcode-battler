@@ -79,21 +79,23 @@ export class StorageManager {
       localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
     } catch (e) {}
 
-    // デッキにセットされていたら解除 (3アイテム対応)
-    const deck = this.getDeck();
-    let deckChanged = false;
-    if (deck.mainChar && deck.mainChar.id === cardId) { deck.mainChar = null; deckChanged = true; }
-    if (deck.subChar1 && deck.subChar1.id === cardId) { deck.subChar1 = null; deckChanged = true; }
-    if (deck.subChar2 && deck.subChar2.id === cardId) { deck.subChar2 = null; deckChanged = true; }
-    if (deck.itemCard1 && deck.itemCard1.id === cardId) { deck.itemCard1 = null; deckChanged = true; }
-    if (deck.itemCard2 && deck.itemCard2.id === cardId) { deck.itemCard2 = null; deckChanged = true; }
-    if (deck.itemCard3 && deck.itemCard3.id === cardId) { deck.itemCard3 = null; deckChanged = true; }
-
-    if (deckChanged) {
-      try {
-        localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(deck));
-      } catch (e) {}
-    }
+    // デッキにセットされていたら解除 (生のLocalStorageデッキデータを更新)
+    try {
+      const rawData = localStorage.getItem(STORAGE_KEY_DECK);
+      if (rawData) {
+        const rawDeck = JSON.parse(rawData);
+        let changed = false;
+        if (rawDeck.mainChar && rawDeck.mainChar.id === cardId) { rawDeck.mainChar = null; changed = true; }
+        if (rawDeck.subChar1 && rawDeck.subChar1.id === cardId) { rawDeck.subChar1 = null; changed = true; }
+        if (rawDeck.subChar2 && rawDeck.subChar2.id === cardId) { rawDeck.subChar2 = null; changed = true; }
+        if (rawDeck.itemCard1 && rawDeck.itemCard1.id === cardId) { rawDeck.itemCard1 = null; changed = true; }
+        if (rawDeck.itemCard2 && rawDeck.itemCard2.id === cardId) { rawDeck.itemCard2 = null; changed = true; }
+        if (rawDeck.itemCard3 && rawDeck.itemCard3.id === cardId) { rawDeck.itemCard3 = null; changed = true; }
+        if (changed) {
+          localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(rawDeck));
+        }
+      }
+    } catch (e) {}
 
     return true;
   }
@@ -132,6 +134,21 @@ export class StorageManager {
     } catch (e) {}
 
     const collection = this.getCollection();
+
+    // 各スロットのカードを collection の最新データ（レベル・成長ステータス）で完全同期
+    const syncCard = (card) => {
+      if (!card || !card.id) return null;
+      const found = collection.find(c => c.id === card.id);
+      return found || null;
+    };
+
+    deck.mainChar = syncCard(deck.mainChar);
+    deck.subChar1 = syncCard(deck.subChar1);
+    deck.subChar2 = syncCard(deck.subChar2);
+    deck.itemCard1 = syncCard(deck.itemCard1);
+    deck.itemCard2 = syncCard(deck.itemCard2);
+    deck.itemCard3 = syncCard(deck.itemCard3);
+
     const validChars = collection.filter(c => c && c.type === 'character' && typeof c.hp === 'number');
     const validItems = collection.filter(c => c && c.type === 'item');
 

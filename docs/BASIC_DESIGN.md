@@ -1,13 +1,16 @@
 # 📐 システム基本設計書 (BASIC_DESIGN.md)
 
 - **システム名**: バーコードバトラー Web アプリケーション
-- **バージョン**: `v3.4.0` (Deck Priority Sorting in Collection)
+- **バージョン**: `v3.5.0` (Level Stat Sync & P2P Disconnect Recovery)
 - **最終更新日**: 2026年8月15日
 - **作成担当**: `software-engineer`
 
 ---
 
 ## 改定履歴 (Changelog)
+- **v3.5.0 (2026-08-15)**:
+  - 【不具合修正】`StorageManager.getDeck()` において、デッキ内カードオブジェクトを図鑑コレクション（`collection`）の最新成長データで即時同期（Hydration）する仕様を追加。
+  - 【新機能・改善】P2P対戦中における `ESCAPE` メッセージ通信および `close` / `error` イベント検知による強制終了・対戦ロビー復帰（`cleanupP2PAndReturnToLobby`）の例外制御仕様を追加。
 - **v3.4.0 (2026-08-15)**:
   - 【新機能】SCR-04 所持図鑑画面において、デッキ選択中のカード（メイン・サブ・アイテム）を最上部（先頭）に優先ソートして表示する仕様・ロジックを追加。
 - **v3.3.0 (2026-08-15)**:

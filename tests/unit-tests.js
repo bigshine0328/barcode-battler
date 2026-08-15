@@ -313,6 +313,47 @@ export function runAllTests() {
   assert(sortedCollection[1].id === "item_b", "デッキ最優先ソート: アイテム1(item_b)が2番目にソートされること");
   assert(sortedCollection.slice(2).some(c => c.id === "card_1"), "デッキ最優先ソート: 未セットカードが後続に配置されること");
 
+  // 19. レベルアップ後のデッキ能力値同期（Hydration）テスト (v3.5.0)
+  localStorage.clear();
+  const testChar = {
+    id: "char_test_sync",
+    type: "character",
+    name: "同期テストドラゴン",
+    species: "ドラゴン",
+    element: "火",
+    rarity: "N",
+    baseHp: 1000,
+    baseAtk: 200,
+    baseDef: 100,
+    baseSpd: 50,
+    hp: 1000,
+    maxHp: 1000,
+    atk: 200,
+    def: 100,
+    spd: 50,
+    level: 1,
+    exp: 0
+  };
+  StorageManager.saveToCollection(testChar);
+  StorageManager.setDeckSlot('mainChar', testChar);
+
+  // 初期状態: Lv.1
+  let currentDeck = StorageManager.getDeck();
+  assert(currentDeck.mainChar.level === 1, "デッキ同期: 初期メインキャラがLv.1であること");
+  const initialHp = currentDeck.mainChar.maxHp || currentDeck.mainChar.hp;
+
+  // collection 内で EXP 獲得 & レベルアップ (Lv.1 -> Lv.2)
+  const collectionForLevel = StorageManager.getCollection();
+  const targetCharInCol = collectionForLevel.find(c => c.id === testChar.id);
+  LevelManager.addExp(targetCharInCol, 100);
+  localStorage.setItem("barcode_battler_collection", JSON.stringify(collectionForLevel));
+
+  // getDeck() 取得時に最新ステータス（Lv.2 & HP上昇）が同期されること
+  const hydratedDeck = StorageManager.getDeck();
+  assert(hydratedDeck.mainChar.level === 2, "デッキ同期: StorageManager.getDeck() でメインキャラが Lv.2 に即座に同期されること");
+  const upgradedHp = hydratedDeck.mainChar.maxHp || hydratedDeck.mainChar.hp;
+  assert(upgradedHp > initialHp, "デッキ同期: メインキャラのHPが成長後の値に正しく更新されていること");
+
   return results;
 }
 
