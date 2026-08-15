@@ -71,11 +71,29 @@ export function runAllTests() {
   assert(rarityCounts.SSR > 0, "レアリティ分布: SSRが生成されること (期待値 ~3%)");
   assert(rarityCounts.N > rarityCounts.R, "レアリティ分布: Nが最大比率 (期待値 ~60%) であること");
 
-  // 6. 属性相性テスト
+  // 6. 属性相性 & 属性均等分散テスト (v3.1.0)
   assert(BattleEngine.getElementMultiplier("火", "木") === 1.5, "属性相性: 火 > 木 で1.5倍補正となること");
   assert(BattleEngine.getElementMultiplier("水", "火") === 1.5, "属性相性: 水 > 火 で1.5倍補正となること");
   assert(BattleEngine.getElementMultiplier("木", "水") === 1.5, "属性相性: 木 > 水 で1.5倍補正となること");
   assert(BattleEngine.getElementMultiplier("火", "水") === 1.0, "属性相性: 等倍判定であること");
+
+  // 8桁バーコードでの属性分散テスト（以前は100%火だった問題の解消検証）
+  const elem8Counts = { "火": 0, "水": 0, "木": 0 };
+  for (let i = 0; i < 300; i++) {
+    const code8 = `4900${i.toString().padStart(4, '0')}`;
+    const c = BarcodeEngine.generateFromBarcode(code8);
+    if (c.type === 'character') elem8Counts[c.element]++;
+  }
+  assert(elem8Counts["火"] > 30 && elem8Counts["水"] > 30 && elem8Counts["木"] > 30, "8桁バーコード属性分散: 8桁コードでも火・水・木が偏りなく均等に出現すること");
+
+  // 13桁バーコードでの属性分散テスト
+  const elem13Counts = { "火": 0, "水": 0, "木": 0 };
+  for (let i = 0; i < 900; i++) {
+    const code13 = `49012345${i.toString().padStart(5, '0')}`;
+    const c = BarcodeEngine.generateFromBarcode(code13);
+    if (c.type === 'character') elem13Counts[c.element]++;
+  }
+  assert(elem13Counts["火"] > 150 && elem13Counts["水"] > 150 && elem13Counts["木"] > 150, "13桁バーコード属性分散: 13桁コードでも3属性がバランス良く均等（各~33%）に出現すること");
 
   // 7. ストレージ100体保存制限 (FIFO) テスト
   localStorage.clear();

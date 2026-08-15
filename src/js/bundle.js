@@ -456,7 +456,7 @@
       const spd = Math.round(rawBaseSpd * charMult);
 
       const elements = ["火", "水", "木"];
-      const element = elements[(digits[12] || 0) % 3];
+      const element = elements[Math.abs(hash) % 3];
 
       const pIdx = hash % PREFIXES.length;
       const bIdx = (hash + 1) % BASE_NAMES.length;
