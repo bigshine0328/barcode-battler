@@ -430,7 +430,8 @@
     const graphicPath = getCardGraphicPath(card);
     if (graphicPath) {
       const elemClass = card.element === '水' ? 'element-water' : card.element === '木' ? 'element-wood' : 'element-fire';
-      return `<img src="${graphicPath}" class="card-art-img ${elemClass}" alt="${card.name || 'カード'}" loading="lazy">`;
+      const rarClass = `rarity-art-${card.rarity || 'N'}`;
+      return `<img src="${graphicPath}" class="card-art-img ${elemClass} ${rarClass}" alt="${card.name || 'カード'}" loading="lazy">`;
     }
 
     if (card.type === 'item') {

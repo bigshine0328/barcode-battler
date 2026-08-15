@@ -888,3 +888,29 @@ h1.logo {
   border-radius: 10px;
 }
 
+/* レアリティ別 枠線・オーラエフェクト (SSR, SR, R, N) */
+.card-art-img.rarity-art-SSR {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.85);
+  animation: ssrPulse 2.5s infinite ease-in-out;
+}
+
+.card-art-img.rarity-art-SR {
+  border: 2px solid #b066ff;
+  box-shadow: 0 0 12px rgba(176, 102, 255, 0.75);
+}
+
+.card-art-img.rarity-art-R {
+  border: 1.5px solid #00e5ff;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+}
+
+.card-art-img.rarity-art-N {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes ssrPulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(255, 215, 0, 0.8); }
+  50% { box-shadow: 0 0 24px rgba(255, 215, 0, 1), 0 0 35px rgba(255, 100, 0, 0.6); }
+}
+
