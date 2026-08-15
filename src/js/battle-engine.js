@@ -1,5 +1,5 @@
 /**
- * Barcode Battler - Battle Engine Module (v2.3.0 3 Items Choice Support)
+ * Barcode Battler - Battle Engine (v2.6.0 with Speed-based Character Switching)
  */
 
 export class BattleEngine {
@@ -47,6 +47,21 @@ export class BattleEngine {
     return count;
   }
 
+  get player() { return this.playerTeam[this.playerIndex]; }
+  get enemy() { return this.enemyTeam[this.enemyIndex]; }
+
+  getAliveSubIndexes(isPlayer) {
+    const team = isPlayer ? this.playerTeam : this.enemyTeam;
+    const currentIndex = isPlayer ? this.playerIndex : this.enemyIndex;
+    const aliveIndexes = [];
+    for (let i = 0; i < team.length; i++) {
+      if (i !== currentIndex && team[i].currentHp > 0) {
+        aliveIndexes.push(i);
+      }
+    }
+    return aliveIndexes;
+  }
+
   _normalize(c, isPlayer) {
     const hp = Math.max(100, Number(c?.hp) || 1200);
     const atk = Math.max(10, Number(c?.atk) || 180);
@@ -58,6 +73,8 @@ export class BattleEngine {
       name: c?.name || (isPlayer ? "爆炎ドラゴン" : "アクアタイガー"),
       element: c?.element || "火",
       rarity: c?.rarity || "R",
+      species: c?.species || "ドラゴン",
+      spriteSvg: c?.spriteSvg || null,
       hp: hp,
       maxHp: hp,
       currentHp: hp,
@@ -71,10 +88,7 @@ export class BattleEngine {
     };
   }
 
-  get player() { return this.playerTeam[this.playerIndex]; }
-  get enemy() { return this.enemyTeam[this.enemyIndex]; }
-
-  processTurn(pAction, pItemIdx = 0, eAction = null, eItemIdx = 0) {
+  processTurn(pAction, pItemIdx = 0, eAction = null, eItemIdx = 0, pSwitchIdx = -1, eSwitchIdx = -1) {
     if (this.isOver) return null;
 
     if (!eAction) {
@@ -84,6 +98,13 @@ export class BattleEngine {
         opts.push('item');
         for (let i = 0; i < this.enemyItems.length; i++) {
           if (!this.enemyItemUsed[i]) { eItemIdx = i; break; }
+        }
+      }
+      if (this.mode === '3p') {
+        const aliveSubs = this.getAliveSubIndexes(false);
+        if (aliveSubs.length > 0 && (this.enemy.currentHp < this.enemy.maxHp * 0.35) && Math.random() < 0.3) {
+          opts.push('switch');
+          eSwitchIdx = aliveSubs[Math.floor(Math.random() * aliveSubs.length)];
         }
       }
       eAction = opts[Math.floor(Math.random() * opts.length)];
@@ -121,14 +142,14 @@ export class BattleEngine {
     const first = (pPriority >= ePriority) ? 'player' : 'enemy';
     const second = (first === 'player') ? 'enemy' : 'player';
 
-    const actMap = {
-      player: { action: pAction, self: this.player, target: this.enemy },
-      enemy: { action: eAction, self: this.enemy, target: this.player }
+    const actParams = {
+      player: { action: pAction, switchIdx: pSwitchIdx },
+      enemy: { action: eAction, switchIdx: eSwitchIdx }
     };
 
-    this._execAction(actMap[first], turnLog);
+    this._execTurnStep(first, actParams[first], turnLog);
     if (!this._checkWin(turnLog)) {
-      this._execAction(actMap[second], turnLog);
+      this._execTurnStep(second, actParams[second], turnLog);
       this._checkWin(turnLog);
     }
 
@@ -142,6 +163,71 @@ export class BattleEngine {
     }
 
     return turnLog;
+  }
+
+  _execTurnStep(actor, { action, switchIdx }, turnLog) {
+    if (this.isOver) return;
+
+    if (action === 'switch') {
+      if (actor === 'player') {
+        if (switchIdx >= 0 && switchIdx < this.playerTeam.length && this.playerTeam[switchIdx].currentHp > 0 && switchIdx !== this.playerIndex) {
+          const oldName = this.player.name;
+          this.playerIndex = switchIdx;
+          turnLog.actions.push({ actor: 'player', message: `🔄 あなたは ${oldName} から ${this.player.name} に こうたい！` });
+        }
+      } else {
+        if (switchIdx >= 0 && switchIdx < this.enemyTeam.length && this.enemyTeam[switchIdx].currentHp > 0 && switchIdx !== this.enemyIndex) {
+          const oldName = this.enemy.name;
+          this.enemyIndex = switchIdx;
+          turnLog.actions.push({ actor: 'enemy', message: `🔄 相手は ${oldName} から ${this.enemy.name} に こうたい！` });
+        }
+      }
+      return;
+    }
+
+    if (action === 'guard' || action === 'item') return;
+
+    const self = (actor === 'player') ? this.player : this.enemy;
+    const target = (actor === 'player') ? this.enemy : this.player;
+
+    if (self.currentHp <= 0 || target.currentHp <= 0) return;
+
+    if (Math.random() < 0.04) {
+      turnLog.actions.push({ actor: (actor === 'player') ? 'player' : 'enemy', message: `${self.name} の こうげき！ しかし MISS!` });
+      return;
+    }
+
+    const baseDamage = self.atk * 2.5 * (100 / (100 + target.def * 0.35));
+    const minGuaranteed = self.atk * 0.50;
+    let raw = Math.max(minGuaranteed, baseDamage);
+
+    let mult = BattleEngine.getElementMultiplier(self.element, target.element);
+    let rand = 0.95 + Math.random() * 0.10;
+    let dmg = Math.max(1, Math.round(raw * mult * rand));
+
+    if (action === 'skill') {
+      if (self.sp >= 100) {
+        self.sp = 0;
+        dmg = Math.round(dmg * 1.85);
+        turnLog.actions.push({ actor: (actor === 'player') ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
+      } else {
+        action = 'attack';
+      }
+    }
+
+    if (action === 'attack') {
+      self.sp = Math.min(100, self.sp + 35);
+    }
+
+    if (target.isGuarding) dmg = Math.max(1, Math.round(dmg * 0.5));
+
+    target.currentHp = Math.max(0, target.currentHp - dmg);
+    target.sp = Math.min(100, target.sp + 15);
+
+    turnLog.actions.push({
+      actor: (actor === 'player') ? 'player' : 'enemy',
+      message: `${self.name} の こうげき！ -> ${target.name} に ${dmg} ダメージ！`
+    });
   }
 
   _applyItemEffect(item, user, opponent, actorRole, turnLog) {
@@ -180,77 +266,38 @@ export class BattleEngine {
     }
   }
 
-  _execAction({ action, self, target }, turnLog) {
-    if (self.currentHp <= 0 || target.currentHp <= 0) return;
-    if (action === 'guard' || action === 'item') return;
-
-    if (Math.random() < 0.04) {
-      turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `${self.name} の こうげき！ しかし MISS!` });
-      return;
-    }
-
-    const baseDamage = self.atk * 2.5 * (100 / (100 + target.def * 0.35));
-    const minGuaranteed = self.atk * 0.50;
-    let raw = Math.max(minGuaranteed, baseDamage);
-
-    let mult = BattleEngine.getElementMultiplier(self.element, target.element);
-    let rand = 0.95 + Math.random() * 0.10;
-    let dmg = Math.max(1, Math.round(raw * mult * rand));
-
-    if (action === 'skill') {
-      if (self.sp >= 100) {
-        self.sp = 0;
-        dmg = Math.round(dmg * 1.85);
-        turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
-      } else {
-        action = 'attack';
-      }
-    }
-
-    if (action === 'attack') {
-      self.sp = Math.min(100, self.sp + 35);
-    }
-
-    if (target.isGuarding) dmg = Math.max(1, Math.round(dmg * 0.5));
-
-    target.currentHp = Math.max(0, target.currentHp - dmg);
-    target.sp = Math.min(100, target.sp + 15);
-
-    turnLog.actions.push({
-      actor: self.isPlayer ? 'player' : 'enemy',
-      message: `${self.name} の こうげき！ -> ${target.name} に ${dmg} ダメージ！`
-    });
-  }
-
   _checkWin(turnLog) {
     if (this.enemy.currentHp <= 0) {
-      if (this.mode === '3p' && this.enemyIndex < this.enemyTeam.length - 1) {
-        this.enemyIndex++;
-        turnLog.actions.push({ actor: 'system', message: `🎉 相手のキャラを たおした！ 敵チームは ${this.enemy.name} が 出撃！` });
-        return false;
-      } else {
-        this.isOver = true;
-        this.winner = 'player';
-        turnLog.actions.push({ actor: 'system', message: `🎉 ${this.enemy.name} を たおした！ あなたの しょうり！` });
-        return true;
+      if (this.mode === '3p') {
+        const aliveSubs = this.getAliveSubIndexes(false);
+        if (aliveSubs.length > 0) {
+          this.enemyIndex = aliveSubs[0];
+          turnLog.actions.push({ actor: 'system', message: `🎉 相手のキャラを たおした！ 敵チームは ${this.enemy.name} が 出撃！` });
+          return false;
+        }
       }
+      this.isOver = true;
+      this.winner = 'player';
+      turnLog.actions.push({ actor: 'system', message: `🎉 ${this.enemy.name} を たおした！ あなたの しょうり！` });
+      return true;
     }
     if (this.player.currentHp <= 0) {
-      if (this.mode === '3p' && this.playerIndex < this.playerTeam.length - 1) {
-        this.playerIndex++;
-        turnLog.actions.push({ actor: 'system', message: `💧 あなたのキャラが たおれた... つぎの ${this.player.name} が 出撃！` });
-        return false;
-      } else {
-        this.isOver = true;
-        this.winner = 'enemy';
-        turnLog.actions.push({ actor: 'system', message: `💧 ${this.player.name} は たおれた... あなたの まけ...` });
-        return true;
+      if (this.mode === '3p') {
+        const aliveSubs = this.getAliveSubIndexes(true);
+        if (aliveSubs.length > 0) {
+          this.playerIndex = aliveSubs[0];
+          turnLog.actions.push({ actor: 'system', message: `💧 あなたのキャラが たおれた... つぎの ${this.player.name} が 出撃！` });
+          return false;
+        }
       }
+      this.isOver = true;
+      this.winner = 'enemy';
+      turnLog.actions.push({ actor: 'system', message: `💧 ${this.player.name} は たおれた... あなたの まけ...` });
+      return true;
     }
     return false;
   }
 
-  // ホスト用のシリアライズ
   exportHostState() {
     return {
       turn: this.turn,
@@ -265,7 +312,6 @@ export class BattleEngine {
     };
   }
 
-  // ゲスト用のデシリアライズ（ホストと立場が逆転：HostのplayerがGuestのenemyになる）
   applyGuestState(hostState) {
     this.turn = hostState.turn;
     this.isOver = hostState.isOver;
@@ -273,14 +319,12 @@ export class BattleEngine {
     this.playerIndex = hostState.enemyIndex;
     this.enemyIndex = hostState.playerIndex;
 
-    // Guest視点: 自分のplayerTeam = HostのenemyTeam
     for (let i = 0; i < hostState.enemyTeam.length; i++) {
       if (this.playerTeam[i]) {
         this.playerTeam[i].currentHp = hostState.enemyTeam[i].currentHp;
         this.playerTeam[i].sp = hostState.enemyTeam[i].sp;
       }
     }
-    // Guest視点: 相手のenemyTeam = HostのplayerTeam
     for (let i = 0; i < hostState.playerTeam.length; i++) {
       if (this.enemyTeam[i]) {
         this.enemyTeam[i].currentHp = hostState.playerTeam[i].currentHp;
@@ -292,4 +336,3 @@ export class BattleEngine {
     this.enemyItemUsed = [...hostState.playerItemUsed];
   }
 }
-

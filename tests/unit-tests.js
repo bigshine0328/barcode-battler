@@ -139,6 +139,33 @@ export function runAllTests() {
   assert(hostEngine.player.sp === guestEngine.enemy.sp, "P2P同期: ホストの自身SPとゲストの敵SPが100%完全一致すること");
   assert(hostEngine.turn === guestEngine.turn, "P2P同期: ターン数が完全一致すること");
 
+  // 12. 3P対戦 キャラクター交代 & 素早さ連動ダメージテスト (v2.6.0)
+  const charFast = { id: "fast", name: "超速ニンジャ", element: "水", rarity: "SSR", hp: 1000, atk: 200, def: 50, spd: 999 };
+  const charSlow = { id: "slow", name: "重装ゴーレム", element: "木", rarity: "SR", hp: 1500, atk: 150, def: 200, spd: 1 };
+  const charEnemy = { id: "enemy", name: "敵ファイター", element: "火", rarity: "R", hp: 1200, atk: 200, def: 50, spd: 100 };
+
+  // パターンA: 自分が先攻（Fast Ninja -> Slow Golem へ交代、相手 Enemy(SPD 100) は後攻）
+  // 期待値: 交代が先に発動し、新登場した Golem がダメージを受ける
+  const switchEngineA = new BattleEngine([charFast, charSlow], [], [charEnemy], [], '3p');
+  const initialFastHp = switchEngineA.playerTeam[0].currentHp;
+  const initialSlowHp = switchEngineA.playerTeam[1].currentHp;
+
+  switchEngineA.processTurn('switch', 0, 'attack', 0, 1, -1);
+  assert(switchEngineA.playerIndex === 1, "キャラ交代: 先攻交代で控えのGolemが出撃していること");
+  assert(switchEngineA.playerTeam[0].currentHp === initialFastHp, "先攻交代: 交代前のNinjaはダメージを受けないこと");
+  assert(switchEngineA.playerTeam[1].currentHp < initialSlowHp, "先攻交代: 交代後のGolemが敵の攻撃を受けてダメージを負うこと");
+
+  // パターンB: 自分が後攻（Slow Golem -> Fast Ninja へ交代、相手 Enemy(SPD 100) は先攻）
+  // 期待値: 敵の攻撃が先に発動し、交代前の Golem が被弾してから Ninja へ交代する
+  const switchEngineB = new BattleEngine([charSlow, charFast], [], [charEnemy], [], '3p');
+  const initialSlowHpB = switchEngineB.playerTeam[0].currentHp;
+  const initialFastHpB = switchEngineB.playerTeam[1].currentHp;
+
+  switchEngineB.processTurn('switch', 0, 'attack', 0, 1, -1);
+  assert(switchEngineB.playerIndex === 1, "キャラ交代: 後攻交代でも最終的に控えのNinjaが出撃していること");
+  assert(switchEngineB.playerTeam[0].currentHp < initialSlowHpB, "後攻交代: 交代前のGolemが敵の先制攻撃を受けて被弾していること");
+  assert(switchEngineB.playerTeam[1].currentHp === initialFastHpB, "後攻交代: 交代後のNinjaはダメージを受けないこと");
+
   return results;
 }
 

@@ -644,7 +644,7 @@
   }
 
   // ==========================================
-  // 4. Battle Engine (3 アイテム選択使用 & 完全同期対応)
+  // 4. Battle Engine (3P 交代 & 素早さ連動ダメージ & 完全同期対応)
   // ==========================================
   class BattleEngine {
     constructor(playerTeam, playerItems, enemyTeam, enemyItems, mode = '1p') {
@@ -691,6 +691,21 @@
       return count;
     }
 
+    get player() { return this.playerTeam[this.playerIndex]; }
+    get enemy() { return this.enemyTeam[this.enemyIndex]; }
+
+    getAliveSubIndexes(isPlayer) {
+      const team = isPlayer ? this.playerTeam : this.enemyTeam;
+      const currentIndex = isPlayer ? this.playerIndex : this.enemyIndex;
+      const aliveIndexes = [];
+      for (let i = 0; i < team.length; i++) {
+        if (i !== currentIndex && team[i].currentHp > 0) {
+          aliveIndexes.push(i);
+        }
+      }
+      return aliveIndexes;
+    }
+
     _normalize(c, isPlayer) {
       const hp = Math.max(100, Number(c?.hp) || 1200);
       const atk = Math.max(10, Number(c?.atk) || 180);
@@ -717,10 +732,7 @@
       };
     }
 
-    get player() { return this.playerTeam[this.playerIndex]; }
-    get enemy() { return this.enemyTeam[this.enemyIndex]; }
-
-    processTurn(pAction, pItemIdx = 0, eAction = null, eItemIdx = 0) {
+    processTurn(pAction, pItemIdx = 0, eAction = null, eItemIdx = 0, pSwitchIdx = -1, eSwitchIdx = -1) {
       if (this.isOver) return null;
 
       if (!eAction) {
@@ -730,6 +742,13 @@
           opts.push('item');
           for (let i = 0; i < this.enemyItems.length; i++) {
             if (!this.enemyItemUsed[i]) { eItemIdx = i; break; }
+          }
+        }
+        if (this.mode === '3p') {
+          const aliveSubs = this.getAliveSubIndexes(false);
+          if (aliveSubs.length > 0 && (this.enemy.currentHp < this.enemy.maxHp * 0.35) && Math.random() < 0.3) {
+            opts.push('switch');
+            eSwitchIdx = aliveSubs[Math.floor(Math.random() * aliveSubs.length)];
           }
         }
         eAction = opts[Math.floor(Math.random() * opts.length)];
@@ -767,14 +786,14 @@
       const first = (pPriority >= ePriority) ? 'player' : 'enemy';
       const second = (first === 'player') ? 'enemy' : 'player';
 
-      const actMap = {
-        player: { action: pAction, self: this.player, target: this.enemy },
-        enemy: { action: eAction, self: this.enemy, target: this.player }
+      const actParams = {
+        player: { action: pAction, switchIdx: pSwitchIdx },
+        enemy: { action: eAction, switchIdx: eSwitchIdx }
       };
 
-      this._execAction(actMap[first], turnLog);
+      this._execTurnStep(first, actParams[first], turnLog);
       if (!this._checkWin(turnLog)) {
-        this._execAction(actMap[second], turnLog);
+        this._execTurnStep(second, actParams[second], turnLog);
         this._checkWin(turnLog);
       }
 
@@ -788,6 +807,71 @@
       }
 
       return turnLog;
+    }
+
+    _execTurnStep(actor, { action, switchIdx }, turnLog) {
+      if (this.isOver) return;
+
+      if (action === 'switch') {
+        if (actor === 'player') {
+          if (switchIdx >= 0 && switchIdx < this.playerTeam.length && this.playerTeam[switchIdx].currentHp > 0 && switchIdx !== this.playerIndex) {
+            const oldName = this.player.name;
+            this.playerIndex = switchIdx;
+            turnLog.actions.push({ actor: 'player', message: `🔄 あなたは ${oldName} から ${this.player.name} に こうたい！` });
+          }
+        } else {
+          if (switchIdx >= 0 && switchIdx < this.enemyTeam.length && this.enemyTeam[switchIdx].currentHp > 0 && switchIdx !== this.enemyIndex) {
+            const oldName = this.enemy.name;
+            this.enemyIndex = switchIdx;
+            turnLog.actions.push({ actor: 'enemy', message: `🔄 相手は ${oldName} から ${this.enemy.name} に こうたい！` });
+          }
+        }
+        return;
+      }
+
+      if (action === 'guard' || action === 'item') return;
+
+      const self = (actor === 'player') ? this.player : this.enemy;
+      const target = (actor === 'player') ? this.enemy : this.player;
+
+      if (self.currentHp <= 0 || target.currentHp <= 0) return;
+
+      if (Math.random() < 0.04) {
+        turnLog.actions.push({ actor: (actor === 'player') ? 'player' : 'enemy', message: `${self.name} の こうげき！ しかし MISS!` });
+        return;
+      }
+
+      const baseDamage = self.atk * 2.5 * (100 / (100 + target.def * 0.35));
+      const minGuaranteed = self.atk * 0.50;
+      let raw = Math.max(minGuaranteed, baseDamage);
+
+      let mult = BattleEngine.getElementMultiplier(self.element, target.element);
+      let rand = 0.95 + Math.random() * 0.10;
+      let dmg = Math.max(1, Math.round(raw * mult * rand));
+
+      if (action === 'skill') {
+        if (self.sp >= 100) {
+          self.sp = 0;
+          dmg = Math.round(dmg * 1.85);
+          turnLog.actions.push({ actor: (actor === 'player') ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
+        } else {
+          action = 'attack';
+        }
+      }
+
+      if (action === 'attack') {
+        self.sp = Math.min(100, self.sp + 35);
+      }
+
+      if (target.isGuarding) dmg = Math.max(1, Math.round(dmg * 0.5));
+
+      target.currentHp = Math.max(0, target.currentHp - dmg);
+      target.sp = Math.min(100, target.sp + 15);
+
+      turnLog.actions.push({
+        actor: (actor === 'player') ? 'player' : 'enemy',
+        message: `${self.name} の こうげき！ -> ${target.name} に ${dmg} ダメージ！`
+      });
     }
 
     _applyItemEffect(item, user, opponent, actorRole, turnLog) {
@@ -826,77 +910,38 @@
       }
     }
 
-    _execAction({ action, self, target }, turnLog) {
-      if (self.currentHp <= 0 || target.currentHp <= 0) return;
-      if (action === 'guard' || action === 'item') return;
-
-      if (Math.random() < 0.04) {
-        turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `${self.name} の こうげき！ しかし MISS!` });
-        return;
-      }
-
-      const baseDamage = self.atk * 2.5 * (100 / (100 + target.def * 0.35));
-      const minGuaranteed = self.atk * 0.50;
-      let raw = Math.max(minGuaranteed, baseDamage);
-
-      let mult = BattleEngine.getElementMultiplier(self.element, target.element);
-      let rand = 0.95 + Math.random() * 0.10;
-      let dmg = Math.max(1, Math.round(raw * mult * rand));
-
-      if (action === 'skill') {
-        if (self.sp >= 100) {
-          self.sp = 0;
-          dmg = Math.round(dmg * 1.85);
-          turnLog.actions.push({ actor: self.isPlayer ? 'player' : 'enemy', message: `✨ ${self.name} の ひっさつ技【ギガブレイク】発動！` });
-        } else {
-          action = 'attack';
-        }
-      }
-
-      if (action === 'attack') {
-        self.sp = Math.min(100, self.sp + 35);
-      }
-
-      if (target.isGuarding) dmg = Math.max(1, Math.round(dmg * 0.5));
-
-      target.currentHp = Math.max(0, target.currentHp - dmg);
-      target.sp = Math.min(100, target.sp + 15);
-
-      turnLog.actions.push({
-        actor: self.isPlayer ? 'player' : 'enemy',
-        message: `${self.name} の こうげき！ -> ${target.name} に ${dmg} ダメージ！`
-      });
-    }
-
     _checkWin(turnLog) {
       if (this.enemy.currentHp <= 0) {
-        if (this.mode === '3p' && this.enemyIndex < this.enemyTeam.length - 1) {
-          this.enemyIndex++;
-          turnLog.actions.push({ actor: 'system', message: `🎉 相手のキャラを たおした！ 敵チームは ${this.enemy.name} が 出撃！` });
-          return false;
-        } else {
-          this.isOver = true;
-          this.winner = 'player';
-          turnLog.actions.push({ actor: 'system', message: `🎉 ${this.enemy.name} を たおした！ あなたの しょうり！` });
-          return true;
+        if (this.mode === '3p') {
+          const aliveSubs = this.getAliveSubIndexes(false);
+          if (aliveSubs.length > 0) {
+            this.enemyIndex = aliveSubs[0];
+            turnLog.actions.push({ actor: 'system', message: `🎉 相手のキャラを たおした！ 敵チームは ${this.enemy.name} が 出撃！` });
+            return false;
+          }
         }
+        this.isOver = true;
+        this.winner = 'player';
+        turnLog.actions.push({ actor: 'system', message: `🎉 ${this.enemy.name} を たおした！ あなたの しょうり！` });
+        return true;
       }
       if (this.player.currentHp <= 0) {
-        if (this.mode === '3p' && this.playerIndex < this.playerTeam.length - 1) {
-          this.playerIndex++;
-          turnLog.actions.push({ actor: 'system', message: `💧 あなたのキャラが たおれた... つぎの ${this.player.name} が 出撃！` });
-          return false;
-        } else {
-          this.isOver = true;
-          this.winner = 'enemy';
-          turnLog.actions.push({ actor: 'system', message: `💧 ${this.player.name} は たおれた... あなたの まけ...` });
-          return true;
+        if (this.mode === '3p') {
+          const aliveSubs = this.getAliveSubIndexes(true);
+          if (aliveSubs.length > 0) {
+            this.playerIndex = aliveSubs[0];
+            turnLog.actions.push({ actor: 'system', message: `💧 あなたのキャラが たおれた... つぎの ${this.player.name} が 出撃！` });
+            return false;
+          }
         }
+        this.isOver = true;
+        this.winner = 'enemy';
+        turnLog.actions.push({ actor: 'system', message: `💧 ${this.player.name} は たおれた... あなたの まけ...` });
+        return true;
       }
       return false;
     }
 
-    // ホスト用のシリアライズ
     exportHostState() {
       return {
         turn: this.turn,
@@ -911,7 +956,6 @@
       };
     }
 
-    // ゲスト用のデシリアライズ（ホストと立場が逆転：HostのplayerがGuestのenemyになる）
     applyGuestState(hostState) {
       this.turn = hostState.turn;
       this.isOver = hostState.isOver;
@@ -919,14 +963,12 @@
       this.playerIndex = hostState.enemyIndex;
       this.enemyIndex = hostState.playerIndex;
 
-      // Guest視点: 自分のplayerTeam = HostのenemyTeam
       for (let i = 0; i < hostState.enemyTeam.length; i++) {
         if (this.playerTeam[i]) {
           this.playerTeam[i].currentHp = hostState.enemyTeam[i].currentHp;
           this.playerTeam[i].sp = hostState.enemyTeam[i].sp;
         }
       }
-      // Guest視点: 相手のenemyTeam = HostのplayerTeam
       for (let i = 0; i < hostState.playerTeam.length; i++) {
         if (this.enemyTeam[i]) {
           this.enemyTeam[i].currentHp = hostState.playerTeam[i].currentHp;
@@ -1395,6 +1437,7 @@
 
     const btnSkill = document.getElementById('btn-cmd-skill');
     const btnItem = document.getElementById('btn-cmd-item');
+    const btnSwitch = document.getElementById('btn-cmd-switch');
     const btnAtk = document.getElementById('btn-cmd-attack');
     const btnGrd = document.getElementById('btn-cmd-guard');
 
@@ -1406,6 +1449,15 @@
       const total = be.playerItems.length;
       btnItem.textContent = `💊 アイテム (${left}/${total})`;
       btnItem.disabled = (left <= 0 || isBusy);
+    }
+    if (btnSwitch) {
+      if (be.mode === '3p') {
+        btnSwitch.style.display = 'inline-flex';
+        const aliveSubs = be.getAliveSubIndexes(true);
+        btnSwitch.disabled = (aliveSubs.length === 0 || isBusy);
+      } else {
+        btnSwitch.style.display = 'none';
+      }
     }
     if (btnAtk) btnAtk.disabled = isBusy;
     if (btnGrd) btnGrd.disabled = isBusy;
@@ -1447,6 +1499,32 @@
     modal.classList.add('active');
   }
 
+  function openBattleSwitchModal() {
+    const be = appState.battleEngine;
+    if (!be || be.isOver || appState.waitingForOpponent || be.mode !== '3p') return;
+
+    const modal = document.getElementById('battle-switch-modal');
+    const list = document.getElementById('battle-switch-list');
+    if (!modal || !list) return;
+
+    const aliveSubs = be.getAliveSubIndexes(true);
+    if (aliveSubs.length === 0) {
+      list.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">交代できる控えキャラクターがいません。</div>`;
+    } else {
+      list.innerHTML = aliveSubs.map(idx => {
+        const char = be.playerTeam[idx];
+        return `
+          <button class="btn btn-secondary" style="margin:0; min-height:48px; font-size:0.88rem; display:flex; justify-content:space-between; align-items:center; padding:6px 12px;" onclick="window.appExecutePlayerAction('switch', 0, ${idx})">
+            <span><span style="color:var(--accent-gold);">[${char.rarity || 'N'}]</span> ${char.name} (${char.element})</span>
+            <span style="color:#00ff88; font-weight:900;">HP: ${char.currentHp}/${char.maxHp}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    modal.classList.add('active');
+  }
+
   function handleBattleEnd(winner) {
     const isWin = (winner === 'player');
     setTimeout(() => {
@@ -1472,16 +1550,18 @@
     }, 400);
   }
 
-  function executePlayerAction(action, itemIdx = 0) {
+  function executePlayerAction(action, itemIdx = 0, switchIdx = -1) {
     const itemModal = document.getElementById('battle-item-modal');
     if (itemModal) itemModal.classList.remove('active');
+    const switchModal = document.getElementById('battle-switch-modal');
+    if (switchModal) switchModal.classList.remove('active');
 
     const be = appState.battleEngine;
     if (!be || be.isOver || appState.waitingForOpponent) return;
 
     if (!appState.isP2P) {
       // CPU対戦
-      const result = be.processTurn(action, itemIdx);
+      const result = be.processTurn(action, itemIdx, null, 0, switchIdx, -1);
       if (!result) return;
 
       appendBattleLog(result.actions);
@@ -1495,7 +1575,7 @@
 
     // P2P対戦
     if (appState.isHost) {
-      appState.pendingHostAction = { action: action, itemIdx: itemIdx };
+      appState.pendingHostAction = { action: action, itemIdx: itemIdx, switchIdx: switchIdx };
       appState.waitingForOpponent = true;
       renderBattleUI();
       appendBattleLog([{ message: "⏳ 相手のコマンド入力を待っています..." }]);
@@ -1514,7 +1594,8 @@
         appState.peerConn.send({
           type: 'GUEST_ACTION',
           action: action,
-          itemIdx: itemIdx
+          itemIdx: itemIdx,
+          switchIdx: switchIdx
         });
       }
     }
@@ -1533,7 +1614,7 @@
     appState.waitingForOpponent = false;
 
     // ホストの視点: player = Host, enemy = Guest
-    const result = be.processTurn(hAct.action, hAct.itemIdx, gAct.action, gAct.itemIdx);
+    const result = be.processTurn(hAct.action, hAct.itemIdx, gAct.action, gAct.itemIdx, hAct.switchIdx, gAct.switchIdx);
     if (!result) return;
 
     appendBattleLog(result.actions);
@@ -1652,26 +1733,35 @@
           if (!data) return;
 
           if (data.type === 'JOIN') {
-            const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
+            const hostMode = appState.battleMode;
+            const playerTeam = (hostMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
             const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
-            const enemyTeam = data.team || [];
+            
+            let enemyTeam = data.team || [];
+            if (hostMode === '3p') {
+              while (enemyTeam.length < 3) {
+                enemyTeam.push(BarcodeEngine.generateFromBarcode("4901234567890"));
+              }
+            } else {
+              enemyTeam = enemyTeam.slice(0, 1);
+            }
             const enemyItems = data.items || [];
 
             conn.send({
               type: 'START',
               team: playerTeam,
               items: playerItems,
-              mode: appState.battleMode
+              mode: hostMode
             });
 
             if (appState.currentScreen !== 'SCR-06') {
-              appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, appState.battleMode);
+              appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, hostMode);
               resetBattleLog();
               switchScreen('SCR-06');
               renderBattleUI();
             }
           } else if (data.type === 'GUEST_ACTION') {
-            appState.pendingGuestAction = { action: data.action, itemIdx: data.itemIdx };
+            appState.pendingGuestAction = { action: data.action, itemIdx: data.itemIdx, switchIdx: data.switchIdx };
             if (appState.pendingHostAction) {
               processHostP2PTurn();
             }
@@ -1787,13 +1877,32 @@
               btnJoin.textContent = "さんかする";
             }
 
-            const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
+            const serverMode = data.mode || '1p';
+            appState.battleMode = serverMode;
+
+            let playerTeam = [];
+            if (serverMode === '3p') {
+              playerTeam = [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean);
+              if (playerTeam.length < 3) {
+                const collection = StorageManager.getCollection();
+                const validChars = collection.filter(c => c && c.type === 'character' && !playerTeam.some(p => p.id === c.id));
+                while (playerTeam.length < 3 && validChars.length > 0) {
+                  playerTeam.push(validChars.shift());
+                }
+                while (playerTeam.length < 3) {
+                  playerTeam.push(BarcodeEngine.generateFromBarcode("4901234567890"));
+                }
+              }
+            } else {
+              playerTeam = [deck.mainChar].filter(Boolean);
+            }
+
             const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
             const enemyTeam = data.team || [];
             const enemyItems = data.items || [];
 
             if (appState.currentScreen !== 'SCR-06') {
-              appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, data.mode || appState.battleMode);
+              appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, serverMode);
               resetBattleLog();
               switchScreen('SCR-06');
               renderBattleUI();
@@ -1899,6 +2008,7 @@
   window.appJoinRoom = joinRoom;
   window.appCancelHost = cancelHost;
   window.appExecutePlayerAction = executePlayerAction;
+  window.appOpenBattleSwitchModal = openBattleSwitchModal;
 
   document.addEventListener('DOMContentLoaded', () => {
     StorageManager.migrateCollectionData();
@@ -2007,8 +2117,12 @@
     document.getElementById('btn-cmd-skill')?.addEventListener('click', () => executePlayerAction('skill'));
     document.getElementById('btn-cmd-guard')?.addEventListener('click', () => executePlayerAction('guard'));
     document.getElementById('btn-cmd-item')?.addEventListener('click', openBattleItemSelectModal);
+    document.getElementById('btn-cmd-switch')?.addEventListener('click', openBattleSwitchModal);
     document.getElementById('btn-close-battle-item')?.addEventListener('click', () => {
       document.getElementById('battle-item-modal')?.classList.remove('active');
+    });
+    document.getElementById('btn-close-battle-switch')?.addEventListener('click', () => {
+      document.getElementById('battle-switch-modal')?.classList.remove('active');
     });
 
     renderHome();
