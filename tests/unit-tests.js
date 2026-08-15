@@ -25,17 +25,17 @@ export function runAllTests() {
   assert(char1.hp === char2.hp, "決定論的生成: 同一バーコードで同じHPが生成されること");
   assert(char1.element === char2.element, "決定論的生成: 同一バーコードで同じ属性が生成されること");
 
-  // 2. 20種族の生成テスト
+  // 2. 20種族の完全均等生成テスト (独立ソルトハッシュ)
   assert(BASE_NAMES.length === 20, "20種族定義: BASE_NAMES が20種類定義されていること");
   const generatedSpecies = new Set();
-  for (let i = 0; i < 200; i++) {
-    const code = `4900000000${i.toString().padStart(3, '0')}`;
+  for (let i = 0; i < 2000; i++) {
+    const code = `490000000${i.toString().padStart(4, '0')}`;
     const card = BarcodeEngine.generateFromBarcode(code);
-    if (card.type === 'character') {
+    if (card && card.type === 'character') {
       generatedSpecies.add(card.species);
     }
   }
-  assert(generatedSpecies.size >= 10, "20種族生成: 多様な種族が決定論的に生成されること");
+  assert(generatedSpecies.size === 20, "20種族生成: 全20種族（ゴーレム・ベア・グリフォン・デーモン含む）が偏りなく生成されること");
 
   // 3. 属性別マルチカラーパレット & SVGレンダリングテスト (v2.4.0)
   assert(ELEMENT_PALETTES["火"] && ELEMENT_PALETTES["水"] && ELEMENT_PALETTES["木"], "属性パレット: 火・水・木の3属性パレットが定義されていること");
@@ -105,9 +105,9 @@ export function runAllTests() {
   assert(collection.length === 100, "ストレージ保存制限: 100体超過時に古いカードが削除され上限100体に維持されること (FIFO)");
 
   // 8. デッキ3アイテムスロット管理テスト
-  const item1 = BarcodeEngine.generateFromBarcode("4900000000001");
-  const item2 = BarcodeEngine.generateFromBarcode("4900000000006");
-  const item3 = BarcodeEngine.generateFromBarcode("4900000000010");
+  const item1 = BarcodeEngine.generateFromBarcode("4900000000004");
+  const item2 = BarcodeEngine.generateFromBarcode("4900000000011");
+  const item3 = BarcodeEngine.generateFromBarcode("4900000000015");
 
   assert(item1.type === 'item' && item2.type === 'item' && item3.type === 'item', "アイテム生成: 3つのテストアイテムが正常にアイテムとして生成されること");
 
@@ -159,7 +159,7 @@ export function runAllTests() {
 
   // 12. 3P対戦 キャラクター交代 & 素早さ連動ダメージテスト (v2.6.0)
   const charFast = { id: "fast", name: "超速ニンジャ", element: "水", rarity: "SSR", hp: 1000, atk: 200, def: 50, spd: 999 };
-  const charSlow = { id: "slow", name: "重装ゴーレム", element: "木", rarity: "SR", hp: 1500, atk: 150, def: 200, spd: 1 };
+  const charSlow = { id: "slow", name: "重装ゴーレム", element: "木", rarity: "SR", hp: 1500, atk: 150, def: 50, spd: 1 };
   const charEnemy = { id: "enemy", name: "敵ファイター", element: "火", rarity: "R", hp: 1200, atk: 200, def: 50, spd: 100 };
 
   // パターンA: 自分が先攻（Fast Ninja -> Slow Golem へ交代、相手 Enemy(SPD 100) は後攻）
