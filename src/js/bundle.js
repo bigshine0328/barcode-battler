@@ -1535,38 +1535,25 @@
     appState.peerConn = null;
     appState.waitingForOpponent = false;
 
-    const deck = StorageManager.getDeck();
-    let playerTeam = [];
-    if (appState.battleMode === '3p') {
-      playerTeam = [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean);
-    } else {
-      playerTeam = [deck.mainChar].filter(Boolean);
-    }
-
-    if (playerTeam.length === 0) {
-      alert("デッキにキャラクターがセットされていません。図鑑からセットしてください。");
-      switchScreen('SCR-04');
-      return;
-    }
-
-    const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
+    const playerTeam = getBattleReadyTeam(appState.battleMode);
+    const playerItems = getBattleReadyItems();
 
     const enemyTeam = [];
     const teamCount = (appState.battleMode === '3p') ? 3 : 1;
     for (let i = 0; i < teamCount; i++) {
       const randCode = BarcodeEngine.getRandomBarcode();
       const enemyChar = BarcodeEngine.generateFromBarcode(randCode);
-      if (enemyChar.type === 'character') {
+      if (enemyChar && enemyChar.type === 'character') {
         enemyTeam.push(enemyChar);
       } else {
-        enemyTeam.push(BarcodeEngine.generateFromBarcode("4901234567890"));
+        enemyTeam.push(getFallbackCharacter(i + 1));
       }
     }
 
     const enemyItems = [
       BarcodeEngine.generateFromBarcode("4900000000001"),
       BarcodeEngine.generateFromBarcode("4900000000006")
-    ];
+    ].filter(c => c && c.type === 'item');
 
     appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, appState.battleMode);
     resetBattleLog();
@@ -1964,14 +1951,57 @@
     };
   }
 
-  function createRoom() {
+  // バトル出撃用チーム構築ヘルパー (デッキ未選択スロットを所持図鑑の未選択キャラからランダム自動選抜)
+  function getBattleReadyTeam(mode = '1p') {
     const deck = StorageManager.getDeck();
-    if (!deck.mainChar) {
-      alert("デッキにキャラクターがセットされていません。");
-      switchScreen('SCR-04');
-      return;
+    const collection = StorageManager.getCollection();
+    const validChars = collection.filter(c => c && c.type === 'character' && typeof c.hp === 'number');
+
+    const requiredCount = (mode === '3p') ? 3 : 1;
+    const team = [];
+
+    // 1. デッキにセットされた有効キャラを優先採用
+    if (deck.mainChar && deck.mainChar.type === 'character') {
+      team.push(deck.mainChar);
+    }
+    if (mode === '3p') {
+      if (deck.subChar1 && deck.subChar1.type === 'character' && !team.some(c => c.id === deck.subChar1.id)) {
+        team.push(deck.subChar1);
+      }
+      if (deck.subChar2 && deck.subChar2.type === 'character' && !team.some(c => c.id === deck.subChar2.id)) {
+        team.push(deck.subChar2);
+      }
     }
 
+    // 2. 未選択スロットがある場合、所持図鑑の未選択キャラからランダム自動選抜
+    if (team.length < requiredCount) {
+      const availableChars = validChars.filter(c => !team.some(t => t.id === c.id));
+      // Fisher-Yates ランダムシャッフル
+      for (let i = availableChars.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [availableChars[i], availableChars[j]] = [availableChars[j], availableChars[i]];
+      }
+
+      while (team.length < requiredCount && availableChars.length > 0) {
+        team.push(availableChars.shift());
+      }
+    }
+
+    // 3. 所持キャラ自体が不足している場合のみ安全なフォールバックキャラで補填
+    let fallbackIdx = 1;
+    while (team.length < requiredCount) {
+      team.push(getFallbackCharacter(fallbackIdx++));
+    }
+
+    return team;
+  }
+
+  function getBattleReadyItems() {
+    const deck = StorageManager.getDeck();
+    return [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(c => c && c.type === 'item');
+  }
+
+  function createRoom() {
     if (appState.peer) {
       try { appState.peer.destroy(); } catch(e){}
       appState.peer = null;
@@ -2040,14 +2070,8 @@
 
           if (data.type === 'JOIN') {
             const hostMode = appState.battleMode;
-            let playerTeam = (hostMode === '3p')
-              ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(c => c && c.type === 'character')
-              : [deck.mainChar].filter(c => c && c.type === 'character');
-            
-            while (playerTeam.length < (hostMode === '3p' ? 3 : 1)) {
-              playerTeam.push(getFallbackCharacter(playerTeam.length + 1));
-            }
-            const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(c => c && c.type === 'item');
+            const playerTeam = getBattleReadyTeam(hostMode);
+            const playerItems = getBattleReadyItems();
             
             let enemyTeam = (data.team || []).filter(c => c && c.type === 'character');
             if (hostMode === '3p') {
@@ -2095,13 +2119,6 @@
       return;
     }
 
-    const deck = StorageManager.getDeck();
-    if (!deck.mainChar) {
-      alert("デッキにキャラクターがセットされていません。");
-      switchScreen('SCR-04');
-      return;
-    }
-
     if (appState.peer) {
       try { appState.peer.destroy(); } catch(e){}
       appState.peer = null;
@@ -2131,7 +2148,7 @@
         }
         alert("部屋への接続がタイムアウトしました。部屋番号が正しいか確認してください。");
       }
-    }, 10000);
+    }, 15000);
 
     try {
       const peer = new Peer(PEER_CONFIG);
@@ -2156,19 +2173,8 @@
         const sendJoinMessage = () => {
           if (hasStarted) return;
           // ゲストはモード未定のため常に3体チームを送信（ホスト側で1P/3Pに合わせて採用）
-          const collection = StorageManager.getCollection();
-          const validChars = collection.filter(c => c && c.type === 'character');
-          let playerTeam = [deck.mainChar, deck.subChar1, deck.subChar2].filter(c => c && c.type === 'character');
-          while (playerTeam.length < 3 && validChars.length > 0) {
-            const nextChar = validChars.find(c => !playerTeam.some(p => p.id === c.id));
-            if (nextChar) playerTeam.push(nextChar);
-            else break;
-          }
-          while (playerTeam.length < 3) {
-            playerTeam.push(getFallbackCharacter(playerTeam.length + 1));
-          }
-
-          const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(c => c && c.type === 'item');
+          const playerTeam = getBattleReadyTeam('3p');
+          const playerItems = getBattleReadyItems();
 
           try {
             conn.send({
@@ -2217,27 +2223,10 @@
             }
 
             const serverMode = data.mode || '1p';
-            appState.battleMode = serverMode;
+            appState.battleMode = serverMode; // ホストの対戦モードに完全同期！
 
-            let playerTeam = [];
-            if (serverMode === '3p') {
-              playerTeam = [deck.mainChar, deck.subChar1, deck.subChar2].filter(c => c && c.type === 'character');
-              if (playerTeam.length < 3) {
-                const collection = StorageManager.getCollection();
-                const validChars = collection.filter(c => c && c.type === 'character' && !playerTeam.some(p => p.id === c.id));
-                while (playerTeam.length < 3 && validChars.length > 0) {
-                  playerTeam.push(validChars.shift());
-                }
-                while (playerTeam.length < 3) {
-                  playerTeam.push(getFallbackCharacter(playerTeam.length + 1));
-                }
-              }
-            } else {
-              playerTeam = [deck.mainChar].filter(c => c && c.type === 'character');
-              if (playerTeam.length === 0) playerTeam.push(getFallbackCharacter(1));
-            }
-
-            const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(c => c && c.type === 'item');
+            const playerTeam = getBattleReadyTeam(serverMode);
+            const playerItems = getBattleReadyItems();
             let enemyTeam = (data.team || []).filter(c => c && c.type === 'character');
             if (serverMode === '3p') {
               while (enemyTeam.length < 3) {

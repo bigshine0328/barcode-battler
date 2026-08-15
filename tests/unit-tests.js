@@ -393,6 +393,68 @@ export function runAllTests() {
   assert(simulatedGuestTeam.every(c => typeof c.hp === 'number' && c.hp > 0), "3Pチーム保証: 全キャラが有効なHPステータスを保持していること");
   assert(!simulatedGuestTeam.some(c => c.name === "いあつのたて"), "3Pチーム保証: 「いあつのたて」がキャラクターとして混入しないこと");
 
+  // 21. 未選択スロットの所持図鑑ランダム自動選抜テスト (v3.7.0)
+  localStorage.clear();
+  const cA = { id: "char_a", type: "character", name: "キャラA", hp: 1000, atk: 100, def: 50, spd: 30 };
+  const cB = { id: "char_b", type: "character", name: "キャラB", hp: 1100, atk: 110, def: 60, spd: 40 };
+  const cC = { id: "char_c", type: "character", name: "キャラC", hp: 1200, atk: 120, def: 70, spd: 50 };
+  const cD = { id: "char_d", type: "character", name: "キャラD", hp: 1300, atk: 130, def: 80, spd: 60 };
+  StorageManager.saveToCollection(cA);
+  StorageManager.saveToCollection(cB);
+  StorageManager.saveToCollection(cC);
+  StorageManager.saveToCollection(cD);
+
+  // メインキャラのみセット (サブ1, サブ2は未セット)
+  StorageManager.setDeckSlot('mainChar', cA);
+  StorageManager.setDeckSlot('subChar1', null);
+  StorageManager.setDeckSlot('subChar2', null);
+
+  function testGetBattleReadyTeam(mode = '3p') {
+    const deck = StorageManager.getDeck();
+    const collection = StorageManager.getCollection();
+    const validChars = collection.filter(c => c && c.type === 'character' && typeof c.hp === 'number');
+    const requiredCount = (mode === '3p') ? 3 : 1;
+    const team = [];
+
+    if (deck.mainChar && deck.mainChar.type === 'character') {
+      team.push(deck.mainChar);
+    }
+    if (mode === '3p') {
+      if (deck.subChar1 && deck.subChar1.type === 'character' && !team.some(c => c.id === deck.subChar1.id)) {
+        team.push(deck.subChar1);
+      }
+      if (deck.subChar2 && deck.subChar2.type === 'character' && !team.some(c => c.id === deck.subChar2.id)) {
+        team.push(deck.subChar2);
+      }
+    }
+
+    if (team.length < requiredCount) {
+      const availableChars = validChars.filter(c => !team.some(t => t.id === c.id));
+      for (let i = availableChars.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [availableChars[i], availableChars[j]] = [availableChars[j], availableChars[i]];
+      }
+      while (team.length < requiredCount && availableChars.length > 0) {
+        team.push(availableChars.shift());
+      }
+    }
+
+    return team;
+  }
+
+  const generatedTeam3p = testGetBattleReadyTeam('3p');
+  assert(generatedTeam3p.length === 3, "ランダム自動選抜: 3P対戦で3体が揃うこと");
+  assert(generatedTeam3p[0].id === "char_a", "ランダム自動選抜: セット済みのメインキャラ(キャラA)が先鋒に配置されること");
+  assert(generatedTeam3p[1].id !== "char_a" && generatedTeam3p[2].id !== "char_a", "ランダム自動選抜: 重複なく未選択キャラが選ばれること");
+  assert(["char_b", "char_c", "char_d"].includes(generatedTeam3p[1].id), "ランダム自動選抜: 次鋒に図鑑内の未選択キャラ(B,C,D)から選出されること");
+  assert(["char_b", "char_c", "char_d"].includes(generatedTeam3p[2].id), "ランダム自動選抜: 大将に図鑑内の未選択キャラ(B,C,D)から選出されること");
+
+  // デッキ完全未セット時の1P対戦テスト
+  StorageManager.setDeckSlot('mainChar', null);
+  const generatedTeam1p = testGetBattleReadyTeam('1p');
+  assert(generatedTeam1p.length === 1, "ランダム自動選抜: 1P対戦で1体が選出されること");
+  assert(["char_a", "char_b", "char_c", "char_d"].includes(generatedTeam1p[0].id), "ランダム自動選抜: 図鑑内のキャラから1体が選ばれること");
+
   return results;
 }
 
