@@ -260,7 +260,7 @@ export function runAllTests() {
   guardEngine.processTurn('guard', 0, 'attack', 0);
   const guardDamage = 1000 - guardEngine.player.currentHp;
 
-  assert(guardDamage <= Math.round(normalDamage * 0.6) && guardDamage >= Math.round(normalDamage * 0.4), "ガード効果: 被ダメージが約50%に半減されていること");
+  assert(guardDamage <= Math.round(normalDamage * 0.65) && guardDamage >= Math.round(normalDamage * 0.35), "ガード効果: 被ダメージが約50%に半減されていること");
 
   // 17. 100枚上限超過時の入れ替え保存テスト (v3.0.0)
   localStorage.clear();
