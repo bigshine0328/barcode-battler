@@ -1349,8 +1349,17 @@
     ];
 
     appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, appState.battleMode);
+    resetBattleLog();
     switchScreen('SCR-06');
     renderBattleUI();
+  }
+
+  function resetBattleLog() {
+    const logBox = document.getElementById('battle-log');
+    if (logBox) {
+      logBox.innerHTML = '<div>⚔️ バトルが はじまった！</div>';
+      logBox.scrollTop = 0;
+    }
   }
 
   function renderBattleUI() {
@@ -1552,6 +1561,19 @@
     if (viewLobby) viewLobby.style.display = 'block';
     if (viewWait) viewWait.style.display = 'none';
 
+    // 部屋番号の入力内容をクリア
+    const inputGuest = document.getElementById('input-guest-code');
+    if (inputGuest) inputGuest.value = "";
+
+    const btnJoin = document.getElementById('btn-join-room');
+    if (btnJoin) {
+      btnJoin.disabled = false;
+      btnJoin.textContent = "さんかする";
+    }
+
+    const hostCodeEl = document.getElementById('host-room-code');
+    if (hostCodeEl) hostCodeEl.textContent = "----";
+
     const btn1p = document.getElementById('btn-mode-1p');
     const btn3p = document.getElementById('btn-mode-3p');
     if (btn1p) btn1p.className = (appState.battleMode === '1p') ? 'mode-btn active' : 'mode-btn';
@@ -1644,6 +1666,7 @@
 
             if (appState.currentScreen !== 'SCR-06') {
               appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, appState.battleMode);
+              resetBattleLog();
               switchScreen('SCR-06');
               renderBattleUI();
             }
@@ -1771,6 +1794,7 @@
 
             if (appState.currentScreen !== 'SCR-06') {
               appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, data.mode || appState.battleMode);
+              resetBattleLog();
               switchScreen('SCR-06');
               renderBattleUI();
             }
