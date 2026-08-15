@@ -1435,9 +1435,17 @@
     if (eSpBar) eSpBar.style.width = `${Math.min(100, e.sp)}%`;
     if (eSprite) eSprite.innerHTML = getCharacterSpriteSvg(e);
 
-    // 3P対戦 チームサブカプセルスロット（残数・体力可視化）
+    // 3P対戦 チームサブカプセルスロット（残数・体力可視化 & 属性丸印）
     const pTeamSlots = document.getElementById('p-team-slots');
     const eTeamSlots = document.getElementById('e-team-slots');
+
+    function getElementDot(element, isDefeated) {
+      if (isDefeated) return `<span style="font-size:0.72rem; line-height:1;">💀</span>`;
+      if (element === '火') return `<span style="color:#ff3344; font-size:0.82rem; line-height:1; vertical-align:middle; filter:drop-shadow(0 0 3px rgba(255,51,68,0.7));">●</span>`;
+      if (element === '水') return `<span style="color:#00e5ff; font-size:0.82rem; line-height:1; vertical-align:middle; filter:drop-shadow(0 0 3px rgba(0,229,255,0.7));">●</span>`;
+      if (element === '木') return `<span style="color:#00ff88; font-size:0.82rem; line-height:1; vertical-align:middle; filter:drop-shadow(0 0 3px rgba(0,255,136,0.7));">●</span>`;
+      return `<span style="color:#ffffff; font-size:0.82rem; line-height:1; vertical-align:middle;">●</span>`;
+    }
 
     if (be.mode === '3p') {
       if (pTeamSlots) {
@@ -1449,7 +1457,7 @@
           return `
             <div class="team-slot-card ${isActive ? 'active' : ''} ${isDefeated ? 'defeated' : ''}">
               <div class="team-slot-header">
-                <span class="team-slot-name">${isActive ? '👑' : (isDefeated ? '💀' : '🟢')} ${c.name}</span>
+                <span class="team-slot-name">${getElementDot(c.element, isDefeated)} ${c.name}</span>
                 <span class="team-slot-hp-text">${c.currentHp}/${c.maxHp}</span>
               </div>
               <div class="team-slot-hp-bg">
@@ -1469,7 +1477,7 @@
           return `
             <div class="team-slot-card ${isActive ? 'active' : ''} ${isDefeated ? 'defeated' : ''}">
               <div class="team-slot-header">
-                <span class="team-slot-name">${isActive ? '👑' : (isDefeated ? '💀' : '🔴')} ${c.name}</span>
+                <span class="team-slot-name">${getElementDot(c.element, isDefeated)} ${c.name}</span>
                 <span class="team-slot-hp-text">${c.currentHp}/${c.maxHp}</span>
               </div>
               <div class="team-slot-hp-bg">
