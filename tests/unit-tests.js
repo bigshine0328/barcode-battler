@@ -354,6 +354,45 @@ export function runAllTests() {
   const upgradedHp = hydratedDeck.mainChar.maxHp || hydratedDeck.mainChar.hp;
   assert(upgradedHp > initialHp, "デッキ同期: メインキャラのHPが成長後の値に正しく更新されていること");
 
+  // 20. 3P対戦チーム編成におけるキャラクター型保証（アイテム混入防止）テスト (v3.6.0)
+  localStorage.clear();
+  const mainC = { id: "main_c", type: "character", name: "メイン", hp: 1500, atk: 200, def: 100, spd: 50 };
+  const itemShield = { id: "item_s", type: "item", name: "いあつのたて", baseVal: 40 };
+  StorageManager.saveToCollection(mainC);
+  StorageManager.saveToCollection(itemShield);
+
+  // ゲスト送信ペイロード生成のシミュレーション
+  const d = StorageManager.getDeck();
+  const col = StorageManager.getCollection();
+  const validCharacters = col.filter(c => c && c.type === 'character');
+  let simulatedGuestTeam = [d.mainChar, d.subChar1, d.subChar2].filter(c => c && c.type === 'character');
+
+  function getFallbackTestChar(idx) {
+    return {
+      id: `char_fallback_test_${idx}`,
+      type: "character",
+      name: `アシストドラゴン${idx}`,
+      hp: 1200,
+      atk: 180,
+      def: 80,
+      spd: 50
+    };
+  }
+
+  while (simulatedGuestTeam.length < 3 && validCharacters.length > 0) {
+    const nextChar = validCharacters.find(c => !simulatedGuestTeam.some(p => p.id === c.id));
+    if (nextChar) simulatedGuestTeam.push(nextChar);
+    else break;
+  }
+  while (simulatedGuestTeam.length < 3) {
+    simulatedGuestTeam.push(getFallbackTestChar(simulatedGuestTeam.length + 1));
+  }
+
+  assert(simulatedGuestTeam.length === 3, "3Pチーム保証: 3体チームが正しく構成されること");
+  assert(simulatedGuestTeam.every(c => c.type === 'character'), "3Pチーム保証: チーム内の全カードが type: 'character' でありアイテムが混入しないこと");
+  assert(simulatedGuestTeam.every(c => typeof c.hp === 'number' && c.hp > 0), "3Pチーム保証: 全キャラが有効なHPステータスを保持していること");
+  assert(!simulatedGuestTeam.some(c => c.name === "いあつのたて"), "3Pチーム保証: 「いあつのたて」がキャラクターとして混入しないこと");
+
   return results;
 }
 

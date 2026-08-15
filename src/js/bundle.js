@@ -1935,6 +1935,35 @@
 
   let p2pJoinInterval = null;
 
+  function getFallbackCharacter(index = 1) {
+    const elems = ["火", "水", "木"];
+    const elem = elems[(index - 1) % 3];
+    return {
+      id: `char_fallback_${Date.now()}_${index}`,
+      barcode: `490000000000${index}`,
+      type: "character",
+      name: `アシストドラゴン${index}`,
+      species: "ドラゴン",
+      element: elem,
+      rarity: "N",
+      baseHp: 1200,
+      baseAtk: 180,
+      baseDef: 80,
+      baseSpd: 50,
+      hp: 1200,
+      maxHp: 1200,
+      atk: 180,
+      def: 80,
+      spd: 50,
+      level: 1,
+      exp: 0,
+      skill: { name: "ギガブレイク", desc: "敵に強力な属性ダメージ！" },
+      spriteSvg: BarcodeEngine.generateCharacterSvg("ドラゴン", elem, "N"),
+      memo: "",
+      createdAt: new Date().toISOString()
+    };
+  }
+
   function createRoom() {
     const deck = StorageManager.getDeck();
     if (!deck.mainChar) {
@@ -1972,6 +2001,10 @@
         if (hostCodeEl) hostCodeEl.textContent = roomCode;
       });
 
+      peer.on('disconnected', () => {
+        handlePeerDisconnect();
+      });
+
       peer.on('error', (err) => {
         console.error("PeerJS host error:", err);
         if (err.type === 'unavailable-id') {
@@ -2007,18 +2040,25 @@
 
           if (data.type === 'JOIN') {
             const hostMode = appState.battleMode;
-            const playerTeam = (hostMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
-            const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
+            let playerTeam = (hostMode === '3p')
+              ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(c => c && c.type === 'character')
+              : [deck.mainChar].filter(c => c && c.type === 'character');
             
-            let enemyTeam = data.team || [];
+            while (playerTeam.length < (hostMode === '3p' ? 3 : 1)) {
+              playerTeam.push(getFallbackCharacter(playerTeam.length + 1));
+            }
+            const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(c => c && c.type === 'item');
+            
+            let enemyTeam = (data.team || []).filter(c => c && c.type === 'character');
             if (hostMode === '3p') {
               while (enemyTeam.length < 3) {
-                enemyTeam.push(BarcodeEngine.generateFromBarcode("4901234567890"));
+                enemyTeam.push(getFallbackCharacter(enemyTeam.length + 1));
               }
             } else {
               enemyTeam = enemyTeam.slice(0, 1);
+              if (enemyTeam.length === 0) enemyTeam.push(getFallbackCharacter(1));
             }
-            const enemyItems = data.items || [];
+            const enemyItems = (data.items || []).filter(c => c && c.type === 'item');
 
             conn.send({
               type: 'START',
@@ -2115,8 +2155,20 @@
 
         const sendJoinMessage = () => {
           if (hasStarted) return;
-          const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
-          const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
+          // ゲストはモード未定のため常に3体チームを送信（ホスト側で1P/3Pに合わせて採用）
+          const collection = StorageManager.getCollection();
+          const validChars = collection.filter(c => c && c.type === 'character');
+          let playerTeam = [deck.mainChar, deck.subChar1, deck.subChar2].filter(c => c && c.type === 'character');
+          while (playerTeam.length < 3 && validChars.length > 0) {
+            const nextChar = validChars.find(c => !playerTeam.some(p => p.id === c.id));
+            if (nextChar) playerTeam.push(nextChar);
+            else break;
+          }
+          while (playerTeam.length < 3) {
+            playerTeam.push(getFallbackCharacter(playerTeam.length + 1));
+          }
+
+          const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(c => c && c.type === 'item');
 
           try {
             conn.send({
@@ -2169,7 +2221,7 @@
 
             let playerTeam = [];
             if (serverMode === '3p') {
-              playerTeam = [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean);
+              playerTeam = [deck.mainChar, deck.subChar1, deck.subChar2].filter(c => c && c.type === 'character');
               if (playerTeam.length < 3) {
                 const collection = StorageManager.getCollection();
                 const validChars = collection.filter(c => c && c.type === 'character' && !playerTeam.some(p => p.id === c.id));
@@ -2177,16 +2229,25 @@
                   playerTeam.push(validChars.shift());
                 }
                 while (playerTeam.length < 3) {
-                  playerTeam.push(BarcodeEngine.generateFromBarcode("4901234567890"));
+                  playerTeam.push(getFallbackCharacter(playerTeam.length + 1));
                 }
               }
             } else {
-              playerTeam = [deck.mainChar].filter(Boolean);
+              playerTeam = [deck.mainChar].filter(c => c && c.type === 'character');
+              if (playerTeam.length === 0) playerTeam.push(getFallbackCharacter(1));
             }
 
-            const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
-            const enemyTeam = data.team || [];
-            const enemyItems = data.items || [];
+            const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(c => c && c.type === 'item');
+            let enemyTeam = (data.team || []).filter(c => c && c.type === 'character');
+            if (serverMode === '3p') {
+              while (enemyTeam.length < 3) {
+                enemyTeam.push(getFallbackCharacter(enemyTeam.length + 1));
+              }
+            } else {
+              enemyTeam = enemyTeam.slice(0, 1);
+              if (enemyTeam.length === 0) enemyTeam.push(getFallbackCharacter(1));
+            }
+            const enemyItems = (data.items || []).filter(c => c && c.type === 'item');
 
             if (appState.currentScreen !== 'SCR-06') {
               appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, serverMode);
@@ -2272,8 +2333,12 @@
         try {
           appState.peerConn.send({ type: 'ESCAPE' });
         } catch(e){}
+        setTimeout(() => {
+          cleanupP2PAndReturnToLobby();
+        }, 120);
+      } else {
+        cleanupP2PAndReturnToLobby();
       }
-      cleanupP2PAndReturnToLobby();
     }
   }
 

@@ -1,13 +1,16 @@
 # 📐 システム基本設計書 (BASIC_DESIGN.md)
 
 - **システム名**: バーコードバトラー Web アプリケーション
-- **バージョン**: `v3.5.0` (Level Stat Sync & P2P Disconnect Recovery)
+- **バージョン**: `v3.6.0` (3P Team Payload Fix & Robust Disconnect Handshake)
 - **最終更新日**: 2026年8月15日
 - **作成担当**: `software-engineer`
 
 ---
 
 ## 改定履歴 (Changelog)
+- **v3.6.0 (2026-08-15)**:
+  - 【不具合修正】3P対戦におけるゲストチーム送信ペイロード仕様（常に3体編成を送信）を是正し、フォールバックダミー生成時のキャラクター型保証ヘルパー（`getFallbackCharacter`）を追加してアイテムカード混入を根絶。
+  - 【不具合修正】P2P対戦逃走・切断時において、`ESCAPE` メッセージ送信の遅延クリーンアップおよび多重切断検知による双方向の対戦ロビー自動復帰（`cleanupP2PAndReturnToLobby`）を堅牢化。
 - **v3.5.0 (2026-08-15)**:
   - 【不具合修正】`StorageManager.getDeck()` において、デッキ内カードオブジェクトを図鑑コレクション（`collection`）の最新成長データで即時同期（Hydration）する仕様を追加。
   - 【新機能・改善】P2P対戦中における `ESCAPE` メッセージ通信および `close` / `error` イベント検知による強制終了・対戦ロビー復帰（`cleanupP2PAndReturnToLobby`）の例外制御仕様を追加。
