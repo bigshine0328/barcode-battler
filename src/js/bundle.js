@@ -1209,7 +1209,24 @@
       return;
     }
 
-    grid.innerHTML = filtered.map(card => {
+    // デッキセット中カードの優先度（メイン ➔ サブ1 ➔ サブ2 ➔ アイテム1 ➔ アイテム2 ➔ アイテム3 ➔ その他）
+    function getDeckPriority(c) {
+      if (deck.mainChar && deck.mainChar.id === c.id) return 1;
+      if (deck.subChar1 && deck.subChar1.id === c.id) return 2;
+      if (deck.subChar2 && deck.subChar2.id === c.id) return 3;
+      if (deck.itemCard1 && deck.itemCard1.id === c.id) return 4;
+      if (deck.itemCard2 && deck.itemCard2.id === c.id) return 5;
+      if (deck.itemCard3 && deck.itemCard3.id === c.id) return 6;
+      return 999;
+    }
+
+    const sortedList = [...filtered].sort((a, b) => {
+      const pA = getDeckPriority(a);
+      const pB = getDeckPriority(b);
+      return pA - pB;
+    });
+
+    grid.innerHTML = sortedList.map(card => {
       let roleBadge = "";
       let isSet = false;
 

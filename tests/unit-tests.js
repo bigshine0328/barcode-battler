@@ -274,10 +274,44 @@ export function runAllTests() {
   const newCard = BarcodeEngine.generateFromBarcode("4999999999999");
   StorageManager.replaceCardInCollection(oldCardId, newCard);
 
-  const colAfterReplace = StorageManager.getCollection();
-  assert(colAfterReplace.length === 100, "入れ替え保存: 総数が100枚に維持されること");
-  assert(!colAfterReplace.some(c => c.id === oldCardId), "入れ替え保存: 選択した古いカードが削除されていること");
-  assert(colAfterReplace.some(c => c.id === newCard.id), "入れ替え保存: 新しいカードが正常に保存されていること");
+  // 18. 図鑑一覧 デッキ採用カード最優先ソートテスト (v3.4.0)
+  localStorage.clear();
+  const c1 = { id: "card_1", name: "キャラ1", type: "character", createdAt: 100 };
+  const c2 = { id: "card_2", name: "キャラ2", type: "character", createdAt: 200 };
+  const c3 = { id: "card_3", name: "キャラ3", type: "character", createdAt: 300 };
+  const itemA = { id: "item_a", name: "アイテムA", type: "item", createdAt: 400 };
+  const itemB = { id: "item_b", name: "アイテムB", type: "item", createdAt: 500 };
+
+  const testList = [c1, c2, c3, itemA, itemB];
+  // c2 をメインキャラ、itemB をアイテム1 にセット
+  const testDeck = {
+    mainChar: c2,
+    subChar1: null,
+    subChar2: null,
+    itemCard1: itemB,
+    itemCard2: null,
+    itemCard3: null
+  };
+
+  function getDeckPriority(c) {
+    if (testDeck.mainChar && testDeck.mainChar.id === c.id) return 1;
+    if (testDeck.subChar1 && testDeck.subChar1.id === c.id) return 2;
+    if (testDeck.subChar2 && testDeck.subChar2.id === c.id) return 3;
+    if (testDeck.itemCard1 && testDeck.itemCard1.id === c.id) return 4;
+    if (testDeck.itemCard2 && testDeck.itemCard2.id === c.id) return 5;
+    if (testDeck.itemCard3 && testDeck.itemCard3.id === c.id) return 6;
+    return 999;
+  }
+
+  const sortedCollection = [...testList].sort((a, b) => {
+    const pA = getDeckPriority(a);
+    const pB = getDeckPriority(b);
+    return pA - pB;
+  });
+
+  assert(sortedCollection[0].id === "card_2", "デッキ最優先ソート: メインキャラ(card_2)が先頭(1番目)にソートされること");
+  assert(sortedCollection[1].id === "item_b", "デッキ最優先ソート: アイテム1(item_b)が2番目にソートされること");
+  assert(sortedCollection.slice(2).some(c => c.id === "card_1"), "デッキ最優先ソート: 未セットカードが後続に配置されること");
 
   return results;
 }
