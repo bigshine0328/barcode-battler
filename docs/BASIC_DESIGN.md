@@ -1,7 +1,7 @@
 # 📐 システム基本設計書 (BASIC_DESIGN.md)
 
 - **システム名**: バーコードバトラー Web アプリケーション
-- **バージョン**: `v2.7.1` (3P Character Switching & Host Rule Authority Edition)
+- **バージョン**: `v3.0.0` (Comprehensive Basic Design with Level & EXP Growth System)
 - **最終更新日**: 2026年8月15日
 - **作成担当**: `software-engineer`
 
@@ -9,15 +9,169 @@
 
 ## 1. システム構成 & アーキテクチャ
 
-- **フロントエンド**: HTML5 / CSS3 / Vanilla ES6+ JavaScript（単一バンドル `src/js/bundle.js`）
-- **P2P通信**: WebRTC / PeerJS (Host Authority パターン ＋ STUN 5重冗長化 ＋ リトライハンドシェイク)
-- **永続化**: ブラウザ LocalStorage (100枚FIFO・デッキ3スロット保存・カスケード保護)
+```
++-----------------------------------------------------------------------------------+
+|                                  Client Browser                                   |
+|                                                                                   |
+|   +---------------------------------------------------------------------------+   |
+|   |                        UI / Router (HTML5 & Vanilla CSS)                  |   |
+|   |   SCR-01 (Home) / SCR-02 (Scan) / SCR-03 (Result)                         |   |
+|   |   SCR-04 (Collection/Deck) / SCR-05 (Lobby) / SCR-06 (Battle)             |   |
+|   +---------------------------------------------------------------------------+   |
+|                                         |                                         |
+|   +---------------------------------------------------------------------------+   |
+|   |                   JavaScript Engine (src/js/bundle.js)                    |   |
+|   |                                                                           |   |
+|   |  +---------------------+   +-------------------+   +-------------------+  |   |
+|   |  |   BarcodeEngine     |   |  StorageManager   |   |   BattleEngine    |  |   |
+|   |  | (JAN Hash/SVGs)     |   | (LocalStorage)    |   | (Turn Logic)      |  |   |
+|   |  +---------------------+   +-------------------+   +-------------------+  |   |
+|   |                                                                           |   |
+|   |  +---------------------+   +-------------------------------------------+  |   |
+|   |  |    LevelManager     |   |              NetworkManager               |  |   |
+|   |  | (EXP & Level Curve) |   |    (PeerJS WebRTC / Host Authority)       |  |   |
+|   |  +---------------------+   +-------------------------------------------+  |   |
+|   +---------------------------------------------------------------------------+   |
+|                                         |                                         |
++-----------------------------------------|-----------------------------------------+
+                                          |
+                      WebRTC P2P Data Channel (STATE_SYNC / GUEST_ACTION)
+                                          |
++-----------------------------------------|-----------------------------------------+
+|                                         v                                         |
+|                                 Peer Client Device                                |
++-----------------------------------------------------------------------------------+
+```
 
 ---
 
-## 2. 3P対戦キャラクター交代 & 素早さ連動ダメージ処理 (`BattleEngine`)
+## 2. モジュール＆データ構造設計
 
-### 2.1 交代（Switch）処理シーケンス
+### 2.1 データモジュール一覧 (`src/js/bundle.js`)
+
+| モジュール名 | 役割・職務概要 |
+|---|---|
+| **`BarcodeEngine`** | JANコード（13桁/8桁）から確定的なハッシュ値を計算し、全20種族モンスターまたは8種強化アイテムのカードデータおよびSVGを決定論的に生成。 |
+| **`StorageManager`** | LocalStorageへの図鑑データ（最大100枚）およびデッキ設定（メイン/サブ1/サブ2/アイテム1・2・3）の保存・更新・削除・100枚超過選択モーダル制御・自動マイグレーション。 |
+| **`LevelManager`** | レベル（1〜100）および累乗必要EXP計算（$\lfloor 40 \times LV^{1.4} \rfloor$）、対戦後EXP付与、レベルアップ時ステータス再計算（+1.5%/Lv）の統括。 |
+| **`BattleEngine`** | ターンの計算、1P(10T)/3P(20T)ルールの管理、素早さ連動途中交代（スイッチ）、ガード時被ダメージ半減（50%軽減）、3アイテム最大3回個別使用管理、出撃参加キャラ履歴の記録。 |
+| **`NetworkManager`** | PeerJSを利用し、4桁のルームコードを用いた端末間WebRTC P2P接続の確立、STUN 5重冗長化、リトライハンドシェイク、Host Authority型確定ステート同期。 |
+| **`History Router`** | `history.pushState` および `popstate` イベントの制御による、ブラウザ「戻る」ボタンでのアプリ内画面移動＆終了ダイアログ処理。 |
+
+---
+
+## 3. カード＆データスキーマ設計
+
+### 3.1 キャラクターカードオブジェクト構造 (`Card`)
+```typescript
+interface CharacterCard {
+  id: string;
+  barcode: string;
+  type: 'character';
+  name: string;
+  species: string;          // 全20種族
+  element: '火' | '水' | '木';
+  rarity: 'SSR' | 'SR' | 'R' | 'N';
+  baseHp: number;
+  baseAtk: number;
+  baseDef: number;
+  baseSpd: number;
+  maxHp: number;           // レベル補正後の最大HP
+  currentHp: number;
+  atk: number;             // レベル補正後の攻撃力
+  def: number;             // レベル補正後の防御力
+  spd: number;             // レベル補正後の素早さ
+  sp: number;              // 0 〜 100
+  level: number;           // 1 〜 100
+  exp: number;             // 現在の経験値
+  skill: { name: string; desc: string };
+  spriteSvg: string;
+  memo?: string;
+  createdAt: number;
+}
+```
+
+### 3.2 アイテムカードオブジェクト構造 (`ItemCard`)
+```typescript
+interface ItemCard {
+  id: string;
+  barcode: string;
+  type: 'item';
+  name: string;
+  rarity: 'SSR' | 'SR' | 'R' | 'N';
+  effectType: 'heal' | 'buff_atk' | 'buff_def' | 'buff_spd' | 'charge_sp' | 'bomb' | 'heal_def' | 'all_buff';
+  value: number;
+  desc: string;
+  spriteSvg: string;
+  memo?: string;
+  createdAt: number;
+}
+```
+
+### 3.3 デッキ構造 (`DeckState`)
+```typescript
+interface DeckState {
+  mainChar: CharacterCard | null;
+  subChar1: CharacterCard | null;
+  subChar2: CharacterCard | null;
+  itemCard1: ItemCard | null;
+  itemCard2: ItemCard | null;
+  itemCard3: ItemCard | null;
+}
+```
+
+---
+
+## 4. グラフィック＆スプライト生成ロジック
+
+### 4.1 属性マルチカラーパレット (`ELEMENT_PALETTES`)
+```javascript
+export const ELEMENT_PALETTES = {
+  "火": { primary: "#ff2200", secondary: "#ffd700", dark: "#880011", eye: "#ffff00", pupil: "#000000", accent: "#ff6600" },
+  "水": { primary: "#0088ff", secondary: "#e0ffff", dark: "#002266", eye: "#00ffff", pupil: "#ffffff", accent: "#00e5ff" },
+  "木": { primary: "#00aa44", secondary: "#aaffaa", dark: "#003311", eye: "#ffff33", pupil: "#003300", accent: "#00ff88" }
+};
+```
+
+### 4.2 レアリティ別背景演出 (`generateCharacterSvg`)
+- **SSR**: 16芒サンバースト大光槍（`<polygon points="70,4 ...">`）＋ 黄金ルーン魔方陣 ＋ 星屑スパークル ＋ 黄金グラデーション
+- **SR**: サイバーオーラ ＋ ヘックス幾何学グリッド（六角形）
+- **R**: クリスタルリング ＋ エナジー粒子
+- **N**: ディープネイビー円形ベースプレート ＋ アークティックライン
+
+### 4.3 レアリティ別ステータス・効果補正係数
+| レアリティ | 出現確率 | キャラ基礎ステータス補正 | アイテム効果補正 |
+|---|:---:|:---:|:---:|
+| **✨ SSR** | 3% | **$\times 1.50$** | **$\times 1.50$** |
+| **🌟 SR** | 12% | **$\times 1.30$** | **$\times 1.30$** |
+| **🔷 R** | 25% | **$\times 1.15$** | **$\times 1.15$** |
+| **⚪ N** | 60% | **$\times 1.00$** | **$\times 1.00$** |
+
+---
+
+## 5. レベル（LV）＆ 経験値（EXP）成長ロジック (`LevelManager`)
+
+### 5.1 必要経験値計算式
+$$\text{NextEXP}(LV) = \lfloor 40 \times (LV)^{1.4} \rfloor$$
+
+### 5.2 レベル補正ステータス計算式
+$$\text{Status}(LV) = \text{BaseStatus} \times (1 + (LV - 1) \times 0.015)$$
+- レベルアップ時に `maxHp`, `atk`, `def`, `spd` を動的に再計算してカードに反映。
+
+### 5.3 出撃キャラ限定の経験値付与処理 (`grantBattleExp`)
+- `BattleEngine` 内でバトル中に出撃したキャラクターIDセット（`participatedCardIds`）を追跡。
+- P2P対戦終了時、勝利時は `+100 EXP`、敗北時は `+30 EXP` を出撃したカードにのみ付与（控えのまま出撃しなかったキャラは対象外）。
+- 累積EXPが必要EXPに達した場合、レベルをインクリメントし複数レベルアップも再帰・ループで処理。
+- 更新結果を `StorageManager` 経由で LocalStorage に永続保存。
+
+### 5.4 既存データマイグレーション (`migrateCollectionData`)
+- 保存データ読み込み時、`level` または `exp` が未定義のカードに対して `level: 1, exp: 0` を自動設定。
+
+---
+
+## 6. 3P対戦キャラクター交代 & 素早さ連動ダメージ処理 (`BattleEngine`)
+
+### 6.1 コマンド優先度と行動順序
 ```typescript
 interface ActionParam {
   action: 'attack' | 'skill' | 'guard' | 'item' | 'switch';
@@ -27,40 +181,89 @@ interface ActionParam {
 ```
 
 - **行動優先度（Priority）計算**:
-  - ガード: `9999`（最優先）
-  - 攻撃 / 必殺技: `spd * (0.85 + Math.random() * 0.3)`
-  - 交代（`switch`）: **出撃中キャラクターの** `spd * (0.85 + Math.random() * 0.3)`
-- **ダメージ適用ロジック**:
-  - **相手が先攻の場合**:
-    1. 相手の攻撃が発動 ➔ **交代前の出撃キャラクターがダメージを受ける**。
-    2. 生存していれば、続いて予定通り控えキャラクターへと交代完了。
-    3. （※もし被弾で倒れた場合は撃破交代へ移行）
-  - **自分が先攻の場合**:
-    1. 自分の交代が先に発動 ➔ **指定した控えキャラクターが出撃**。
-    2. 続いて相手の攻撃が発動 ➔ **新しく登場したキャラクターがダメージを受ける**。
-- **個別ステータス管理**:
-  - 各キャラクターのHP・SP・バフ状態は配列内で個別に独立して維持・管理される。
+  - **🛡️ ガード**: `9999`（最優先で発動し、**そのターンの被ダメージを50%半減**）
+  - **⚔️ 攻撃 / ✨ 必殺技**: `spd * (0.85 + Math.random() * 0.3)`
+  - **🔄 交代（switch）**: **出撃中キャラクターの** `spd * (0.85 + Math.random() * 0.3)`
+  - **💊 アイテム**: `9000`
+
+### 6.2 交代時の被ダメージシーケンス
+- **相手が先攻の場合**:
+  1. 相手の攻撃が発動 ➔ **交代前の出撃キャラクターがダメージを受ける**。
+  2. 生存していれば、続いて予定通り控えキャラクターへと交代完了。
+  3. （※被弾で倒れた場合は撃破交代へ移行）
+- **自分が先攻の場合**:
+  1. 自分の交代が先に発動 ➔ **指定した控えキャラクターが出撃**。
+  2. 続いて相手の攻撃が発動 ➔ **新しく登場したキャラクターがダメージを受ける**。
 
 ---
 
-## 3. P2P Host Authority & ルール統一同期
+## 7. P2P通信プロトコル＆同期シーケンス (Host Authority Pattern)
 
-### 3.1 ホスト権威モデル (Host Authority)
-- ホスト側が唯一の審判としてターン計算・ダメージ・勝敗・交代を一括処理。
-- 確定ステート（`STATE_SYNC`）をゲストへ送信し、ゲスト側は `applyGuestState(state)` で完全同期復元。
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Guest as 🟢 ゲスト端末 (Client)
+    participant Host as 🔴 ホスト端末 (Host Authority)
 
-### 3.2 部屋ルール（1P/3P）の強制統一
-- ホストが部屋作成時に選択した `appState.battleMode`（`1p` または `3p`）を正とする。
-- ゲスト参加時、`START` メッセージの `mode` に応じて自動的にデッキから1体または3体を編成し、双方で確実に同一人数の対戦を開始する。
+    Note over Guest, Host: PeerJS WebRTC P2P 接続確立 (STUN 5重冗長化)
+    Guest->>Host: JOIN_ROOM { guestDeck, guestMode }
+    Note over Host: ホストの公式ルール(1Pまたは3P)を確定
+    Host->>Guest: START { hostDeck, mode, firstTurn }
+
+    rect rgb(30, 40, 70)
+        Note over Guest, Host: ターンコマンド入力
+        Guest->>Host: GUEST_ACTION { action, itemIdx, switchIdx }
+        Note over Host: ホストが processTurn(...) で一括判定<br/>(ダメージ・交代・HP・SP・勝敗を計算)
+        Host->>Guest: STATE_SYNC { playerTeam, enemyTeam, playerIndex, enemyIndex, isOver, winner, turnLog }
+    end
+
+    Note over Guest: applyGuestState(payload) で100%完全同期復元
+    Note over Host, Guest: バトル決着時: grantBattleExp(winner, participatedIds) 実行
+```
 
 ---
 
-## 4. UIコンポーネント設計 (3Pチームサブスロット & エレメントドット)
+## 8. UI/UX 画面状態遷移設計
 
-- **3Pチームサブスロット (`.team-sub-slots`)**:
-  - 敵・味方の情報バー内に横並び3分割のスロットをレンダリング。
-  - 出撃中: 黄金枠ハイライト＋属性丸印（`●`）＋残りHP/最大HP＋ミニHPバー。
-  - 控え: 通常枠＋属性丸印（`●`）＋残りHP/最大HP＋ミニHPバー。
-  - 戦闘不能: 💀アイコン＋グレーアウト。
-- **ノースクロール保証**:
-  - バトルステージ、アリーナ、ログ（54px）、コマンドボタングリッドのサイズをビューポート内に最適化し、スクロール不要で1画面完結。
+```mermaid
+stateDiagram-v2
+    [*] --> SCR_01: アプリ起動 (initApp)
+    
+    SCR_01 --> SCR_02: 📷 バーコードをすきゃん！
+    SCR_02 --> SCR_03: バーコード検知 (processScanResult)
+    SCR_03 --> SCR_04: 📖 ずかんに保存
+    SCR_03 --> Modal_StorageLimit: 100枚上限超過
+    Modal_StorageLimit --> SCR_04: 選択カード削除して保存
+    SCR_03 --> SCR_01: 🏠 ホームへもどる
+
+    SCR_01 --> SCR_04: 📖 ずかん・デッキへんせい
+    SCR_04 --> SCR_01: ← もどる
+
+    SCR_01 --> SCR_05: ⚔️ たいせんロビー
+    SCR_05 --> SCR_06: 対戦開始 (1P / 3P / CPU)
+    SCR_06 --> SCR_05: 🏃 にげる (セッション破棄)
+    SCR_06 --> SCR_05: バトル決着 & レベルアップダイアログ ➔ ロビー自動復帰
+    SCR_05 --> SCR_01: ← もどる
+```
+
+---
+
+## 9. 与ダメージ計算＆ゲームバランス設計
+
+### 9.1 ダメージ計算式
+$$\text{BaseDamage} = \text{ATK} \times 2.5 \times \left( \frac{100}{100 + \text{DEF} \times 0.35} \right)$$
+
+- **🛡️ ガード時**: **被ダメージを50%半減**（$\text{Damage} \times 0.50$）。
+- **✨ 必殺技倍率**: SP 100% 発動時 $\text{Damage} \times 1.85$。
+- **属性相性倍率**: 有利属性（火 ➔ 木 ➔ 水 ➔ 火）で **1.5倍**。
+- **最低保障貫通ダメージ**: $\text{ATK} \times 0.50$。
+
+---
+
+## 10. 非機能・エラーハンドリング設計
+
+1. **100枚上限時の削除選択モーダル (`#storage-limit-modal`)**:
+   - 自動FIFOではなく、ユーザーが削除対象カードを一覧から選択して入れ替えるUIを提供。
+2. **スクリプト起動保護**: `document.readyState` チェックおよび `try-catch` ガード。
+3. **自動マイグレーション (`migrateCollectionData`)**: 旧データ読み込み時に自動で `level: 1, exp: 0` を補完。
+4. **ブラウザ「戻る」対策**: `history.pushState` と `popstate` イベントの連動。

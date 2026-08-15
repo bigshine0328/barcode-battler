@@ -400,16 +400,16 @@
 
       if (rarityScore < 3) {
         rarity = "SSR";
-        charMult = 1.60;
-        itemMult = 2.50;
+        charMult = 1.50;
+        itemMult = 1.50;
       } else if (rarityScore < 15) {
         rarity = "SR";
-        charMult = 1.35;
-        itemMult = 1.70;
+        charMult = 1.30;
+        itemMult = 1.30;
       } else if (rarityScore < 40) {
         rarity = "R";
         charMult = 1.15;
-        itemMult = 1.25;
+        itemMult = 1.15;
       } else {
         rarity = "N";
         charMult = 1.00;
@@ -419,11 +419,11 @@
       if (isItemCard) {
         const baseItemTypes = [
           { name: "えりくさー", type: "heal", baseVal: 300, getDesc: (v) => `HPを ${v} かいふく！` },
-          { name: "はかいのつるぎ", type: "buff_atk", baseVal: 60, getDesc: (v) => `ATKを +${v} アップ！` },
-          { name: "いあつのたて", type: "buff_def", baseVal: 50, getDesc: (v) => `DEFを +${v} アップ！` },
+          { name: "はかいのつるぎ", type: "buff_atk", baseVal: 40, getDesc: (v) => `ATKを +${v} アップ！` },
+          { name: "いあつのたて", type: "buff_def", baseVal: 40, getDesc: (v) => `DEFを +${v} アップ！` },
           { name: "ひかりのたびびと", type: "buff_spd", baseVal: 40, getDesc: (v) => `SPDを +${v} アップ！` },
           { name: "びくとりーのたま", type: "charge_sp", baseVal: 100, getDesc: () => `SPを 即座に 100% ためる！` },
-          { name: "まほうのばくだん", type: "bomb", baseVal: 200, getDesc: (v) => `相手に ${v} の固定ダメージ！` },
+          { name: "まほうのばくだん", type: "bomb", baseVal: 250, getDesc: (v) => `相手に ${v} の固定ダメージ！` },
           { name: "ふ死鳥の水", type: "heal_def", baseVal: 200, getDesc: (v) => `HPを ${v} かいふく & DEFアップ！` },
           { name: "おうかんの輝き", type: "all_buff", baseVal: 30, getDesc: (v) => `ATK/DEF/SPD を +${v} アップ！` }
         ];
@@ -445,15 +445,15 @@
         };
       }
 
-      const baseHp = 900 + ((digits[9] || 7) * 80) + ((digits[10] || 8) * 10);
-      const baseAtk = 90 + ((digits[7] || 5) * 15) + (digits[8] || 6);
-      const baseDef = 40 + ((digits[5] || 3) * 8) + (digits[6] || 4);
-      const baseSpd = 10 + ((digits[3] || 1) * 4) + (digits[4] || 2);
+      const rawBaseHp = 900 + ((digits[9] || 7) * 80) + ((digits[10] || 8) * 10);
+      const rawBaseAtk = 90 + ((digits[7] || 5) * 15) + (digits[8] || 6);
+      const rawBaseDef = 40 + ((digits[5] || 3) * 8) + (digits[6] || 4);
+      const rawBaseSpd = 10 + ((digits[3] || 1) * 4) + (digits[4] || 2);
 
-      const hp = Math.round(baseHp * charMult);
-      const atk = Math.round(baseAtk * charMult);
-      const def = Math.round(baseDef * charMult);
-      const spd = Math.round(baseSpd * charMult);
+      const hp = Math.round(rawBaseHp * charMult);
+      const atk = Math.round(rawBaseAtk * charMult);
+      const def = Math.round(rawBaseDef * charMult);
+      const spd = Math.round(rawBaseSpd * charMult);
 
       const elements = ["火", "水", "木"];
       const element = elements[(digits[12] || 0) % 3];
@@ -474,11 +474,17 @@
         species: baseSpeciesName,
         element: element,
         rarity: rarity,
+        baseHp: hp,
+        baseAtk: atk,
+        baseDef: def,
+        baseSpd: spd,
         hp: hp,
         maxHp: hp,
         atk: atk,
         def: def,
         spd: spd,
+        level: 1,
+        exp: 0,
         skill: { name: "ギガブレイク", desc: "敵に強力な属性ダメージ！" },
         spriteSvg: spriteSvg,
         memo: customMemo || "",
@@ -488,7 +494,89 @@
   }
 
   // ==========================================
-  // 3. Storage Manager (3 アイテム対応)
+  // 3. Level Manager (Lv.1 〜 Lv.100 & EXP Growth)
+  // ==========================================
+  class LevelManager {
+    static MAX_LEVEL = 100;
+
+    static getRequiredExp(level) {
+      if (level >= this.MAX_LEVEL) return 0;
+      return Math.floor(40 * Math.pow(level, 1.4));
+    }
+
+    static calculateStats(baseStats, level) {
+      const scale = 1 + (level - 1) * 0.015;
+      return {
+        maxHp: Math.round(baseStats.baseHp * scale),
+        atk: Math.round(baseStats.baseAtk * scale),
+        def: Math.round(baseStats.baseDef * scale),
+        spd: Math.round(baseStats.baseSpd * scale)
+      };
+    }
+
+    static addExp(card, expGained) {
+      if (!card || card.type !== 'character') return null;
+      if (card.level >= this.MAX_LEVEL) {
+        card.level = this.MAX_LEVEL;
+        card.exp = 0;
+        return { card, leveledUp: false, oldLevel: this.MAX_LEVEL, newLevel: this.MAX_LEVEL, levelDiff: 0 };
+      }
+
+      const oldLevel = card.level || 1;
+      let currentLevel = oldLevel;
+      let currentExp = (card.exp || 0) + expGained;
+
+      while (currentLevel < this.MAX_LEVEL) {
+        const needed = this.getRequiredExp(currentLevel);
+        if (currentExp >= needed) {
+          currentExp -= needed;
+          currentLevel++;
+        } else {
+          break;
+        }
+      }
+
+      if (currentLevel >= this.MAX_LEVEL) {
+        currentLevel = this.MAX_LEVEL;
+        currentExp = 0;
+      }
+
+      const leveledUp = (currentLevel > oldLevel);
+      card.level = currentLevel;
+      card.exp = currentExp;
+
+      const base = {
+        baseHp: card.baseHp || card.maxHp || card.hp || 1200,
+        baseAtk: card.baseAtk || card.atk || 180,
+        baseDef: card.baseDef || card.def || 80,
+        baseSpd: card.baseSpd || card.spd || 50
+      };
+      card.baseHp = base.baseHp;
+      card.baseAtk = base.baseAtk;
+      card.baseDef = base.baseDef;
+      card.baseSpd = base.baseSpd;
+
+      const newStats = this.calculateStats(base, currentLevel);
+      card.maxHp = newStats.maxHp;
+      card.hp = newStats.maxHp;
+      card.currentHp = newStats.maxHp;
+      card.atk = newStats.atk;
+      card.def = newStats.def;
+      card.spd = newStats.spd;
+
+      return {
+        card,
+        leveledUp,
+        oldLevel,
+        newLevel: currentLevel,
+        levelDiff: currentLevel - oldLevel,
+        newStats
+      };
+    }
+  }
+
+  // ==========================================
+  // 4. Storage Manager (3 アイテム & 100枚管理)
   // ==========================================
   const STORAGE_KEY_COLLECTION = "barcode_battler_collection";
   const STORAGE_KEY_DECK = "barcode_battler_deck";
@@ -508,18 +596,30 @@
         const collection = this.getCollection();
         if (!collection || collection.length === 0) return;
 
+        let changed = false;
         const updatedCollection = collection.map(card => {
-          if (card && card.barcode) {
-            const freshCard = BarcodeEngine.generateFromBarcode(card.barcode, card.memo || "");
-            freshCard.id = card.id;
-            freshCard.createdAt = card.createdAt || new Date().toISOString();
-            return freshCard;
+          if (card && card.type === 'character') {
+            if (card.level === undefined || card.exp === undefined || card.baseHp === undefined) {
+              changed = true;
+              card.level = card.level || 1;
+              card.exp = card.exp || 0;
+              card.baseHp = card.baseHp || card.maxHp || card.hp || 1200;
+              card.baseAtk = card.baseAtk || card.atk || 180;
+              card.baseDef = card.baseDef || card.def || 80;
+              card.baseSpd = card.baseSpd || card.spd || 50;
+            }
           }
           return card;
         });
 
-        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
+        if (changed) {
+          localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
+        }
       } catch (e) {}
+    }
+
+    static isCollectionFull() {
+      return this.getCollection().length >= 100;
     }
 
     static saveToCollection(card) {
@@ -536,6 +636,11 @@
       try {
         localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
       } catch (e) {}
+    }
+
+    static replaceCardInCollection(deleteCardId, newCard) {
+      this.deleteFromCollection(deleteCardId);
+      this.saveToCollection(newCard);
     }
 
     static deleteFromCollection(cardId) {
@@ -666,6 +771,11 @@
       this.maxTurns = (mode === '3p') ? 20 : 10;
       this.isOver = false;
       this.winner = null;
+
+      this.participatedPlayerCardIds = new Set();
+      this.participatedEnemyCardIds = new Set();
+      if (this.player && this.player.id) this.participatedPlayerCardIds.add(this.player.id);
+      if (this.enemy && this.enemy.id) this.participatedEnemyCardIds.add(this.enemy.id);
     }
 
     static getElementMultiplier(attackerElement, defenderElement) {
@@ -719,6 +829,12 @@
         rarity: c?.rarity || "R",
         species: c?.species || "ドラゴン",
         spriteSvg: c?.spriteSvg || null,
+        level: c?.level || 1,
+        exp: c?.exp || 0,
+        baseHp: c?.baseHp || hp,
+        baseAtk: c?.baseAtk || atk,
+        baseDef: c?.baseDef || def,
+        baseSpd: c?.baseSpd || spd,
         hp: hp,
         maxHp: hp,
         currentHp: hp,
@@ -817,12 +933,14 @@
           if (switchIdx >= 0 && switchIdx < this.playerTeam.length && this.playerTeam[switchIdx].currentHp > 0 && switchIdx !== this.playerIndex) {
             const oldName = this.player.name;
             this.playerIndex = switchIdx;
+            if (this.player && this.player.id) this.participatedPlayerCardIds.add(this.player.id);
             turnLog.actions.push({ actor: 'player', message: `🔄 あなたは ${oldName} から ${this.player.name} に こうたい！` });
           }
         } else {
           if (switchIdx >= 0 && switchIdx < this.enemyTeam.length && this.enemyTeam[switchIdx].currentHp > 0 && switchIdx !== this.enemyIndex) {
             const oldName = this.enemy.name;
             this.enemyIndex = switchIdx;
+            if (this.enemy && this.enemy.id) this.participatedEnemyCardIds.add(this.enemy.id);
             turnLog.actions.push({ actor: 'enemy', message: `🔄 相手は ${oldName} から ${this.enemy.name} に こうたい！` });
           }
         }
@@ -916,6 +1034,7 @@
           const aliveSubs = this.getAliveSubIndexes(false);
           if (aliveSubs.length > 0) {
             this.enemyIndex = aliveSubs[0];
+            if (this.enemy && this.enemy.id) this.participatedEnemyCardIds.add(this.enemy.id);
             turnLog.actions.push({ actor: 'system', message: `🎉 相手のキャラを たおした！ 敵チームは ${this.enemy.name} が 出撃！` });
             return false;
           }
@@ -930,6 +1049,7 @@
           const aliveSubs = this.getAliveSubIndexes(true);
           if (aliveSubs.length > 0) {
             this.playerIndex = aliveSubs[0];
+            if (this.player && this.player.id) this.participatedPlayerCardIds.add(this.player.id);
             turnLog.actions.push({ actor: 'system', message: `💧 あなたのキャラが たおれた... つぎの ${this.player.name} が 出撃！` });
             return false;
           }
@@ -1103,10 +1223,12 @@
       const spriteSvg = getCharacterSpriteSvg(card);
       const isItem = (card.type === 'item');
       const rarityClass = `rarity-${card.rarity || 'N'}`;
+      const levelBadge = isItem ? '' : `<span class="level-badge">Lv.${card.level || 1}</span>`;
 
       return `
         <div class="card-item ${isItem ? 'item-card' : ''} ${isSet ? 'is-deck-set' : ''} ${rarityClass}" onclick="window.appOpenCardDetail('${card.id}')">
           ${deckRibbon}
+          ${levelBadge}
           ${roleBadge}
           <div class="mini-sprite">
             ${spriteSvg}
@@ -1121,9 +1243,10 @@
             </div>
           ` : `
             <div class="card-stat-tray">
-              <span class="element-tag element-${card.element}" style="padding:1px 5px; font-size:0.65rem; border-radius:4px; font-weight:900;">${card.element}</span>
-              <span style="color:#00ff88; font-weight:900;">HP ${card.hp}</span>
-              <span style="color:#ff4570; font-weight:900;">ATK ${card.atk}</span>
+              <span class="element-tag element-${card.element}" style="padding:1px 4px; font-size:0.62rem; border-radius:4px; font-weight:900;">${card.element}</span>
+              <span style="color:#00ff88; font-weight:900; font-size:0.68rem;">HP ${card.hp || card.maxHp}</span>
+              <span style="color:#ff4570; font-weight:900; font-size:0.68rem;">ATK ${card.atk}</span>
+              <span style="color:#00e5ff; font-weight:900; font-size:0.68rem;">DEF ${card.def}</span>
             </div>
           `}
         </div>
@@ -1143,9 +1266,9 @@
     const item2El = document.getElementById('slot-content-item2');
     const item3El = document.getElementById('slot-content-item3');
 
-    if (mainEl) mainEl.innerHTML = deck.mainChar ? `<span style="color:#00ff88;">[${deck.mainChar.rarity || 'N'}] ${deck.mainChar.name} (HP:${deck.mainChar.hp} ATK:${deck.mainChar.atk})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
-    if (sub1El) sub1El.innerHTML = deck.subChar1 ? `<span style="color:#00e5ff;">[${deck.subChar1.rarity || 'N'}] ${deck.subChar1.name} (HP:${deck.subChar1.hp} ATK:${deck.subChar1.atk})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
-    if (sub2El) sub2El.innerHTML = deck.subChar2 ? `<span style="color:#ff0055;">[${deck.subChar2.rarity || 'N'}] ${deck.subChar2.name} (HP:${deck.subChar2.hp} ATK:${deck.subChar2.atk})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
+    if (mainEl) mainEl.innerHTML = deck.mainChar ? `<span style="color:#00ff88;">[${deck.mainChar.rarity || 'N'}] Lv.${deck.mainChar.level || 1} ${deck.mainChar.name} (HP:${deck.mainChar.hp} ATK:${deck.mainChar.atk})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
+    if (sub1El) sub1El.innerHTML = deck.subChar1 ? `<span style="color:#00e5ff;">[${deck.subChar1.rarity || 'N'}] Lv.${deck.subChar1.level || 1} ${deck.subChar1.name} (HP:${deck.subChar1.hp} ATK:${deck.subChar1.atk})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
+    if (sub2El) sub2El.innerHTML = deck.subChar2 ? `<span style="color:#ff0055;">[${deck.subChar2.rarity || 'N'}] Lv.${deck.subChar2.level || 1} ${deck.subChar2.name} (HP:${deck.subChar2.hp} ATK:${deck.subChar2.atk})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
     if (item1El) item1El.innerHTML = deck.itemCard1 ? `<span style="color:var(--accent-gold);">[${deck.itemCard1.rarity || 'N'}] ${deck.itemCard1.name} (${deck.itemCard1.desc})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
     if (item2El) item2El.innerHTML = deck.itemCard2 ? `<span style="color:var(--accent-gold);">[${deck.itemCard2.rarity || 'N'}] ${deck.itemCard2.name} (${deck.itemCard2.desc})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
     if (item3El) item3El.innerHTML = deck.itemCard3 ? `<span style="color:var(--accent-gold);">[${deck.itemCard3.rarity || 'N'}] ${deck.itemCard3.name} (${deck.itemCard3.desc})</span>` : `<span style="color:var(--text-muted);">未セット</span>`;
@@ -1164,6 +1287,26 @@
     const isItem = (card.type === 'item');
     const spriteSvg = getCharacterSpriteSvg(card);
 
+    let expSection = "";
+    if (!isItem) {
+      const isMax = (card.level >= 100);
+      const reqExp = isMax ? 0 : LevelManager.getRequiredExp(card.level || 1);
+      const curExp = card.exp || 0;
+      const percent = isMax ? 100 : Math.min(100, Math.round((curExp / reqExp) * 100));
+
+      expSection = `
+        <div class="exp-bar-container">
+          <div class="exp-text-row">
+            <span>👑 レベル: Lv.${card.level || 1} / 100</span>
+            <span>${isMax ? 'EXP: MAX' : `EXP: ${curExp} / ${reqExp} (${percent}%)`}</span>
+          </div>
+          <div class="exp-gauge-bg">
+            <div class="exp-gauge-fill" style="width: ${percent}%;"></div>
+          </div>
+        </div>
+      `;
+    }
+
     content.innerHTML = `
       <div class="sprite-container" style="width:130px; height:130px; margin: 0 auto;">
         ${spriteSvg}
@@ -1178,8 +1321,9 @@
           <span class="element-tag element-${card.element}">属性: ${card.element}</span>
           <span style="font-size:0.8rem; color:var(--text-muted); margin-left:6px;">種族: ${card.species || 'ドラゴン'}</span>
         </div>
+        ${expSection}
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:0.85rem; font-weight:800; margin: 8px 0; background:rgba(0,0,0,0.3); padding:8px; border-radius:10px;">
-          <div style="color:#00ff88;">HP: ${card.hp}</div>
+          <div style="color:#00ff88;">HP: ${card.hp || card.maxHp}</div>
           <div style="color:#ff3366;">ATK: ${card.atk}</div>
           <div style="color:#00e5ff;">DEF: ${card.def}</div>
           <div style="color:#ffd700;">SPD: ${card.spd}</div>
@@ -1584,8 +1728,46 @@
 
   function handleBattleEnd(winner) {
     const isWin = (winner === 'player');
+    const be = appState.battleEngine;
+    const isP2P = appState.isP2P;
+
+    let expMessage = "";
+    if (isP2P && be) {
+      const expGained = isWin ? 100 : 30;
+      const collection = StorageManager.getCollection();
+      const participatedIds = be.participatedPlayerCardIds || new Set();
+
+      let levelUpMsgs = [];
+      let expCards = [];
+
+      collection.forEach(card => {
+        if (card && card.type === 'character' && participatedIds.has(card.id)) {
+          const oldLevel = card.level || 1;
+          const res = LevelManager.addExp(card, expGained);
+          if (res) {
+            expCards.push(card);
+            if (res.leveledUp) {
+              levelUpMsgs.push(`✨ ${card.name} が Lv.${oldLevel} ➔ Lv.${card.level} に レベルアップ！\n   (HP:${card.maxHp}, ATK:${card.atk}, DEF:${card.def}, SPD:${card.spd})`);
+            }
+          }
+        }
+      });
+
+      if (expCards.length > 0) {
+        try {
+          localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+        } catch (e) {}
+
+        expMessage = `\n\n━━━━━━━━━━━━━━━━━━━━\n⚔️ バトル参加ボーナス: +${expGained} EXP 獲得！\n(参加キャラ: ${expCards.map(c => c.name).join(', ')})`;
+        if (levelUpMsgs.length > 0) {
+          expMessage += `\n\n${levelUpMsgs.join('\n')}`;
+        }
+      }
+    }
+
     setTimeout(() => {
-      alert(isWin ? '🎉 あなたの勝利です！' : '💧 敗北しました...');
+      const title = isWin ? '🎉 あなたの勝利です！' : '💧 敗北しました...';
+      alert(title + expMessage);
       
       // P2P通信およびバトルのクリーンアップ
       if (appState.peerConn) {
@@ -2021,6 +2203,45 @@
   // ==========================================
   // 7. グローバル公開 & 初期化バインド
   // ==========================================
+  let selectedDeleteCardId = null;
+
+  function openStorageLimitModal(newCard) {
+    const modal = document.getElementById('storage-limit-modal');
+    const listEl = document.getElementById('storage-limit-list');
+    const btnConfirm = document.getElementById('btn-confirm-replace-save');
+    if (!modal || !listEl) return;
+
+    selectedDeleteCardId = null;
+    if (btnConfirm) btnConfirm.disabled = true;
+
+    const collection = StorageManager.getCollection();
+    listEl.innerHTML = collection.map(c => {
+      const isItem = (c.type === 'item');
+      const label = isItem ? `💊 [${c.rarity || 'N'}] ${c.name}` : `👾 [${c.rarity || 'N'}] Lv.${c.level || 1} ${c.name} (${c.element})`;
+      return `
+        <div class="storage-limit-card" data-id="${c.id}" onclick="window.appSelectStorageLimitCard('${c.id}')">
+          <span style="font-weight:800; font-size:0.75rem; color:#fff;">${label}</span>
+          <span style="font-size:0.68rem; color:var(--text-muted);">${c.memo || ''}</span>
+        </div>
+      `;
+    }).join('');
+
+    modal.classList.add('active');
+  }
+
+  window.appSelectStorageLimitCard = function(cardId) {
+    selectedDeleteCardId = cardId;
+    document.querySelectorAll('.storage-limit-card').forEach(el => {
+      if (el.getAttribute('data-id') === cardId) {
+        el.classList.add('selected');
+      } else {
+        el.classList.remove('selected');
+      }
+    });
+    const btnConfirm = document.getElementById('btn-confirm-replace-save');
+    if (btnConfirm) btnConfirm.disabled = false;
+  };
+
   window.appSwitchScreen = switchScreen;
   window.appStartCamera = startCamera;
   window.appOpenCardDetail = openCardDetail;
@@ -2095,8 +2316,29 @@
         if (appState.scannedCard) {
           const memo = document.getElementById('scanned-memo-input')?.value || "";
           appState.scannedCard.memo = memo;
-          StorageManager.saveToCollection(appState.scannedCard);
-          alert(`「${appState.scannedCard.name}」を ずかんに ほぞんしました！`);
+
+          const collection = StorageManager.getCollection();
+          const existing = collection.find(c => c.id === appState.scannedCard.id);
+
+          if (!existing && StorageManager.isCollectionFull()) {
+            openStorageLimitModal(appState.scannedCard);
+          } else {
+            StorageManager.saveToCollection(appState.scannedCard);
+            alert(`「${appState.scannedCard.name}」を ずかんに ほぞんしました！`);
+            switchScreen('SCR-04');
+          }
+        }
+      });
+    }
+
+    // 100枚超過 入れ替え保存ボタン
+    const btnConfirmReplace = document.getElementById('btn-confirm-replace-save');
+    if (btnConfirmReplace) {
+      btnConfirmReplace.addEventListener('click', () => {
+        if (selectedDeleteCardId && appState.scannedCard) {
+          StorageManager.replaceCardInCollection(selectedDeleteCardId, appState.scannedCard);
+          document.getElementById('storage-limit-modal')?.classList.remove('active');
+          alert(`入れ替えて「${appState.scannedCard.name}」を ずかんに ほぞんしました！`);
           switchScreen('SCR-04');
         }
       });

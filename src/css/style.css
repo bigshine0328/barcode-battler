@@ -232,6 +232,28 @@ h1.logo {
   line-height: 1.2;
 }
 
+/* 左上 レベルバッジ */
+.level-badge {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--accent-gold);
+  border: 1px solid var(--accent-gold);
+  font-size: 0.64rem;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 5px;
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  line-height: 1.2;
+}
+
+.is-deck-set .level-badge {
+  left: auto;
+  left: 52px; /* DECKリボンと重ならないよう右側に配置 */
+}
+
 /* 右上 役職バッジ（カード内側右上隅に完全格納） */
 .slot-badge {
   position: absolute;
@@ -251,6 +273,73 @@ h1.logo {
 .badge-sub1 { background: #b066ff; color: #fff; }
 .badge-sub2 { background: var(--primary-pink); color: #fff; }
 .badge-item { background: var(--accent-gold); color: #000; }
+
+/* EXP プログレスバー */
+.exp-bar-container {
+  width: 100%;
+  margin: 6px 0 10px 0;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 8px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+.exp-text-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+  margin-bottom: 4px;
+}
+
+.exp-gauge-bg {
+  width: 100%;
+  height: 6px;
+  background: #252b48;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.exp-gauge-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ffc107, #ffd700);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+  transition: width 0.3s ease;
+}
+
+/* 100枚超過選択モーダル */
+.storage-limit-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.storage-limit-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--surface-card);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.storage-limit-card:hover, .storage-limit-card.selected {
+  border-color: var(--primary-pink);
+  background: rgba(255, 0, 85, 0.15);
+  box-shadow: 0 0 8px rgba(255, 0, 85, 0.4);
+}
 
 /* カード内テキスト・ステータストレイ（黒ベース高コントラストで完全視認） */
 .card-name-box {

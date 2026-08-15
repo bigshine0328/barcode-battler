@@ -22,6 +22,11 @@ export class BattleEngine {
     this.maxTurns = (mode === '3p') ? 20 : 10;
     this.isOver = false;
     this.winner = null;
+
+    this.participatedPlayerCardIds = new Set();
+    this.participatedEnemyCardIds = new Set();
+    if (this.player && this.player.id) this.participatedPlayerCardIds.add(this.player.id);
+    if (this.enemy && this.enemy.id) this.participatedEnemyCardIds.add(this.enemy.id);
   }
 
   static getElementMultiplier(attackerElement, defenderElement) {
@@ -75,6 +80,12 @@ export class BattleEngine {
       rarity: c?.rarity || "R",
       species: c?.species || "ドラゴン",
       spriteSvg: c?.spriteSvg || null,
+      level: c?.level || 1,
+      exp: c?.exp || 0,
+      baseHp: c?.baseHp || hp,
+      baseAtk: c?.baseAtk || atk,
+      baseDef: c?.baseDef || def,
+      baseSpd: c?.baseSpd || spd,
       hp: hp,
       maxHp: hp,
       currentHp: hp,
@@ -173,12 +184,14 @@ export class BattleEngine {
         if (switchIdx >= 0 && switchIdx < this.playerTeam.length && this.playerTeam[switchIdx].currentHp > 0 && switchIdx !== this.playerIndex) {
           const oldName = this.player.name;
           this.playerIndex = switchIdx;
+          if (this.player && this.player.id) this.participatedPlayerCardIds.add(this.player.id);
           turnLog.actions.push({ actor: 'player', message: `🔄 あなたは ${oldName} から ${this.player.name} に こうたい！` });
         }
       } else {
         if (switchIdx >= 0 && switchIdx < this.enemyTeam.length && this.enemyTeam[switchIdx].currentHp > 0 && switchIdx !== this.enemyIndex) {
           const oldName = this.enemy.name;
           this.enemyIndex = switchIdx;
+          if (this.enemy && this.enemy.id) this.participatedEnemyCardIds.add(this.enemy.id);
           turnLog.actions.push({ actor: 'enemy', message: `🔄 相手は ${oldName} から ${this.enemy.name} に こうたい！` });
         }
       }
@@ -272,6 +285,7 @@ export class BattleEngine {
         const aliveSubs = this.getAliveSubIndexes(false);
         if (aliveSubs.length > 0) {
           this.enemyIndex = aliveSubs[0];
+          if (this.enemy && this.enemy.id) this.participatedEnemyCardIds.add(this.enemy.id);
           turnLog.actions.push({ actor: 'system', message: `🎉 相手のキャラを たおした！ 敵チームは ${this.enemy.name} が 出撃！` });
           return false;
         }
@@ -286,6 +300,7 @@ export class BattleEngine {
         const aliveSubs = this.getAliveSubIndexes(true);
         if (aliveSubs.length > 0) {
           this.playerIndex = aliveSubs[0];
+          if (this.player && this.player.id) this.participatedPlayerCardIds.add(this.player.id);
           turnLog.actions.push({ actor: 'system', message: `💧 あなたのキャラが たおれた... つぎの ${this.player.name} が 出撃！` });
           return false;
         }

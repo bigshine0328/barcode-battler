@@ -375,16 +375,16 @@ export class BarcodeEngine {
 
     if (rarityScore < 3) {
       rarity = "SSR";
-      charMult = 1.60;
-      itemMult = 2.50;
+      charMult = 1.50;
+      itemMult = 1.50;
     } else if (rarityScore < 15) {
       rarity = "SR";
-      charMult = 1.35;
-      itemMult = 1.70;
+      charMult = 1.30;
+      itemMult = 1.30;
     } else if (rarityScore < 40) {
       rarity = "R";
       charMult = 1.15;
-      itemMult = 1.25;
+      itemMult = 1.15;
     } else {
       rarity = "N";
       charMult = 1.00;
@@ -394,11 +394,11 @@ export class BarcodeEngine {
     if (isItemCard) {
       const baseItemTypes = [
         { name: "えりくさー", type: "heal", baseVal: 300, getDesc: (v) => `HPを ${v} かいふく！` },
-        { name: "はかいのつるぎ", type: "buff_atk", baseVal: 60, getDesc: (v) => `ATKを +${v} アップ！` },
-        { name: "いあつのたて", type: "buff_def", baseVal: 50, getDesc: (v) => `DEFを +${v} アップ！` },
+        { name: "はかいのつるぎ", type: "buff_atk", baseVal: 40, getDesc: (v) => `ATKを +${v} アップ！` },
+        { name: "いあつのたて", type: "buff_def", baseVal: 40, getDesc: (v) => `DEFを +${v} アップ！` },
         { name: "ひかりのたびびと", type: "buff_spd", baseVal: 40, getDesc: (v) => `SPDを +${v} アップ！` },
         { name: "びくとりーのたま", type: "charge_sp", baseVal: 100, getDesc: () => `SPを 即座に 100% ためる！` },
-        { name: "まほうのばくだん", type: "bomb", baseVal: 200, getDesc: (v) => `相手に ${v} の固定ダメージ！` },
+        { name: "まほうのばくだん", type: "bomb", baseVal: 250, getDesc: (v) => `相手に ${v} の固定ダメージ！` },
         { name: "ふ死鳥の水", type: "heal_def", baseVal: 200, getDesc: (v) => `HPを ${v} かいふく & DEFアップ！` },
         { name: "おうかんの輝き", type: "all_buff", baseVal: 30, getDesc: (v) => `ATK/DEF/SPD を +${v} アップ！` }
       ];
@@ -420,15 +420,15 @@ export class BarcodeEngine {
       };
     }
 
-    const baseHp = 900 + ((digits[9] || 7) * 80) + ((digits[10] || 8) * 10);
-    const baseAtk = 90 + ((digits[7] || 5) * 15) + (digits[8] || 6);
-    const baseDef = 40 + ((digits[5] || 3) * 8) + (digits[6] || 4);
-    const baseSpd = 10 + ((digits[3] || 1) * 4) + (digits[4] || 2);
+    const rawBaseHp = 900 + ((digits[9] || 7) * 80) + ((digits[10] || 8) * 10);
+    const rawBaseAtk = 90 + ((digits[7] || 5) * 15) + (digits[8] || 6);
+    const rawBaseDef = 40 + ((digits[5] || 3) * 8) + (digits[6] || 4);
+    const rawBaseSpd = 10 + ((digits[3] || 1) * 4) + (digits[4] || 2);
 
-    const hp = Math.round(baseHp * charMult);
-    const atk = Math.round(baseAtk * charMult);
-    const def = Math.round(baseDef * charMult);
-    const spd = Math.round(baseSpd * charMult);
+    const hp = Math.round(rawBaseHp * charMult);
+    const atk = Math.round(rawBaseAtk * charMult);
+    const def = Math.round(rawBaseDef * charMult);
+    const spd = Math.round(rawBaseSpd * charMult);
 
     const elements = ["火", "水", "木"];
     const element = elements[(digits[12] || 0) % 3];
@@ -449,15 +449,100 @@ export class BarcodeEngine {
       species: baseSpeciesName,
       element: element,
       rarity: rarity,
+      baseHp: hp,
+      baseAtk: atk,
+      baseDef: def,
+      baseSpd: spd,
       hp: hp,
       maxHp: hp,
       atk: atk,
       def: def,
       spd: spd,
+      level: 1,
+      exp: 0,
       skill: { name: "ギガブレイク", desc: "敵に強力な属性ダメージ！" },
       spriteSvg: spriteSvg,
       memo: customMemo || "",
       createdAt: new Date().toISOString()
+    };
+  }
+}
+
+export class LevelManager {
+  static MAX_LEVEL = 100;
+
+  static getRequiredExp(level) {
+    if (level >= this.MAX_LEVEL) return 0;
+    return Math.floor(40 * Math.pow(level, 1.4));
+  }
+
+  static calculateStats(baseStats, level) {
+    const scale = 1 + (level - 1) * 0.015;
+    return {
+      maxHp: Math.round(baseStats.baseHp * scale),
+      atk: Math.round(baseStats.baseAtk * scale),
+      def: Math.round(baseStats.baseDef * scale),
+      spd: Math.round(baseStats.baseSpd * scale)
+    };
+  }
+
+  static addExp(card, expGained) {
+    if (!card || card.type !== 'character') return null;
+    if (card.level >= this.MAX_LEVEL) {
+      card.level = this.MAX_LEVEL;
+      card.exp = 0;
+      return { card, leveledUp: false, oldLevel: this.MAX_LEVEL, newLevel: this.MAX_LEVEL, levelDiff: 0 };
+    }
+
+    const oldLevel = card.level || 1;
+    let currentLevel = oldLevel;
+    let currentExp = (card.exp || 0) + expGained;
+
+    while (currentLevel < this.MAX_LEVEL) {
+      const needed = this.getRequiredExp(currentLevel);
+      if (currentExp >= needed) {
+        currentExp -= needed;
+        currentLevel++;
+      } else {
+        break;
+      }
+    }
+
+    if (currentLevel >= this.MAX_LEVEL) {
+      currentLevel = this.MAX_LEVEL;
+      currentExp = 0;
+    }
+
+    const leveledUp = (currentLevel > oldLevel);
+    card.level = currentLevel;
+    card.exp = currentExp;
+
+    const base = {
+      baseHp: card.baseHp || card.maxHp || card.hp || 1200,
+      baseAtk: card.baseAtk || card.atk || 180,
+      baseDef: card.baseDef || card.def || 80,
+      baseSpd: card.baseSpd || card.spd || 50
+    };
+    card.baseHp = base.baseHp;
+    card.baseAtk = base.baseAtk;
+    card.baseDef = base.baseDef;
+    card.baseSpd = base.baseSpd;
+
+    const newStats = this.calculateStats(base, currentLevel);
+    card.maxHp = newStats.maxHp;
+    card.hp = newStats.maxHp;
+    card.currentHp = newStats.maxHp;
+    card.atk = newStats.atk;
+    card.def = newStats.def;
+    card.spd = newStats.spd;
+
+    return {
+      card,
+      leveledUp,
+      oldLevel,
+      newLevel: currentLevel,
+      levelDiff: currentLevel - oldLevel,
+      newStats
     };
   }
 }

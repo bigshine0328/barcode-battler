@@ -2,7 +2,7 @@
  * Unit Tests for Barcode Battler Engine (v2.4.0)
  */
 
-import { BarcodeEngine, BASE_NAMES, ELEMENT_PALETTES } from '../src/js/barcode-engine.js';
+import { BarcodeEngine, LevelManager, BASE_NAMES, ELEMENT_PALETTES } from '../src/js/barcode-engine.js';
 import { StorageManager } from '../src/js/storage.js';
 import { BattleEngine } from '../src/js/battle-engine.js';
 
@@ -165,6 +165,101 @@ export function runAllTests() {
   assert(switchEngineB.playerIndex === 1, "キャラ交代: 後攻交代でも最終的に控えのNinjaが出撃していること");
   assert(switchEngineB.playerTeam[0].currentHp < initialSlowHpB, "後攻交代: 交代前のGolemが敵の先制攻撃を受けて被弾していること");
   assert(switchEngineB.playerTeam[1].currentHp === initialFastHpB, "後攻交代: 交代後のNinjaはダメージを受けないこと");
+
+  // 13. LevelManager 必要EXP計算 & 成長ステータス計算テスト (v3.0.0)
+  import('../src/js/barcode-engine.js').then(); // ensure loaded
+  const expLv1 = LevelManager.getRequiredExp(1);
+  const expLv10 = LevelManager.getRequiredExp(10);
+  const expLv50 = LevelManager.getRequiredExp(50);
+  const expLv100 = LevelManager.getRequiredExp(100);
+
+  assert(expLv1 === 40, "必要EXP計算: Lv.1 -> Lv.2 の必要EXPが 40 であること");
+  assert(expLv10 === 1004, "必要EXP計算: Lv.10 の必要EXPが 1004 (40 * 10^1.4) であること");
+  assert(expLv50 === 9563, "必要EXP計算: Lv.50 の必要EXPが 9563 (40 * 50^1.4) であること");
+  assert(expLv100 === 0, "必要EXP計算: Lv.100 (MAX) の必要EXPが 0 であること");
+
+  const baseStats = { baseHp: 1000, baseAtk: 100, baseDef: 100, baseSpd: 100 };
+  const statsLv1 = LevelManager.calculateStats(baseStats, 1);
+  const statsLv50 = LevelManager.calculateStats(baseStats, 50);
+  const statsLv100 = LevelManager.calculateStats(baseStats, 100);
+
+  assert(statsLv1.maxHp === 1000 && statsLv1.atk === 100, "ステータス計算: Lv.1 で倍率 1.0 (等倍) であること");
+  assert(statsLv50.maxHp === 1735 && statsLv50.atk === 174, "ステータス計算: Lv.50 で倍率 1 + 49*0.015 = 1.735倍 であること");
+  assert(statsLv100.maxHp === 2485 && statsLv100.atk === 249, "ステータス計算: Lv.100 で倍率 1 + 99*0.015 = 2.485倍 であること");
+
+  // 14. LevelManager 経験値付与 & 複数レベルアップテスト (v3.0.0)
+  const testGrowthCard = {
+    id: "growth_test",
+    type: "character",
+    name: "成長テストドラゴン",
+    level: 1,
+    exp: 0,
+    baseHp: 1000,
+    baseAtk: 100,
+    baseDef: 100,
+    baseSpd: 100,
+    hp: 1000,
+    maxHp: 1000,
+    atk: 100,
+    def: 100,
+    spd: 100
+  };
+
+  // +100 EXP 付与 (Lv.1 -> Lv.2 必要40, Lv.2 -> Lv.3 必要105 -> 60余り)
+  const resExp1 = LevelManager.addExp(testGrowthCard, 100);
+  assert(resExp1.leveledUp === true, "レベルアップ判定: 100 EXP獲得でレベルアップすること");
+  assert(testGrowthCard.level === 2, "レベルアップ判定: Lv.2 に上昇すること");
+  assert(testGrowthCard.exp === 60, "経験値余り: 余剰経験値 60 が正常に繰り越されること");
+  assert(testGrowthCard.maxHp === 1015, "成長ステータス: HPが 1015 (+1.5%) に再計算されていること");
+
+  // 15. 3P対戦 出撃参加キャラクター限定EXP付与判定テスト (v3.0.0)
+  const cP1 = { id: "p1", name: "キャラ1", type: "character", hp: 1000, atk: 100, def: 50, spd: 100 };
+  const cP2 = { id: "p2", name: "キャラ2", type: "character", hp: 1000, atk: 100, def: 50, spd: 80 };
+  const cP3 = { id: "p3", name: "キャラ3", type: "character", hp: 1000, atk: 100, def: 50, spd: 50 };
+  const cEnemy = { id: "en", name: "敵キャラ", type: "character", hp: 3000, atk: 100, def: 50, spd: 60 };
+
+  const battleExpEngine = new BattleEngine([cP1, cP2, cP3], [], [cEnemy], [], '3p');
+  assert(battleExpEngine.participatedPlayerCardIds.has("p1"), "出撃キャラ追跡: 初期出撃キャラ(p1)が参加リストに含まれること");
+  assert(!battleExpEngine.participatedPlayerCardIds.has("p2"), "出撃キャラ追跡: 未出撃キャラ(p2)は参加リストに含まれないこと");
+  assert(!battleExpEngine.participatedPlayerCardIds.has("p3"), "出撃キャラ追跡: 未出撃キャラ(p3)は参加リストに含まれないこと");
+
+  // 途中交代で p2 を出撃
+  battleExpEngine.processTurn('switch', 0, 'attack', 0, 1, -1);
+  assert(battleExpEngine.participatedPlayerCardIds.has("p2"), "出撃キャラ追跡: 途中交代で出撃したキャラ(p2)が参加リストに追加されること");
+  assert(!battleExpEngine.participatedPlayerCardIds.has("p3"), "出撃キャラ追跡: 出撃していないキャラ(p3)は除外され続けること (案B仕様完全準拠)");
+
+  // 16. ガード時 50%被ダメージ半減テスト (v3.0.0)
+  const attCard = { id: "att", name: "攻撃役", element: "火", hp: 1000, atk: 200, def: 50, spd: 100 };
+  const defCard = { id: "def", name: "防御役", element: "火", hp: 1000, atk: 100, def: 50, spd: 50 };
+
+  // 通常攻撃時のダメージ計測
+  const normalEngine = new BattleEngine([defCard], [], [attCard], [], '1p');
+  normalEngine.processTurn('attack', 0, 'attack', 0);
+  const normalDamage = 1000 - normalEngine.player.currentHp;
+
+  // ガード時のダメージ計測
+  const guardEngine = new BattleEngine([defCard], [], [attCard], [], '1p');
+  guardEngine.processTurn('guard', 0, 'attack', 0);
+  const guardDamage = 1000 - guardEngine.player.currentHp;
+
+  assert(guardDamage <= Math.round(normalDamage * 0.6) && guardDamage >= Math.round(normalDamage * 0.4), "ガード効果: 被ダメージが約50%に半減されていること");
+
+  // 17. 100枚上限超過時の入れ替え保存テスト (v3.0.0)
+  localStorage.clear();
+  for (let i = 0; i < 100; i++) {
+    const card = BarcodeEngine.generateFromBarcode(`4900000000${i.toString().padStart(3, '0')}`);
+    StorageManager.saveToCollection(card);
+  }
+  assert(StorageManager.isCollectionFull() === true, "所持上限判定: 100枚到達時に isCollectionFull が true を返すこと");
+
+  const oldCardId = StorageManager.getCollection()[0].id;
+  const newCard = BarcodeEngine.generateFromBarcode("4999999999999");
+  StorageManager.replaceCardInCollection(oldCardId, newCard);
+
+  const colAfterReplace = StorageManager.getCollection();
+  assert(colAfterReplace.length === 100, "入れ替え保存: 総数が100枚に維持されること");
+  assert(!colAfterReplace.some(c => c.id === oldCardId), "入れ替え保存: 選択した古いカードが削除されていること");
+  assert(colAfterReplace.some(c => c.id === newCard.id), "入れ替え保存: 新しいカードが正常に保存されていること");
 
   return results;
 }

@@ -22,18 +22,30 @@ export class StorageManager {
       const collection = this.getCollection();
       if (!collection || collection.length === 0) return;
 
+      let changed = false;
       const updatedCollection = collection.map(card => {
-        if (card && card.barcode) {
-          const freshCard = BarcodeEngine.generateFromBarcode(card.barcode, card.memo || "");
-          freshCard.id = card.id;
-          freshCard.createdAt = card.createdAt || new Date().toISOString();
-          return freshCard;
+        if (card && card.type === 'character') {
+          if (card.level === undefined || card.exp === undefined || card.baseHp === undefined) {
+            changed = true;
+            card.level = card.level || 1;
+            card.exp = card.exp || 0;
+            card.baseHp = card.baseHp || card.maxHp || card.hp || 1200;
+            card.baseAtk = card.baseAtk || card.atk || 180;
+            card.baseDef = card.baseDef || card.def || 80;
+            card.baseSpd = card.baseSpd || card.spd || 50;
+          }
         }
         return card;
       });
 
-      localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
+      if (changed) {
+        localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(updatedCollection));
+      }
     } catch (e) {}
+  }
+
+  static isCollectionFull() {
+    return this.getCollection().length >= 100;
   }
 
   static saveToCollection(card) {
@@ -50,6 +62,11 @@ export class StorageManager {
     try {
       localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
     } catch (e) {}
+  }
+
+  static replaceCardInCollection(deleteCardId, newCard) {
+    this.deleteFromCollection(deleteCardId);
+    this.saveToCollection(newCard);
   }
 
   static deleteFromCollection(cardId) {
