@@ -1141,6 +1141,7 @@
   let scanVideo = null;
   let scanCanvas = null;
   let scanAnimationId = null;
+  let zxingReader = null;
 
   function switchScreen(targetId) {
     if (appState.currentScreen === 'SCR-02' && targetId !== 'SCR-02') {
@@ -1436,7 +1437,7 @@
   }
 
   // ==========================================
-  // カメラ堅牢起動 (Robust Camera Engine)
+  // カメラ堅牢起動 (Robust Hybrid Camera Engine: Android Native + iOS Fallback)
   // ==========================================
   async function startCamera() {
     scanVideo = document.getElementById('scan-video');
@@ -1451,6 +1452,7 @@
     if (scanVideo) {
       scanVideo.setAttribute('autoplay', 'true');
       scanVideo.setAttribute('playsinline', 'true');
+      scanVideo.setAttribute('webkit-playsinline', 'true');
       scanVideo.muted = true;
     }
 
@@ -1489,6 +1491,9 @@
       cancelAnimationFrame(scanAnimationId);
       scanAnimationId = null;
     }
+    if (zxingReader) {
+      try { zxingReader.reset(); } catch(e){}
+    }
     if (scanVideo && scanVideo.srcObject) {
       try {
         const tracks = scanVideo.srcObject.getTracks();
@@ -1499,11 +1504,12 @@
   }
 
   function scanBarcodeLoop() {
-    if (!scanVideo || scanVideo.readyState !== scanVideo.HAVE_ENOUGH_DATA) {
+    if (!scanVideo || scanVideo.readyState < 2) {
       scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
       return;
     }
 
+    // ①【Android / PC Chrome最優先パス】BarcodeDetector によるネイティブ超高速解析 (Zero-Impact)
     if ('BarcodeDetector' in window) {
       try {
         const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code', 'code_128'] });
@@ -1521,9 +1527,45 @@
       } catch (e) {
         scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
       }
-    } else {
-      scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+      return; // Android はここで完了
     }
+
+    // ②【iPhone / iOS Safari専用フォールバックパス】ZXing-JS によるキャンバス映像フレームデコード
+    if (window.ZXing) {
+      if (!zxingReader) {
+        try {
+          zxingReader = new window.ZXing.BrowserMultiFormatReader();
+        } catch (e) {
+          console.warn("ZXing init failed:", e);
+        }
+      }
+
+      if (zxingReader && scanCanvas && scanVideo.videoWidth > 0 && scanVideo.videoHeight > 0) {
+        try {
+          const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
+          scanCanvas.width = scanVideo.videoWidth;
+          scanCanvas.height = scanVideo.videoHeight;
+          ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+
+          zxingReader.decodeFromImageElement(scanCanvas).then(result => {
+            if (result && result.text) {
+              stopCamera();
+              handleScanBarcode(result.text);
+            } else {
+              scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+            }
+          }).catch(() => {
+            scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+          });
+          return;
+        } catch (e) {
+          scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+          return;
+        }
+      }
+    }
+
+    scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
   }
 
   // ==========================================

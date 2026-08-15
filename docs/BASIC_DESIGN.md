@@ -1,13 +1,17 @@
 # 📐 システム基本設計書 (BASIC_DESIGN.md)
 
 - **システム名**: バーコードバトラー Web アプリケーション
-- **バージョン**: `v3.7.0` (Random Auto-Fill for Empty Slots & P2P Lobby Mode Sync)
-- **最終更新日**: 2026年8月15日
+- **バージョン**: `v3.8.0` (Hybrid Barcode Scanner: Android Native + iOS ZXing Fallback)
+- **最終更新日**: 2026年8月16日
 - **作成担当**: `software-engineer`
 
 ---
 
 ## 改定履歴 (Changelog)
+- **v3.8.0 (2026-08-16)**:
+  - 【新機能・互換性拡張】ハイブリッド・バーコードスキャンアーキテクチャ（`BarcodeDetector` ＋ `ZXing-JS`）を設計。
+    - Android/PC Chrome等: `window.BarcodeDetector` によるネイティブハードウェア解析を最優先実行（Zero-Impact）。
+    - iPhone/iOS Safari等: `ZXing.BrowserMultiFormatReader`（キャンバスフレーム解析）への自動フォールバックを実装。
 - **v3.7.0 (2026-08-15)**:
   - 【新機能・仕様改善】バトル出撃チーム構築ヘルパー（`getBattleReadyTeam(mode)`）を設計。デッキのメイン・サブが未選択の場合、所持図鑑の未選択キャラクターからランダムに自動選出するロジックを実装。
   - 【不具合修正】P2P対戦ロビーにおいて、ゲスト側のモード（1P/3P）選択状態に関わらずホストの対戦モード（`START` ペイロード）に完全追従する設計とし、再送ハンドシェイクおよびタイムアウト（15秒）処理を強化。

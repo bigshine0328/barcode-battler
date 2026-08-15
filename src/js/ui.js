@@ -163,11 +163,13 @@ export class UIController {
 
   startScanLoop() {
     const video = document.getElementById('scan-video');
+    const canvas = document.getElementById('scan-canvas');
     if (!video) return;
 
     this.scanIntervalId = setInterval(async () => {
-      if (!video.videoWidth || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+      if (!video.videoWidth || video.readyState < 2) return;
 
+      // ① Android / Chrome 最優先
       if (this.barcodeDetector) {
         try {
           const barcodes = await this.barcodeDetector.detect(video);
@@ -175,6 +177,23 @@ export class UIController {
             const detectedCode = barcodes[0].rawValue;
             this.stopCamera();
             this.processScanResult(detectedCode);
+            return;
+          }
+        } catch (e) {}
+      } else if (window.ZXing && canvas) {
+        // ② iOS Safari フォールバック
+        try {
+          if (!this.zxingReader) {
+            this.zxingReader = new window.ZXing.BrowserMultiFormatReader();
+          }
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const result = await this.zxingReader.decodeFromImageElement(canvas);
+          if (result && result.text) {
+            this.stopCamera();
+            this.processScanResult(result.text);
           }
         } catch (e) {}
       }

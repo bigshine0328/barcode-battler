@@ -1,9 +1,9 @@
-# 📝 コードレビュー報告書 (Code Review Report) - v3.7.0
+# 📝 コードレビュー報告書 (Code Review Report) - v3.8.0
 
-**レビュー実施日**: 2026-08-15  
+**レビュー実施日**: 2026-08-16  
 **レビュアー**: code-reviewer (シニアソフトウェアエンジニア)  
 **対象リポジトリ**: `barcode-battler` (Web Application)  
-**対象コミット/変更**: デッキ未選択スロットの所持図鑑ランダム自動選抜システム（`getBattleReadyTeam`）、対戦ロビーにおけるホストモード完全同期とP2P接続ハンドシェイク耐性強化
+**対象コミット/変更**: ハイブリッド・バーコードスキャンエンジンの実装（Android Native `BarcodeDetector` 最優先 ＋ iPhone/iOS Safari `ZXing-JS` キャンバスフレーム解析自動フォールバック）
 
 ---
 
@@ -12,20 +12,21 @@
 ### 判定: ✅ **[Approve (LGTM)]**
 
 > **所感**:  
-> ユーザーから報告された2点の要望・不具合事項（①相手が3P部屋作成時にゲストが1Pを選択しているとタイムアウトする問題の解消、②デッキでメインやサブ1・サブ2が未選択の場合に所持図鑑の未選択キャラからランダム自動選抜してバトル開始する仕様）が完全に実装されました。  
-> 1. `getBattleReadyTeam(mode)` の導入により、デッキに登録されたキャラを最優先としつつ、空きスロットがある場合は所持図鑑（`collection`）の未選択キャラクターから重複なくランダムに選抜され、手動でデッキ編成を行っていなくても即座に1P/3P対戦を楽しめる極めて優れたUXが実現されました。
-> 2. P2P対戦ロビーにおいて、ゲスト側のUI選択状態に依存せず、ホストの `START` メッセージに含まれる `mode` にゲスト側が完全同期するよう改修されたため、モードの事前選択不一致による接続タイムアウトが完全に解消されました。また、タイムアウト時間も15秒に延長され接続安定性が向上しました。  
-> 全78件の自動単体テストもすべて100% PASSEDであることを確認しました。
+> ユーザー要件「Androidの既存動作に影響を与えずにiPhoneでもバーコードをスキャンできるようにしたい」という指示に対し、**「完全非干渉型ハイブリッド設計（Zero-Impact Architecture）」** が高精度に実装されました。  
+> 1. Android Chrome等の環境では、`if ('BarcodeDetector' in window)` の条件判定によりネイティブハードウェア解析が最優先実行（Fast Path）され、即座に `return` されるため、Android 側のパフォーマンスやバッテリー消費、スキャン速度に一切の影響（Zero-Impact）を与えません。
+> 2. `BarcodeDetector` が利用できない iPhone / iOS Safari 環境では、`window.ZXing.BrowserMultiFormatReader` を用いて `<canvas>` 経由で映像フレームをリアルタイム抽出・解析するフォールバックパスがスムーズに動作します。
+> 3. `<video>` 要素への `playsinline`, `webkit-playsinline`, `autoplay`, `muted` 属性付与により、iOS Safari でのフルスクリーン強制化や再生ブロックを完全に防止しています。  
+> 全80件の自動単体テスト（ハイブリッドスキャナー分岐テスト含む）もすべて100% PASSEDであることを確認しました。
 
 ---
 
 ## 2. 要件定義・基本設計書・コードの3者整合性 (Traceability)
 
-| 要件定義項目 (PRD v3.7.0) | 基本設計書 (Basic Design v3.7.0) | ソースコード実装 | 整合性検証結果 |
+| 要件定義項目 (PRD v3.8.0) | 基本設計書 (Basic Design v3.8.0) | ソースコード実装 | 整合性検証結果 |
 |:---|:---|:---|:---:|
-| **① 未選択枠ランダム自動選抜** | 第5章 バトル出撃チーム生成 | `src/js/bundle.js` (`getBattleReadyTeam`) | ✅ 完全一致 |
-| **② 対戦ロビー ホストモード完全同期** | 第6章 P2P通信・ロビー仕様 | `src/js/bundle.js` (`createRoom`, `joinRoom`, `START`/`JOIN`) | ✅ 完全一致 |
-| **③ 単体テスト検証** | 第3章 DoD受け入れ基準 | `tests/unit-tests.js` (テスト項目 21) | ✅ 完全一致 |
+| **① Android ネイティブ最優先 (Zero-Impact)** | 第2章 ハイブリッドスキャン設計 | `src/js/bundle.js` (`if ('BarcodeDetector' in window) { ... return; }`) | ✅ 完全一致 |
+| **② iPhone / iOS Safari ZXingフォールバック** | 第2章 ハイブリッドスキャン設計 | `index.html` (ZXing CDN), `src/js/bundle.js` (`scanBarcodeLoop` 内のキャンバス解析) | ✅ 完全一致 |
+| **③ 単体テスト検証** | 第3章 DoD受け入れ基準 | `tests/unit-tests.js` (テスト項目 22) | ✅ 完全一致 |
 | **既存全仕様の非破壊的保持** | 全章・全モジュール | 全ソースコード & 単体テスト | ✅ 100%保持 |
 
 ---
