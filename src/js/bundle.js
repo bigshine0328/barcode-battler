@@ -1162,18 +1162,19 @@
     if (mainChar) {
       const spriteSvg = getCharacterSpriteSvg(mainChar);
       showcase.innerHTML = `
-        <div class="sprite-container" style="width:140px; height:140px;">
+        <div class="sprite-container">
           ${spriteSvg}
         </div>
-        <div class="char-name" style="font-weight:900;">
-          <span class="rarity-tag" style="color:var(--accent-gold); font-size:1.1rem;">[${mainChar.rarity || 'N'}]</span>
-          ${mainChar.name}
+        <div class="char-name" style="font-weight:900; display:flex; align-items:center; justify-content:center; gap:4px; flex-wrap:wrap;">
+          <span class="level-badge-home">Lv.${mainChar.level || 1}</span>
+          <span class="rarity-tag" style="color:var(--accent-gold); font-size:1.05rem;">[${mainChar.rarity || 'N'}]</span>
+          <span>${mainChar.name}</span>
         </div>
-        <div style="margin: 4px 0;">
+        <div style="margin: 2px 0;">
           <span class="element-tag element-${mainChar.element}">属性: ${mainChar.element}</span>
-          <span style="font-size:0.8rem; color:var(--text-muted); margin-left:6px;">種族: ${mainChar.species || 'ドラゴン'}</span>
+          <span style="font-size:0.78rem; color:var(--text-muted); margin-left:6px;">種族: ${mainChar.species || 'ドラゴン'}</span>
         </div>
-        <div style="display:flex; gap:10px; font-size:0.85rem; font-weight:800; margin-top:6px;">
+        <div style="display:flex; gap:8px; font-size:0.82rem; font-weight:800; margin-top:4px;">
           <span style="color:#00ff88;">HP: ${mainChar.hp}</span>
           <span style="color:#ff3366;">ATK: ${mainChar.atk}</span>
           <span style="color:#00e5ff;">DEF: ${mainChar.def}</span>
@@ -1219,7 +1220,6 @@
       else if (deck.itemCard2 && deck.itemCard2.id === card.id) { roleBadge = `<span class="slot-badge badge-item">💊 アイテム2</span>`; isSet = true; }
       else if (deck.itemCard3 && deck.itemCard3.id === card.id) { roleBadge = `<span class="slot-badge badge-item">💊 アイテム3</span>`; isSet = true; }
 
-      const deckRibbon = isSet ? `<span class="deck-ribbon">✅ DECK</span>` : '';
       const spriteSvg = getCharacterSpriteSvg(card);
       const isItem = (card.type === 'item');
       const rarityClass = `rarity-${card.rarity || 'N'}`;
@@ -1227,7 +1227,6 @@
 
       return `
         <div class="card-item ${isItem ? 'item-card' : ''} ${isSet ? 'is-deck-set' : ''} ${rarityClass}" onclick="window.appOpenCardDetail('${card.id}')">
-          ${deckRibbon}
           ${levelBadge}
           ${roleBadge}
           <div class="mini-sprite">
