@@ -403,13 +403,23 @@
       for (const [key, path] of Object.entries(ItemImageMap)) {
         if (card.name && card.name.includes(key)) return path;
       }
-    } else if (card.type === 'character') {
-      const species = card.species || "";
-      if (MonsterImageMap[species]) return MonsterImageMap[species];
-      for (const [key, path] of Object.entries(MonsterImageMap)) {
-        if (card.name && card.name.includes(key)) return path;
+      return null;
+    }
+
+    // キャラクター判定 (card.type === 'character' または species/nameのマッチ)
+    const species = card.species || "";
+    if (MonsterImageMap[species]) return MonsterImageMap[species];
+    for (const [key, path] of Object.entries(MonsterImageMap)) {
+      if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
+        return path;
       }
     }
+
+    // アイテム名フォールバック
+    for (const [key, path] of Object.entries(ItemImageMap)) {
+      if (card.name && card.name.includes(key)) return path;
+    }
+
     return null;
   }
 
@@ -911,6 +921,7 @@
 
       return {
         id: c?.id || `char_${Math.random()}`,
+        type: c?.type || "character",
         name: c?.name || (isPlayer ? "爆炎ドラゴン" : "アクアタイガー"),
         element: c?.element || "火",
         rarity: c?.rarity || "R",
