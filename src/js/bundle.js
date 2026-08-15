@@ -1438,6 +1438,31 @@
     modal.classList.add('active');
   }
 
+  function handleBattleEnd(winner) {
+    const isWin = (winner === 'player');
+    setTimeout(() => {
+      alert(isWin ? '🎉 あなたの勝利です！' : '💧 敗北しました...');
+      
+      // P2P通信およびバトルのクリーンアップ
+      if (appState.peerConn) {
+        try { appState.peerConn.close(); } catch(e){}
+        appState.peerConn = null;
+      }
+      if (appState.peer) {
+        try { appState.peer.destroy(); } catch(e){}
+        appState.peer = null;
+      }
+      appState.isP2P = false;
+      appState.isHost = false;
+      appState.waitingForOpponent = false;
+      appState.battleEngine = null;
+
+      // 対戦ロビーへ確実に戻る
+      switchScreen('SCR-05');
+      renderLobby();
+    }, 400);
+  }
+
   function executePlayerAction(action, itemIdx = 0) {
     const itemModal = document.getElementById('battle-item-modal');
     if (itemModal) itemModal.classList.remove('active');
@@ -1454,10 +1479,7 @@
       renderBattleUI();
 
       if (be.isOver) {
-        const winner = be.winner;
-        setTimeout(() => {
-          alert(winner === 'player' ? '🎉 あなたの勝利です！' : '💧 敗北しました...');
-        }, 500);
+        handleBattleEnd(be.winner);
       }
       return;
     }
@@ -1520,10 +1542,7 @@
     }
 
     if (be.isOver) {
-      const winner = be.winner;
-      setTimeout(() => {
-        alert(winner === 'player' ? '🎉 あなたの勝利です！' : '💧 敗北しました...');
-      }, 500);
+      handleBattleEnd(be.winner);
     }
   }
 
@@ -1764,10 +1783,7 @@
               renderBattleUI();
 
               if (be.isOver) {
-                const winner = be.winner;
-                setTimeout(() => {
-                  alert(winner === 'player' ? '🎉 あなたの勝利です！' : '💧 敗北しました...');
-                }, 500);
+                handleBattleEnd(be.winner);
               }
             }
           }
@@ -1793,12 +1809,33 @@
   }
 
 
+  function escapeBattle() {
+    if (confirm("バトルを ちゅうだん して 対戦ロビーへ もどりますか？")) {
+      if (appState.peerConn) {
+        try { appState.peerConn.close(); } catch(e){}
+        appState.peerConn = null;
+      }
+      if (appState.peer) {
+        try { appState.peer.destroy(); } catch(e){}
+        appState.peer = null;
+      }
+      appState.isP2P = false;
+      appState.isHost = false;
+      appState.waitingForOpponent = false;
+      appState.battleEngine = null;
+      switchScreen('SCR-05');
+      renderLobby();
+    }
+  }
+
   // ==========================================
   // 7. グローバル公開 & 初期化バインド
   // ==========================================
   window.appSwitchScreen = switchScreen;
   window.appStartCamera = startCamera;
   window.appOpenCardDetail = openCardDetail;
+  window.appEscapeBattle = escapeBattle;
+
   window.appSelectTab = function(tab) {
     const colTab = document.getElementById('view-collection-tab');
     const deckTab = document.getElementById('view-deck-tab');
