@@ -1,7 +1,7 @@
 # 📐 システム基本設計書 (BASIC_DESIGN.md)
 
 - **システム名**: バーコードバトラー Web アプリケーション
-- **バージョン**: `v2.5.0` (Multi-Element Color & Ultra SSR Edition)
+- **バージョン**: `v2.7.1` (3P Character Switching & Host Rule Authority Edition)
 - **最終更新日**: 2026年8月15日
 - **作成担当**: `software-engineer`
 
@@ -10,42 +10,57 @@
 ## 1. システム構成 & アーキテクチャ
 
 - **フロントエンド**: HTML5 / CSS3 / Vanilla ES6+ JavaScript（単一バンドル `src/js/bundle.js`）
-- **P2P通信**: WebRTC / PeerJS (Host Authority パターン)
+- **P2P通信**: WebRTC / PeerJS (Host Authority パターン ＋ STUN 5重冗長化 ＋ リトライハンドシェイク)
 - **永続化**: ブラウザ LocalStorage (100枚FIFO・デッキ3スロット保存・カスケード保護)
 
 ---
 
-## 2. グラフィック & スプライト生成ロジック
+## 2. 3P対戦キャラクター交代 & 素早さ連動ダメージ処理 (`BattleEngine`)
 
-### 2.1 属性マルチカラーパレット (`ELEMENT_PALETTES`)
-```javascript
-export const ELEMENT_PALETTES = {
-  "火": { primary: "#ff2200", secondary: "#ffd700", dark: "#880011", eye: "#ffff00", pupil: "#000000", accent: "#ff6600" },
-  "水": { primary: "#0088ff", secondary: "#e0ffff", dark: "#002266", eye: "#00ffff", pupil: "#ffffff", accent: "#00e5ff" },
-  "木": { primary: "#00aa44", secondary: "#aaffaa", dark: "#003311", eye: "#ffff33", pupil: "#003300", accent: "#00ff88" }
-};
+### 2.1 交代（Switch）処理シーケンス
+```typescript
+interface ActionParam {
+  action: 'attack' | 'skill' | 'guard' | 'item' | 'switch';
+  itemIdx?: number;
+  switchIdx?: number;
+}
 ```
 
-### 2.2 レアリティ別背景演出 (`generateCharacterSvg`)
-- **SSR**: 16芒サンバースト大光槍（`<polygon points="70,4 ...">`）＋ 黄金ルーン魔方陣 ＋ 星屑スパークル ＋ 黄金グラデーション
-- **SR**: サイバーオーラ ＋ ヘックス幾何学グリッド（六角形）
-- **R**: クリスタルリング ＋ エナジー粒子
-- **N**: ディープネイビー円形ベースプレート ＋ アークティックライン
+- **行動優先度（Priority）計算**:
+  - ガード: `9999`（最優先）
+  - 攻撃 / 必殺技: `spd * (0.85 + Math.random() * 0.3)`
+  - 交代（`switch`）: **出撃中キャラクターの** `spd * (0.85 + Math.random() * 0.3)`
+- **ダメージ適用ロジック**:
+  - **相手が先攻の場合**:
+    1. 相手の攻撃が発動 ➔ **交代前の出撃キャラクターがダメージを受ける**。
+    2. 生存していれば、続いて予定通り控えキャラクターへと交代完了。
+    3. （※もし被弾で倒れた場合は撃破交代へ移行）
+  - **自分が先攻の場合**:
+    1. 自分の交代が先に発動 ➔ **指定した控えキャラクターが出撃**。
+    2. 続いて相手の攻撃が発動 ➔ **新しく登場したキャラクターがダメージを受ける**。
+- **個別ステータス管理**:
+  - 各キャラクターのHP・SP・バフ状態は配列内で個別に独立して維持・管理される。
 
 ---
 
-## 3. デッキ & 図鑑3アイテム連動仕様
+## 3. P2P Host Authority & ルール統一同期
 
-- `AppState.deck` スキーマ:
-  ```typescript
-  interface DeckState {
-    mainChar: Card | null;
-    subChar1: Card | null;
-    subChar2: Card | null;
-    itemCard1: Card | null;
-    itemCard2: Card | null;
-    itemCard3: Card | null;
-  }
-  ```
-- 図鑑描画時、`deck.itemCard1`, `deck.itemCard2`, `deck.itemCard3` すべてに個別バッジ（`[💊 アイテム1]`, `[💊 アイテム2]`, `[💊 アイテム3]`）を付与し、3枚同時にハイライト表示。
-- バトルエンジンは所持アイテム配列（最大3個）を管理し、未消費のアイテムを個別に選択発動可能。
+### 3.1 ホスト権威モデル (Host Authority)
+- ホスト側が唯一の審判としてターン計算・ダメージ・勝敗・交代を一括処理。
+- 確定ステート（`STATE_SYNC`）をゲストへ送信し、ゲスト側は `applyGuestState(state)` で完全同期復元。
+
+### 3.2 部屋ルール（1P/3P）の強制統一
+- ホストが部屋作成時に選択した `appState.battleMode`（`1p` または `3p`）を正とする。
+- ゲスト参加時、`START` メッセージの `mode` に応じて自動的にデッキから1体または3体を編成し、双方で確実に同一人数の対戦を開始する。
+
+---
+
+## 4. UIコンポーネント設計 (3Pチームサブスロット & エレメントドット)
+
+- **3Pチームサブスロット (`.team-sub-slots`)**:
+  - 敵・味方の情報バー内に横並び3分割のスロットをレンダリング。
+  - 出撃中: 黄金枠ハイライト＋属性丸印（`●`）＋残りHP/最大HP＋ミニHPバー。
+  - 控え: 通常枠＋属性丸印（`●`）＋残りHP/最大HP＋ミニHPバー。
+  - 戦闘不能: 💀アイコン＋グレーアウト。
+- **ノースクロール保証**:
+  - バトルステージ、アリーナ、ログ（54px）、コマンドボタングリッドのサイズをビューポート内に最適化し、スクロール不要で1画面完結。
