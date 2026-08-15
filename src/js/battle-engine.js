@@ -249,4 +249,47 @@ export class BattleEngine {
     }
     return false;
   }
+
+  // ホスト用のシリアライズ
+  exportHostState() {
+    return {
+      turn: this.turn,
+      isOver: this.isOver,
+      winner: this.winner,
+      playerIndex: this.playerIndex,
+      enemyIndex: this.enemyIndex,
+      playerTeam: this.playerTeam.map(c => ({ hp: c.hp, maxHp: c.maxHp, currentHp: c.currentHp, sp: c.sp, name: c.name, element: c.element, rarity: c.rarity, species: c.species, spriteSvg: c.spriteSvg })),
+      enemyTeam: this.enemyTeam.map(c => ({ hp: c.hp, maxHp: c.maxHp, currentHp: c.currentHp, sp: c.sp, name: c.name, element: c.element, rarity: c.rarity, species: c.species, spriteSvg: c.spriteSvg })),
+      playerItemUsed: [...this.playerItemUsed],
+      enemyItemUsed: [...this.enemyItemUsed]
+    };
+  }
+
+  // ゲスト用のデシリアライズ（ホストと立場が逆転：HostのplayerがGuestのenemyになる）
+  applyGuestState(hostState) {
+    this.turn = hostState.turn;
+    this.isOver = hostState.isOver;
+    this.winner = (hostState.winner === 'player') ? 'enemy' : (hostState.winner === 'enemy') ? 'player' : null;
+    this.playerIndex = hostState.enemyIndex;
+    this.enemyIndex = hostState.playerIndex;
+
+    // Guest視点: 自分のplayerTeam = HostのenemyTeam
+    for (let i = 0; i < hostState.enemyTeam.length; i++) {
+      if (this.playerTeam[i]) {
+        this.playerTeam[i].currentHp = hostState.enemyTeam[i].currentHp;
+        this.playerTeam[i].sp = hostState.enemyTeam[i].sp;
+      }
+    }
+    // Guest視点: 相手のenemyTeam = HostのplayerTeam
+    for (let i = 0; i < hostState.playerTeam.length; i++) {
+      if (this.enemyTeam[i]) {
+        this.enemyTeam[i].currentHp = hostState.playerTeam[i].currentHp;
+        this.enemyTeam[i].sp = hostState.playerTeam[i].sp;
+      }
+    }
+
+    this.playerItemUsed = [...hostState.enemyItemUsed];
+    this.enemyItemUsed = [...hostState.playerItemUsed];
+  }
 }
+

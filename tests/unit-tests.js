@@ -123,5 +123,22 @@ export function runAllTests() {
   assert(turnResult !== null, "バトルエンジン: 1ターン目のアイテム使用処理が正常に実行されること");
   assert(bEngine.playerItemUsesLeft === 1, "バトルアイテム: アイテム使用後に残数が1個に減少すること");
 
+  // 11. P2P Host Authority 完全同期テスト (v2.5.0)
+  const hostEngine = new BattleEngine([char1], [item1], [charDiff], [item2], '1p');
+  const guestEngine = new BattleEngine([charDiff], [item2], [char1], [item1], '1p');
+
+  // ホストでターン実行
+  const hTurn = hostEngine.processTurn('attack', 0, 'attack', 0);
+  const exportedState = hostEngine.exportHostState();
+
+  // ゲストへ同期適用
+  guestEngine.applyGuestState(exportedState);
+
+  assert(hostEngine.player.currentHp === guestEngine.enemy.currentHp, "P2P同期: ホストの自身HPとゲストの敵HPが100%完全一致すること");
+  assert(hostEngine.enemy.currentHp === guestEngine.player.currentHp, "P2P同期: ホストの敵HPとゲストの自身HPが100%完全一致すること");
+  assert(hostEngine.player.sp === guestEngine.enemy.sp, "P2P同期: ホストの自身SPとゲストの敵SPが100%完全一致すること");
+  assert(hostEngine.turn === guestEngine.turn, "P2P同期: ターン数が完全一致すること");
+
   return results;
 }
+

@@ -1,5 +1,5 @@
 /**
- * Barcode Battler - Complete Standalone Bundle (v2.4.4 Vertical Fit & Guaranteed Text Visibility)
+ * Barcode Battler - Complete Standalone Bundle (v2.5.0 P2P Host Authority & Robust Camera Engine)
  */
 
 (function() {
@@ -644,7 +644,7 @@
   }
 
   // ==========================================
-  // 4. Battle Engine (3 アイテム選択使用)
+  // 4. Battle Engine (3 アイテム選択使用 & 完全同期対応)
   // ==========================================
   class BattleEngine {
     constructor(playerTeam, playerItems, enemyTeam, enemyItems, mode = '1p') {
@@ -895,6 +895,48 @@
       }
       return false;
     }
+
+    // ホスト用のシリアライズ
+    exportHostState() {
+      return {
+        turn: this.turn,
+        isOver: this.isOver,
+        winner: this.winner,
+        playerIndex: this.playerIndex,
+        enemyIndex: this.enemyIndex,
+        playerTeam: this.playerTeam.map(c => ({ hp: c.hp, maxHp: c.maxHp, currentHp: c.currentHp, sp: c.sp, name: c.name, element: c.element, rarity: c.rarity, species: c.species, spriteSvg: c.spriteSvg })),
+        enemyTeam: this.enemyTeam.map(c => ({ hp: c.hp, maxHp: c.maxHp, currentHp: c.currentHp, sp: c.sp, name: c.name, element: c.element, rarity: c.rarity, species: c.species, spriteSvg: c.spriteSvg })),
+        playerItemUsed: [...this.playerItemUsed],
+        enemyItemUsed: [...this.enemyItemUsed]
+      };
+    }
+
+    // ゲスト用のデシリアライズ（ホストと立場が逆転：HostのplayerがGuestのenemyになる）
+    applyGuestState(hostState) {
+      this.turn = hostState.turn;
+      this.isOver = hostState.isOver;
+      this.winner = (hostState.winner === 'player') ? 'enemy' : (hostState.winner === 'enemy') ? 'player' : null;
+      this.playerIndex = hostState.enemyIndex;
+      this.enemyIndex = hostState.playerIndex;
+
+      // Guest視点: 自分のplayerTeam = HostのenemyTeam
+      for (let i = 0; i < hostState.enemyTeam.length; i++) {
+        if (this.playerTeam[i]) {
+          this.playerTeam[i].currentHp = hostState.enemyTeam[i].currentHp;
+          this.playerTeam[i].sp = hostState.enemyTeam[i].sp;
+        }
+      }
+      // Guest視点: 相手のenemyTeam = HostのplayerTeam
+      for (let i = 0; i < hostState.playerTeam.length; i++) {
+        if (this.enemyTeam[i]) {
+          this.enemyTeam[i].currentHp = hostState.playerTeam[i].currentHp;
+          this.enemyTeam[i].sp = hostState.playerTeam[i].sp;
+        }
+      }
+
+      this.playerItemUsed = [...hostState.enemyItemUsed];
+      this.enemyItemUsed = [...hostState.playerItemUsed];
+    }
   }
 
   // ==========================================
@@ -907,9 +949,13 @@
     collectionSubTab: 'all',
     battleMode: '1p',
     battleEngine: null,
+    isP2P: false,
+    isHost: false,
     peer: null,
     peerConn: null,
-    isHost: false
+    pendingGuestAction: null,
+    pendingHostAction: null,
+    waitingForOpponent: false
   };
 
   let scanVideo = null;
@@ -932,6 +978,7 @@
       window.scrollTo(0, 0);
 
       if (targetId === 'SCR-01') renderHome();
+      if (targetId === 'SCR-02') startCamera();
       if (targetId === 'SCR-04') renderCollection();
       if (targetId === 'SCR-05') renderLobby();
     }
@@ -1168,7 +1215,10 @@
     switchScreen('SCR-03');
   }
 
-  function startCamera() {
+  // ==========================================
+  // カメラ堅牢起動 (Robust Camera Engine)
+  // ==========================================
+  async function startCamera() {
     scanVideo = document.getElementById('scan-video');
     scanCanvas = document.getElementById('scan-canvas');
     const msg = document.getElementById('camera-status-msg');
@@ -1178,18 +1228,40 @@
       return;
     }
 
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    }).then(stream => {
-      if (scanVideo) {
-        scanVideo.srcObject = stream;
-        scanVideo.play();
-        if (msg) msg.textContent = "カメラをバーコードに合わせてください...";
-        scanBarcodeLoop();
+    if (scanVideo) {
+      scanVideo.setAttribute('autoplay', 'true');
+      scanVideo.setAttribute('playsinline', 'true');
+      scanVideo.muted = true;
+    }
+
+    const constraintsCandidates = [
+      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+      { video: { facingMode: 'environment' } },
+      { video: true }
+    ];
+
+    let stream = null;
+    for (const constraints of constraintsCandidates) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (stream) break;
+      } catch (e) {
+        console.warn("Camera constraint attempt failed:", constraints, e);
       }
-    }).catch(err => {
+    }
+
+    if (stream && scanVideo) {
+      scanVideo.srcObject = stream;
+      try {
+        await scanVideo.play();
+      } catch (e) {
+        console.warn("Video play exception:", e);
+      }
+      if (msg) msg.textContent = "カメラをバーコードに合わせてください...";
+      scanBarcodeLoop();
+    } else {
       if (msg) msg.textContent = "カメラの起動に失敗しました。下のテストコードをお試しください。";
-    });
+    }
   }
 
   function stopCamera() {
@@ -1198,8 +1270,10 @@
       scanAnimationId = null;
     }
     if (scanVideo && scanVideo.srcObject) {
-      const tracks = scanVideo.srcObject.getTracks();
-      tracks.forEach(t => t.stop());
+      try {
+        const tracks = scanVideo.srcObject.getTracks();
+        tracks.forEach(t => t.stop());
+      } catch (e) {}
       scanVideo.srcObject = null;
     }
   }
@@ -1211,27 +1285,36 @@
     }
 
     if ('BarcodeDetector' in window) {
-      const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code', 'code_128'] });
-      detector.detect(scanVideo).then(barcodes => {
-        if (barcodes && barcodes.length > 0) {
-          const raw = barcodes[0].rawValue;
-          stopCamera();
-          handleScanBarcode(raw);
-        } else {
+      try {
+        const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code', 'code_128'] });
+        detector.detect(scanVideo).then(barcodes => {
+          if (barcodes && barcodes.length > 0) {
+            const raw = barcodes[0].rawValue;
+            stopCamera();
+            handleScanBarcode(raw);
+          } else {
+            scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+          }
+        }).catch(() => {
           scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-        }
-      }).catch(() => {
+        });
+      } catch (e) {
         scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-      });
+      }
     } else {
       scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
     }
   }
 
   // ==========================================
-  // 6. バトル制御 & アイテム選択モーダル
+  // 6. バトル制御 & P2P 完全同期 (Host Authority)
   // ==========================================
   function startCpuBattle() {
+    appState.isP2P = false;
+    appState.isHost = false;
+    appState.peerConn = null;
+    appState.waitingForOpponent = false;
+
     const deck = StorageManager.getDeck();
     let playerTeam = [];
     if (appState.battleMode === '3p') {
@@ -1302,27 +1385,38 @@
     if (eSprite) eSprite.innerHTML = getCharacterSpriteSvg(e);
 
     const btnSkill = document.getElementById('btn-cmd-skill');
-    if (btnSkill) {
-      btnSkill.disabled = (p.sp < 100 || be.isOver);
-    }
-
     const btnItem = document.getElementById('btn-cmd-item');
+    const btnAtk = document.getElementById('btn-cmd-attack');
+    const btnGrd = document.getElementById('btn-cmd-guard');
+
+    const isBusy = appState.waitingForOpponent || be.isOver;
+
+    if (btnSkill) btnSkill.disabled = (p.sp < 100 || isBusy);
     if (btnItem) {
       const left = be.playerItemUsesLeft;
       const total = be.playerItems.length;
       btnItem.textContent = `💊 アイテム (${left}/${total})`;
-      btnItem.disabled = (left <= 0 || be.isOver);
+      btnItem.disabled = (left <= 0 || isBusy);
     }
+    if (btnAtk) btnAtk.disabled = isBusy;
+    if (btnGrd) btnGrd.disabled = isBusy;
+  }
 
-    const btnAtk = document.getElementById('btn-cmd-attack');
-    const btnGrd = document.getElementById('btn-cmd-guard');
-    if (btnAtk) btnAtk.disabled = be.isOver;
-    if (btnGrd) btnGrd.disabled = be.isOver;
+  function appendBattleLog(actions) {
+    const logBox = document.getElementById('battle-log');
+    if (!logBox || !actions) return;
+    actions.forEach(act => {
+      const div = document.createElement('div');
+      div.style.margin = '2px 0';
+      div.textContent = act.message || act;
+      logBox.appendChild(div);
+    });
+    logBox.scrollTop = logBox.scrollHeight;
   }
 
   function openBattleItemSelectModal() {
     const be = appState.battleEngine;
-    if (!be || be.isOver) return;
+    if (!be || be.isOver || appState.waitingForOpponent) return;
 
     const modal = document.getElementById('battle-item-modal');
     const list = document.getElementById('battle-item-list');
@@ -1349,23 +1443,81 @@
     if (itemModal) itemModal.classList.remove('active');
 
     const be = appState.battleEngine;
-    if (!be || be.isOver) return;
+    if (!be || be.isOver || appState.waitingForOpponent) return;
 
-    const result = be.processTurn(action, itemIdx);
-    if (!result) return;
+    if (!appState.isP2P) {
+      // CPU対戦
+      const result = be.processTurn(action, itemIdx);
+      if (!result) return;
 
-    const logBox = document.getElementById('battle-log');
-    if (logBox) {
-      result.actions.forEach(act => {
-        const div = document.createElement('div');
-        div.style.margin = '2px 0';
-        div.textContent = act.message;
-        logBox.appendChild(div);
-      });
-      logBox.scrollTop = logBox.scrollHeight;
+      appendBattleLog(result.actions);
+      renderBattleUI();
+
+      if (be.isOver) {
+        const winner = be.winner;
+        setTimeout(() => {
+          alert(winner === 'player' ? '🎉 あなたの勝利です！' : '💧 敗北しました...');
+        }, 500);
+      }
+      return;
     }
 
+    // P2P対戦
+    if (appState.isHost) {
+      appState.pendingHostAction = { action: action, itemIdx: itemIdx };
+      appState.waitingForOpponent = true;
+      renderBattleUI();
+      appendBattleLog([{ message: "⏳ 相手のコマンド入力を待っています..." }]);
+
+      // ゲストからのアクションが既に届いていればターン処理
+      if (appState.pendingGuestAction) {
+        processHostP2PTurn();
+      }
+    } else {
+      // ゲスト側: ホストへコマンド送信
+      appState.waitingForOpponent = true;
+      renderBattleUI();
+      appendBattleLog([{ message: "⏳ ホストへコマンド送信中... 結果を待っています" }]);
+
+      if (appState.peerConn) {
+        appState.peerConn.send({
+          type: 'GUEST_ACTION',
+          action: action,
+          itemIdx: itemIdx
+        });
+      }
+    }
+  }
+
+  // ホスト専用: 双方のアクションが揃った時のターン一括計算 & ゲストへ同期配信
+  function processHostP2PTurn() {
+    const be = appState.battleEngine;
+    if (!be || !appState.pendingHostAction || !appState.pendingGuestAction) return;
+
+    const hAct = appState.pendingHostAction;
+    const gAct = appState.pendingGuestAction;
+
+    appState.pendingHostAction = null;
+    appState.pendingGuestAction = null;
+    appState.waitingForOpponent = false;
+
+    // ホストの視点: player = Host, enemy = Guest
+    const result = be.processTurn(hAct.action, hAct.itemIdx, gAct.action, gAct.itemIdx);
+    if (!result) return;
+
+    appendBattleLog(result.actions);
     renderBattleUI();
+
+    const hostState = be.exportHostState();
+
+    // ゲストへ完全同期送信
+    if (appState.peerConn) {
+      appState.peerConn.send({
+        type: 'STATE_SYNC',
+        state: hostState,
+        actions: result.actions
+      });
+    }
 
     if (be.isOver) {
       const winner = be.winner;
@@ -1396,7 +1548,11 @@
     }
 
     const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+    appState.isP2P = true;
     appState.isHost = true;
+    appState.pendingHostAction = null;
+    appState.pendingGuestAction = null;
+    appState.waitingForOpponent = false;
 
     const hostCodeEl = document.getElementById('host-room-code');
     if (hostCodeEl) hostCodeEl.textContent = roomCode;
@@ -1407,13 +1563,16 @@
     if (viewWait) viewWait.style.display = 'block';
 
     try {
-      const peer = new Peer(`bb-v23-${roomCode}`, { debug: 1 });
+      const peer = new Peer(`bb-v24-${roomCode}`, { debug: 1 });
       appState.peer = peer;
 
       peer.on('connection', conn => {
         appState.peerConn = conn;
+
         conn.on('data', data => {
-          if (data && data.type === 'JOIN') {
+          if (!data) return;
+
+          if (data.type === 'JOIN') {
             const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
             const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
             const enemyTeam = data.team || [];
@@ -1429,6 +1588,11 @@
             appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, appState.battleMode);
             switchScreen('SCR-06');
             renderBattleUI();
+          } else if (data.type === 'GUEST_ACTION') {
+            appState.pendingGuestAction = { action: data.action, itemIdx: data.itemIdx };
+            if (appState.pendingHostAction) {
+              processHostP2PTurn();
+            }
           }
         });
       });
@@ -1452,12 +1616,16 @@
       return;
     }
 
+    appState.isP2P = true;
+    appState.isHost = false;
+    appState.waitingForOpponent = false;
+
     try {
       const peer = new Peer();
       appState.peer = peer;
 
       peer.on('open', () => {
-        const conn = peer.connect(`bb-v23-${code}`);
+        const conn = peer.connect(`bb-v24-${code}`);
         appState.peerConn = conn;
 
         conn.on('open', () => {
@@ -1472,7 +1640,9 @@
         });
 
         conn.on('data', data => {
-          if (data && data.type === 'START') {
+          if (!data) return;
+
+          if (data.type === 'START') {
             const playerTeam = (appState.battleMode === '3p') ? [deck.mainChar, deck.subChar1, deck.subChar2].filter(Boolean) : [deck.mainChar];
             const playerItems = [deck.itemCard1, deck.itemCard2, deck.itemCard3].filter(Boolean);
             const enemyTeam = data.team || [];
@@ -1481,6 +1651,22 @@
             appState.battleEngine = new BattleEngine(playerTeam, playerItems, enemyTeam, enemyItems, data.mode || appState.battleMode);
             switchScreen('SCR-06');
             renderBattleUI();
+          } else if (data.type === 'STATE_SYNC') {
+            // ホストから届いた確定ステートを適用
+            const be = appState.battleEngine;
+            if (be && data.state) {
+              be.applyGuestState(data.state);
+              appState.waitingForOpponent = false;
+              if (data.actions) appendBattleLog(data.actions);
+              renderBattleUI();
+
+              if (be.isOver) {
+                const winner = be.winner;
+                setTimeout(() => {
+                  alert(winner === 'player' ? '🎉 あなたの勝利です！' : '💧 敗北しました...');
+                }, 500);
+              }
+            }
           }
         });
       });
