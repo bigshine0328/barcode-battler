@@ -1435,6 +1435,55 @@
     if (eSpBar) eSpBar.style.width = `${Math.min(100, e.sp)}%`;
     if (eSprite) eSprite.innerHTML = getCharacterSpriteSvg(e);
 
+    // 3P対戦 チームサブカプセルスロット（残数・体力可視化）
+    const pTeamSlots = document.getElementById('p-team-slots');
+    const eTeamSlots = document.getElementById('e-team-slots');
+
+    if (be.mode === '3p') {
+      if (pTeamSlots) {
+        pTeamSlots.style.display = 'grid';
+        pTeamSlots.innerHTML = be.playerTeam.map((c, idx) => {
+          const isActive = (idx === be.playerIndex);
+          const isDefeated = (c.currentHp <= 0);
+          const hpPercent = Math.max(0, Math.min(100, (c.currentHp / c.maxHp) * 100));
+          return `
+            <div class="team-slot-card ${isActive ? 'active' : ''} ${isDefeated ? 'defeated' : ''}">
+              <div class="team-slot-header">
+                <span class="team-slot-name">${isActive ? '👑' : (isDefeated ? '💀' : '🟢')} ${c.name}</span>
+                <span class="team-slot-hp-text">${c.currentHp}/${c.maxHp}</span>
+              </div>
+              <div class="team-slot-hp-bg">
+                <div class="team-slot-hp-fill" style="width: ${hpPercent}%;"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (eTeamSlots) {
+        eTeamSlots.style.display = 'grid';
+        eTeamSlots.innerHTML = be.enemyTeam.map((c, idx) => {
+          const isActive = (idx === be.enemyIndex);
+          const isDefeated = (c.currentHp <= 0);
+          const hpPercent = Math.max(0, Math.min(100, (c.currentHp / c.maxHp) * 100));
+          return `
+            <div class="team-slot-card ${isActive ? 'active' : ''} ${isDefeated ? 'defeated' : ''}">
+              <div class="team-slot-header">
+                <span class="team-slot-name">${isActive ? '👑' : (isDefeated ? '💀' : '🔴')} ${c.name}</span>
+                <span class="team-slot-hp-text">${c.currentHp}/${c.maxHp}</span>
+              </div>
+              <div class="team-slot-hp-bg">
+                <div class="team-slot-hp-fill" style="width: ${hpPercent}%;"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    } else {
+      if (pTeamSlots) pTeamSlots.style.display = 'none';
+      if (eTeamSlots) eTeamSlots.style.display = 'none';
+    }
+
     const btnSkill = document.getElementById('btn-cmd-skill');
     const btnItem = document.getElementById('btn-cmd-item');
     const btnSwitch = document.getElementById('btn-cmd-switch');
