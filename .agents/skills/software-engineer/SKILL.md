@@ -26,10 +26,19 @@ description: Creates basic design documents, obtains user approval, writes high-
 4. **リリース後の不具合修正・機能改修時**:
    - コード修正に伴いデータ構造、API、状態管理に変更が生じる場合は、**コードと同時に必ず `docs/Basic_Design.md` を最新化・同期更新する。**
 
+5. **基本設計書の改定・機能削除ルール (Change Requests / Maintenance)**:
+   - **【非破壊的設計改定 (Non-destructive Update) 原則】**:
+     - 基本設計書の改定時、既存の `docs/Basic_Design.md` の全章・全詳細定義（アーキテクチャ、データモデル、シーケンス図、計算式、例外設計等）を精読し、**変更対象外の既存章・定義を勝手に要約・省略・削除してはならない**。常に過去の設計内容を完全に保持・継承した上で追記・修正すること。
+   - **【正当な機能削除・廃止 (Controlled Deletion) のルール】**:
+     - ユーザーから明示的な機能削除の指示があった場合のみ、ドキュメント冒頭の「改定履歴（Changelog）」に削除理由を明記した上で、該当モジュール・データ型・通信プロトコル・テストコードを整合性を持って削除・整理すること。他の設計セクションを巻き添えで削除してはならない。
+
 ## Output Format
 ### 1. 基本設計書策定時 (`docs/Basic_Design.md`)
 ```markdown
 # [アプリ名] 基本設計書 (Basic Design)
+
+## 改定履歴 (Changelog)
+- **vX.X (YYYY-MM-DD)**: [追加/変更/削除の内容と理由]
 
 ## 1. システムアーキテクチャ・全体構成
 - システム構成図 (クライアント/サーバー/P2P/外部API)
