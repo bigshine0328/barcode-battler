@@ -352,8 +352,50 @@
     `.trim();
   }
 
+  const MonsterImageMap = {
+    "ドラゴン": "src/assets/images/monsters/dragon.jpg",
+    "ゴーレム": "src/assets/images/monsters/golem.jpg",
+    "レヴィアタン": "src/assets/images/monsters/leviathan.jpg",
+    "フェニックス": "src/assets/images/monsters/phoenix.jpg",
+    "ファントム": "src/assets/images/monsters/phantom.jpg",
+    "ペガサス": "src/assets/images/monsters/pegasus.jpg",
+    "ケルベロス": "src/assets/images/monsters/cerberus.jpg"
+  };
+
+  const ItemImageMap = {
+    "えりくさー": "src/assets/images/items/elixir.jpg",
+    "はかいのつるぎ": "src/assets/images/items/sword.jpg",
+    "いあつのたて": "src/assets/images/items/shield.jpg",
+    "ひかりのたびびと": "src/assets/images/items/boots.jpg",
+    "びくとりーのたま": "src/assets/images/items/victory_orb.jpg",
+    "まほうのばくだん": "src/assets/images/items/bomb.jpg"
+  };
+
+  function getCardGraphicPath(card) {
+    if (!card) return null;
+    if (card.type === 'item') {
+      for (const [key, path] of Object.entries(ItemImageMap)) {
+        if (card.name && card.name.includes(key)) return path;
+      }
+    } else if (card.type === 'character') {
+      const species = card.species || "";
+      if (MonsterImageMap[species]) return MonsterImageMap[species];
+      for (const [key, path] of Object.entries(MonsterImageMap)) {
+        if (card.name && card.name.includes(key)) return path;
+      }
+    }
+    return null;
+  }
+
   function getCharacterSpriteSvg(card) {
     if (!card) return generateCharacterSvg("ドラゴン", "火", "N");
+
+    // NanoBanana グラフィックアセットが存在する場合は画像として描画 (Zero Layout Shift)
+    const graphicPath = getCardGraphicPath(card);
+    if (graphicPath) {
+      return `<img src="${graphicPath}" class="card-art-img" alt="${card.name || 'カード'}" loading="lazy">`;
+    }
+
     if (card.type === 'item') {
       return ITEM_ICONS[card.effectType] || ITEM_ICONS["heal"];
     }
