@@ -353,37 +353,34 @@
   }
 
   const MonsterImageMap = {
-    // 高品質個別3Dグラフィック (生成完了分)
+    // 全20種族 専用高品質3Dグラフィック
     "ドラゴン": "src/assets/images/monsters/dragon.jpg",
     "ゴーレム": "src/assets/images/monsters/golem.jpg",
-    "レヴィアタン": "src/assets/images/monsters/leviathan.jpg",
+    "ナイト": "src/assets/images/monsters/knight.jpg",
     "フェニックス": "src/assets/images/monsters/phoenix.jpg",
-    "ファントム": "src/assets/images/monsters/phantom.jpg",
+    "タイガー": "src/assets/images/monsters/tiger.jpg",
+    "スライム": "src/assets/images/monsters/slime.jpg",
+    "ベア": "src/assets/images/monsters/bear.jpg",
+    "ロボ": "src/assets/images/monsters/robot.jpg",
+    "ウルフ": "src/assets/images/monsters/wolf.jpg",
+    "ライオン": "src/assets/images/monsters/lion.jpg",
+    "イエティ": "src/assets/images/monsters/yeti.jpg",
+    "グリフォン": "src/assets/images/monsters/griffon.jpg",
+    "バトロボ": "src/assets/images/monsters/battlerobot.jpg",
+    "クラーケン": "src/assets/images/monsters/kraken.jpg",
     "ペガサス": "src/assets/images/monsters/pegasus.jpg",
-    "ケルベロス": "src/assets/images/monsters/cerberus.jpg",
+    "キマイラ": "src/assets/images/monsters/chimera.jpg",
+    "デーモン": "src/assets/images/monsters/cerberus.jpg",
+    "レヴィアタン": "src/assets/images/monsters/leviathan.jpg",
+    "ネクロマンサー": "src/assets/images/monsters/necromancer.jpg",
+    "ファントム": "src/assets/images/monsters/phantom.jpg",
 
-    // 未生成種族用: 開発中プレビューフォールバック (クォータ解除後に専用グラフィックへ順次置換)
+    // 追加別名サポート
+    "ケルベロス": "src/assets/images/monsters/cerberus.jpg",
     "ワイバーン": "src/assets/images/monsters/dragon.jpg",
-    "ロボ": "src/assets/images/monsters/golem.jpg",
-    "バトロボ": "src/assets/images/monsters/golem.jpg",
-    "タイタン": "src/assets/images/monsters/golem.jpg",
-    "クラーケン": "src/assets/images/monsters/leviathan.jpg",
-    "ヒドラ": "src/assets/images/monsters/leviathan.jpg",
-    "グリフォン": "src/assets/images/monsters/phoenix.jpg",
-    "ネクロマンサー": "src/assets/images/monsters/phantom.jpg",
-    "デーモン": "src/assets/images/monsters/phantom.jpg",
     "ユニコーン": "src/assets/images/monsters/pegasus.jpg",
-    "ナイト": "src/assets/images/monsters/pegasus.jpg",
-    "ウルフ": "src/assets/images/monsters/cerberus.jpg",
-    "タイガー": "src/assets/images/monsters/cerberus.jpg",
-    "ライオン": "src/assets/images/monsters/cerberus.jpg",
-    "ベア": "src/assets/images/monsters/cerberus.jpg",
-    "キマイラ": "src/assets/images/monsters/cerberus.jpg",
-    "イエティ": "src/assets/images/monsters/golem.jpg",
-    "スライム": "src/assets/images/monsters/phantom.jpg",
-    "バジリスク": "src/assets/images/monsters/dragon.jpg",
-    "スフィンクス": "src/assets/images/monsters/cerberus.jpg",
-    "ベヒーモス": "src/assets/images/monsters/golem.jpg"
+    "タイタン": "src/assets/images/monsters/golem.jpg",
+    "ヒドラ": "src/assets/images/monsters/leviathan.jpg"
   };
 
   const ItemImageMap = {
