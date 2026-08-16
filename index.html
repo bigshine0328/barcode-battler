@@ -61,9 +61,15 @@
         <div class="scan-laser"></div>
       </div>
 
-      <button id="btn-start-camera" class="btn btn-secondary" onclick="if(window.appStartCamera) window.appStartCamera();" style="margin-top: 8px; font-size: 0.92rem; min-height: 42px;">
-        🎥 カメラを き動する
-      </button>
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button id="btn-start-camera" class="btn btn-secondary" onclick="if(window.appStartCamera) window.appStartCamera();" style="flex: 1; margin: 0; font-size: 0.88rem; min-height: 42px;">
+          🎥 リアルタイムカメラ
+        </button>
+        <label class="btn btn-gold" style="flex: 1; margin: 0; font-size: 0.88rem; min-height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-align: center; line-height: 1.2;">
+          📸 写真でスキャン
+          <input type="file" id="input-camera-photo" accept="image/*" capture="environment" style="display: none;" onchange="if(window.appHandleImageFileScan) window.appHandleImageFileScan(event);">
+        </label>
+      </div>
 
       <div class="demo-barcode-section">
         <div style="font-size: 0.82rem; font-weight: 800;">🧪 テスト用バーコード（カメラがない環境用）</div>

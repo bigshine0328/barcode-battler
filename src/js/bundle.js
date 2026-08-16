@@ -1546,32 +1546,85 @@
         }
       }
 
-      if (zxingReader && scanCanvas && scanVideo.videoWidth > 0 && scanVideo.videoHeight > 0) {
-        try {
-          const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
-          scanCanvas.width = scanVideo.videoWidth;
-          scanCanvas.height = scanVideo.videoHeight;
-          ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
-
-          zxingReader.decodeFromImageElement(scanCanvas).then(result => {
-            if (result && result.text) {
-              stopCamera();
-              handleScanBarcode(result.text);
-            } else {
-              scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-            }
-          }).catch(() => {
+      if (zxingReader) {
+        // A. Video要素からのダイレクトデコード（公式推奨・最速）
+        zxingReader.decodeFromVideoElement(scanVideo).then(result => {
+          if (result && result.text) {
+            stopCamera();
+            handleScanBarcode(result.text);
+          } else {
             scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-          });
-          return;
-        } catch (e) {
+          }
+        }).catch(() => {
+          // B. Canvas 2D経由のフォールバック
+          if (scanCanvas && scanVideo.videoWidth > 0 && scanVideo.videoHeight > 0) {
+            try {
+              const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
+              scanCanvas.width = scanVideo.videoWidth;
+              scanCanvas.height = scanVideo.videoHeight;
+              ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+              if (zxingReader.decodeFromCanvas) {
+                zxingReader.decodeFromCanvas(scanCanvas).then(res => {
+                  if (res && res.text) {
+                    stopCamera();
+                    handleScanBarcode(res.text);
+                  } else {
+                    scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+                  }
+                }).catch(() => {
+                  scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+                });
+                return;
+              }
+            } catch (e) {}
+          }
           scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-          return;
-        }
+        });
+        return;
       }
     }
 
     scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+  }
+
+  // iPhone/ブラウザ用: 写真撮影・画像ファイル選択による確実なバーコードスキャン
+  async function handleImageFileScan(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const msg = document.getElementById('camera-status-msg');
+    if (msg) msg.textContent = "画像を解析中...";
+
+    const img = new Image();
+    img.onload = async () => {
+      // 1. Android/PC BarcodeDetector
+      if ('BarcodeDetector' in window) {
+        try {
+          const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code', 'code_128'] });
+          const barcodes = await detector.detect(img);
+          if (barcodes && barcodes.length > 0) {
+            handleScanBarcode(barcodes[0].rawValue);
+            return;
+          }
+        } catch (e) {}
+      }
+
+      // 2. iPhone / iOS ZXing
+      if (window.ZXing) {
+        try {
+          const reader = new window.ZXing.BrowserMultiFormatReader();
+          const res = await reader.decodeFromImageElement(img);
+          if (res && res.text) {
+            handleScanBarcode(res.text);
+            return;
+          }
+        } catch (e) {}
+      }
+
+      if (msg) msg.textContent = "バーコードが見つかりませんでした。別の写真を試すかコードを入力してください。";
+    };
+
+    img.src = URL.createObjectURL(file);
   }
 
   // ==========================================
@@ -2423,6 +2476,7 @@
 
   window.appSwitchScreen = switchScreen;
   window.appStartCamera = startCamera;
+  window.appHandleImageFileScan = handleImageFileScan;
   window.appOpenCardDetail = openCardDetail;
   window.appEscapeBattle = escapeBattle;
 
