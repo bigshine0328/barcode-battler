@@ -390,8 +390,8 @@
     "ひかりのたびびと": "src/assets/images/items/boots.jpg",
     "びくとりーのたま": "src/assets/images/items/victory_orb.jpg",
     "まほうのばくだん": "src/assets/images/items/bomb.jpg",
-    "ふ死鳥の水": "src/assets/images/items/elixir.jpg",
-    "おうかんの輝き": "src/assets/images/items/victory_orb.jpg"
+    "ふ死鳥の水": "src/assets/images/items/phoenix_water.jpg",
+    "おうかんの輝き": "src/assets/images/items/crown_shine.jpg"
   };
 
   function getCardGraphicPath(card) {
