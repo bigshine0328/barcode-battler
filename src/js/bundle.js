@@ -353,7 +353,7 @@
   }
 
   const MonsterImageMap = {
-    // 全20種族 専用高品質3Dグラフィック
+    // 全20種族 純白背景 専用高品質3Dグラフィック
     "ドラゴン": "src/assets/images/monsters/dragon.jpg",
     "ゴーレム": "src/assets/images/monsters/golem.jpg",
     "ナイト": "src/assets/images/monsters/knight.jpg",
@@ -387,9 +387,9 @@
     "えりくさー": "src/assets/images/items/elixir.jpg",
     "はかいのつるぎ": "src/assets/images/items/sword.jpg",
     "いあつのたて": "src/assets/images/items/shield.jpg",
-    "ひかりのたびびと": "src/assets/images/items/boots.jpg",
-    "びくとりーのたま": "src/assets/images/items/victory_orb.jpg",
-    "まほうのばくだん": "src/assets/images/items/bomb.jpg",
+    "ひかりのたびびと": "src/assets/images/items/sword.jpg",
+    "びくとりーのたま": "src/assets/images/items/crown_shine.jpg",
+    "まほうのばくだん": "src/assets/images/items/phoenix_water.jpg",
     "ふ死鳥の水": "src/assets/images/items/phoenix_water.jpg",
     "おうかんの輝き": "src/assets/images/items/crown_shine.jpg"
   };
