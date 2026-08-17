@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="src/css/style.css?v=4.0.0-purewhite-final">
+  <link rel="stylesheet" href="src/css/style.css?v=4.0.0-style-switch1">
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <!-- iOS Safari / iPhone バーコードスキャン用 ZXing ライブラリ (AndroidはBarcodeDetector最優先) -->
   <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
@@ -115,6 +115,15 @@
 
       <!-- ずかんビュー (横スクロールゼロ・縦スクロール完全対応 & 全能力値常時表示) -->
       <div id="view-collection-tab" style="display: flex; flex-direction: column; flex: 1; width: 100%; overflow-x: hidden; overflow-y: auto; box-sizing: border-box;">
+        <!-- グラフィックスタイル切り替え (かっこいい / かわいい) -->
+        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0, 0, 0, 0.5); padding: 5px 10px; border-radius: 10px; border: 1px solid rgba(0, 229, 255, 0.35); margin-bottom: 6px;">
+          <span style="font-size: 0.78rem; font-weight: 800; color: var(--secondary-cyan);">🎨 イラスト:</span>
+          <div style="display: flex; gap: 4px;">
+            <button id="style-btn-cool" class="sub-tab-btn active" style="padding: 4px 10px; font-size: 0.74rem;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('cool');">🔥 かっこいい</button>
+            <button id="style-btn-cute" class="sub-tab-btn" style="padding: 4px 10px; font-size: 0.74rem;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('cute');">✨ かわいい</button>
+          </div>
+        </div>
+
         <!-- キャラ / アイテム サブタブ表示切替 -->
         <div style="display: flex; gap: 4px; margin-bottom: 6px;">
           <button id="sub-tab-all" class="sub-tab-btn active" onclick="if(window.appSelectSubTab) window.appSelectSubTab('all');">すべて</button>
@@ -344,6 +353,6 @@
   </div>
 
   <!-- スクリプト統合読み込み -->
-  <script src="src/js/bundle.js?v=4.0.0-purewhite-final"></script>
+  <script src="src/js/bundle.js?v=4.0.0-style-switch1"></script>
 </body>
 </html>

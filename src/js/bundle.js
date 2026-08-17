@@ -352,35 +352,51 @@
     `.trim();
   }
 
-  const MonsterImageMap = {
-    // 全20種族 純白背景 専用高品質3Dグラフィック
-    "ドラゴン": "src/assets/images/monsters/dragon.jpg",
-    "ゴーレム": "src/assets/images/monsters/golem.jpg",
-    "ナイト": "src/assets/images/monsters/knight.jpg",
-    "フェニックス": "src/assets/images/monsters/phoenix.jpg",
-    "タイガー": "src/assets/images/monsters/tiger.jpg",
-    "スライム": "src/assets/images/monsters/slime.jpg",
-    "ベア": "src/assets/images/monsters/bear.jpg",
-    "ロボ": "src/assets/images/monsters/robot.jpg",
-    "ウルフ": "src/assets/images/monsters/wolf.jpg",
-    "ライオン": "src/assets/images/monsters/lion.jpg",
-    "イエティ": "src/assets/images/monsters/yeti.jpg",
-    "グリフォン": "src/assets/images/monsters/griffon.jpg",
-    "バトロボ": "src/assets/images/monsters/battlerobot.jpg",
-    "クラーケン": "src/assets/images/monsters/kraken.jpg",
-    "ペガサス": "src/assets/images/monsters/pegasus.jpg",
-    "キマイラ": "src/assets/images/monsters/chimera.jpg",
-    "デーモン": "src/assets/images/monsters/cerberus.jpg",
-    "レヴィアタン": "src/assets/images/monsters/leviathan.jpg",
-    "ネクロマンサー": "src/assets/images/monsters/necromancer.jpg",
-    "ファントム": "src/assets/images/monsters/phantom.jpg",
+  const MonsterCoolMap = {
+    "ドラゴン": "src/assets/images/monsters_cool/dragon.jpg",
+    "ゴーレム": "src/assets/images/monsters_cool/golem.jpg",
+    "ナイト": "src/assets/images/monsters_cool/knight.jpg",
+    "フェニックス": "src/assets/images/monsters_cool/phoenix.jpg",
+    "タイガー": "src/assets/images/monsters_cool/tiger.jpg",
+    "スライム": "src/assets/images/monsters_cool/slime.jpg",
+    "ベア": "src/assets/images/monsters_cool/bear.jpg",
+    "ロボ": "src/assets/images/monsters_cool/robot.jpg",
+    "ウルフ": "src/assets/images/monsters_cool/wolf.jpg",
+    "ライオン": "src/assets/images/monsters_cool/lion.jpg",
+    "ワイバーン": "src/assets/images/monsters_cool/dragon.jpg",
+    "タイタン": "src/assets/images/monsters_cool/golem.jpg"
+  };
 
-    // 追加別名サポート
-    "ケルベロス": "src/assets/images/monsters/cerberus.jpg",
-    "ワイバーン": "src/assets/images/monsters/dragon.jpg",
-    "ユニコーン": "src/assets/images/monsters/pegasus.jpg",
-    "タイタン": "src/assets/images/monsters/golem.jpg",
-    "ヒドラ": "src/assets/images/monsters/leviathan.jpg"
+  const MonsterCuteMap = {
+    "ドラゴン": "src/assets/images/monsters_cute/dragon.jpg",
+    "ゴーレム": "src/assets/images/monsters_cute/golem.jpg",
+    "ナイト": "src/assets/images/monsters_cute/knight.jpg",
+    "フェニックス": "src/assets/images/monsters_cute/phoenix.jpg",
+    "タイガー": "src/assets/images/monsters_cute/tiger.jpg",
+    "スライム": "src/assets/images/monsters_cute/slime.jpg",
+    "ベア": "src/assets/images/monsters_cute/bear.jpg",
+    "ロボ": "src/assets/images/monsters_cute/robot.jpg",
+    "ウルフ": "src/assets/images/monsters_cute/wolf.jpg",
+    "ライオン": "src/assets/images/monsters_cute/lion.jpg",
+    "イエティ": "src/assets/images/monsters_cute/yeti.jpg",
+    "グリフォン": "src/assets/images/monsters_cute/griffon.jpg",
+    "バトロボ": "src/assets/images/monsters_cute/battlerobot.jpg",
+    "クラーケン": "src/assets/images/monsters_cute/kraken.jpg",
+    "ペガサス": "src/assets/images/monsters_cute/pegasus.jpg",
+    "キマイラ": "src/assets/images/monsters_cute/chimera.jpg",
+    "デーモン": "src/assets/images/monsters_cute/cerberus.jpg",
+    "レヴィアタン": "src/assets/images/monsters_cute/leviathan.jpg",
+    "ネクロマンサー": "src/assets/images/monsters_cute/necromancer.jpg",
+    "ファントム": "src/assets/images/monsters_cute/phantom.jpg",
+    "ケルベロス": "src/assets/images/monsters_cute/cerberus.jpg",
+    "ワイバーン": "src/assets/images/monsters_cute/dragon.jpg",
+    "ユニコーン": "src/assets/images/monsters_cute/pegasus.jpg",
+    "タイタン": "src/assets/images/monsters_cute/golem.jpg",
+    "ヒドラ": "src/assets/images/monsters_cute/leviathan.jpg"
+  };
+
+  const MonsterImageMap = {
+    ...MonsterCuteMap
   };
 
   const ItemImageMap = {
@@ -394,6 +410,10 @@
     "おうかんの輝き": "src/assets/images/items/crown_shine.jpg"
   };
 
+  function getGraphicStyle() {
+    return localStorage.getItem('bb_graphic_style') || 'cool';
+  }
+
   function getCardGraphicPath(card) {
     if (!card) return null;
     if (card.type === 'item') {
@@ -403,16 +423,27 @@
       return null;
     }
 
-    // キャラクター判定 (card.type === 'character' または species/nameのマッチ)
+    const style = getGraphicStyle();
     const species = card.species || "";
-    if (MonsterImageMap[species]) return MonsterImageMap[species];
-    for (const [key, path] of Object.entries(MonsterImageMap)) {
+
+    // クールモード優先
+    if (style === 'cool') {
+      if (MonsterCoolMap[species]) return MonsterCoolMap[species];
+      for (const [key, path] of Object.entries(MonsterCoolMap)) {
+        if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
+          return path;
+        }
+      }
+    }
+
+    // キュートモードまたはクール未生成分のフォールバック
+    if (MonsterCuteMap[species]) return MonsterCuteMap[species];
+    for (const [key, path] of Object.entries(MonsterCuteMap)) {
       if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
         return path;
       }
     }
 
-    // アイテム名フォールバック
     for (const [key, path] of Object.entries(ItemImageMap)) {
       if (card.name && card.name.includes(key)) return path;
     }
@@ -2598,6 +2629,25 @@
   window.appCancelHost = cancelHost;
   window.appExecutePlayerAction = executePlayerAction;
   window.appOpenBattleSwitchModal = openBattleSwitchModal;
+
+  window.appGetGraphicStyle = getGraphicStyle;
+  window.appSetGraphicStyle = function(style) {
+    localStorage.setItem('bb_graphic_style', style);
+    const styleBtnCool = document.getElementById('style-btn-cool');
+    const styleBtnCute = document.getElementById('style-btn-cute');
+    if (styleBtnCool && styleBtnCute) {
+      if (style === 'cool') {
+        styleBtnCool.classList.add('active');
+        styleBtnCute.classList.remove('active');
+      } else {
+        styleBtnCool.classList.remove('active');
+        styleBtnCute.classList.add('active');
+      }
+    }
+    renderCollection();
+    renderDeckView();
+    if (appState.currentScreen === 'lobby') renderLobby();
+  };
 
   document.addEventListener('DOMContentLoaded', () => {
     StorageManager.migrateCollectionData();
