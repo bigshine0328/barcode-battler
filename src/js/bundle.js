@@ -352,21 +352,39 @@
     `.trim();
   }
 
-  const MonsterCoolMap = {
-    "ドラゴン": "src/assets/images/monsters_cool/dragon.jpg",
-    "ゴーレム": "src/assets/images/monsters_cool/golem.jpg",
-    "ナイト": "src/assets/images/monsters_cool/knight.jpg",
-    "フェニックス": "src/assets/images/monsters_cool/phoenix.jpg",
-    "タイガー": "src/assets/images/monsters_cool/tiger.jpg",
-    "スライム": "src/assets/images/monsters_cool/slime.jpg",
-    "ベア": "src/assets/images/monsters_cool/bear.jpg",
-    "ロボ": "src/assets/images/monsters_cool/robot.jpg",
-    "ウルフ": "src/assets/images/monsters_cool/wolf.jpg",
-    "ライオン": "src/assets/images/monsters_cool/lion.jpg",
-    "ワイバーン": "src/assets/images/monsters_cool/dragon.jpg",
-    "タイタン": "src/assets/images/monsters_cool/golem.jpg"
+  // 1. 王道RPG (DQ・ポケモン風 黄金比スタイル)
+  const MonsterHeroicMap = {
+    "ドラゴン": "src/assets/images/monsters_heroic/dragon.jpg",
+    "ゴーレム": "src/assets/images/monsters_heroic/golem.jpg",
+    "ナイト": "src/assets/images/monsters_heroic/knight.jpg",
+    "フェニックス": "src/assets/images/monsters_heroic/phoenix.jpg",
+    "タイガー": "src/assets/images/monsters_heroic/tiger.jpg",
+    "スライム": "src/assets/images/monsters_heroic/slime.jpg",
+    "ベア": "src/assets/images/monsters_heroic/bear.jpg",
+    "ロボ": "src/assets/images/monsters_heroic/robot.jpg",
+    "ウルフ": "src/assets/images/monsters_heroic/wolf.jpg",
+    "ライオン": "src/assets/images/monsters_heroic/lion.jpg",
+    "ワイバーン": "src/assets/images/monsters_heroic/dragon.jpg",
+    "タイタン": "src/assets/images/monsters_heroic/golem.jpg"
   };
 
+  // 2. リアル迫力 (Epic Style)
+  const MonsterEpicMap = {
+    "ドラゴン": "src/assets/images/monsters_epic/dragon.jpg",
+    "ゴーレム": "src/assets/images/monsters_epic/golem.jpg",
+    "ナイト": "src/assets/images/monsters_epic/knight.jpg",
+    "フェニックス": "src/assets/images/monsters_epic/phoenix.jpg",
+    "タイガー": "src/assets/images/monsters_epic/tiger.jpg",
+    "スライム": "src/assets/images/monsters_epic/slime.jpg",
+    "ベア": "src/assets/images/monsters_epic/bear.jpg",
+    "ロボ": "src/assets/images/monsters_epic/robot.jpg",
+    "ウルフ": "src/assets/images/monsters_epic/wolf.jpg",
+    "ライオン": "src/assets/images/monsters_epic/lion.jpg",
+    "ワイバーン": "src/assets/images/monsters_epic/dragon.jpg",
+    "タイタン": "src/assets/images/monsters_epic/golem.jpg"
+  };
+
+  // 3. かわいい (Cute Style 全20種)
   const MonsterCuteMap = {
     "ドラゴン": "src/assets/images/monsters_cute/dragon.jpg",
     "ゴーレム": "src/assets/images/monsters_cute/golem.jpg",
@@ -395,6 +413,8 @@
     "ヒドラ": "src/assets/images/monsters_cute/leviathan.jpg"
   };
 
+  const MonsterCoolMap = MonsterHeroicMap;
+
   const MonsterImageMap = {
     ...MonsterCuteMap
   };
@@ -411,7 +431,7 @@
   };
 
   function getGraphicStyle() {
-    return localStorage.getItem('bb_graphic_style') || 'cool';
+    return localStorage.getItem('bb_graphic_style') || 'heroic';
   }
 
   function getCardGraphicPath(card) {
@@ -426,17 +446,27 @@
     const style = getGraphicStyle();
     const species = card.species || "";
 
-    // クールモード優先
-    if (style === 'cool') {
-      if (MonsterCoolMap[species]) return MonsterCoolMap[species];
-      for (const [key, path] of Object.entries(MonsterCoolMap)) {
+    // 1. 王道RPG (DQ・ポケモン風) モード
+    if (style === 'heroic' || style === 'cool') {
+      if (MonsterHeroicMap[species]) return MonsterHeroicMap[species];
+      for (const [key, path] of Object.entries(MonsterHeroicMap)) {
         if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
           return path;
         }
       }
     }
 
-    // キュートモードまたはクール未生成分のフォールバック
+    // 2. リアル迫力 (Epic) モード
+    if (style === 'epic') {
+      if (MonsterEpicMap[species]) return MonsterEpicMap[species];
+      for (const [key, path] of Object.entries(MonsterEpicMap)) {
+        if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
+          return path;
+        }
+      }
+    }
+
+    // 3. かわいい (Cute) モード または フォールバック
     if (MonsterCuteMap[species]) return MonsterCuteMap[species];
     for (const [key, path] of Object.entries(MonsterCuteMap)) {
       if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
@@ -2633,17 +2663,14 @@
   window.appGetGraphicStyle = getGraphicStyle;
   window.appSetGraphicStyle = function(style) {
     localStorage.setItem('bb_graphic_style', style);
-    const styleBtnCool = document.getElementById('style-btn-cool');
+    const styleBtnHeroic = document.getElementById('style-btn-heroic');
+    const styleBtnEpic = document.getElementById('style-btn-epic');
     const styleBtnCute = document.getElementById('style-btn-cute');
-    if (styleBtnCool && styleBtnCute) {
-      if (style === 'cool') {
-        styleBtnCool.classList.add('active');
-        styleBtnCute.classList.remove('active');
-      } else {
-        styleBtnCool.classList.remove('active');
-        styleBtnCute.classList.add('active');
-      }
-    }
+    
+    if (styleBtnHeroic) styleBtnHeroic.classList.toggle('active', style === 'heroic');
+    if (styleBtnEpic) styleBtnEpic.classList.toggle('active', style === 'epic');
+    if (styleBtnCute) styleBtnCute.classList.toggle('active', style === 'cute');
+
     renderCollection();
     renderDeckView();
     if (appState.currentScreen === 'lobby') renderLobby();
