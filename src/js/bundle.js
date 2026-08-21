@@ -352,7 +352,7 @@
     `.trim();
   }
 
-  // 1. 王道RPG (DQ・ポケモン風 黄金比スタイル)
+  // 1. 王道RPG (DQ・ポケモン風 黄金比スタイル 全20種族完全網羅)
   const MonsterHeroicMap = {
     "ドラゴン": "src/assets/images/monsters_heroic/dragon.jpg",
     "ゴーレム": "src/assets/images/monsters_heroic/golem.jpg",
@@ -364,8 +364,23 @@
     "ロボ": "src/assets/images/monsters_heroic/robot.jpg",
     "ウルフ": "src/assets/images/monsters_heroic/wolf.jpg",
     "ライオン": "src/assets/images/monsters_heroic/lion.jpg",
+    "イエティ": "src/assets/images/monsters_heroic/yeti.jpg",
+    "グリフォン": "src/assets/images/monsters_heroic/griffon.jpg",
+    "バトロボ": "src/assets/images/monsters_heroic/battlerobot.jpg",
+    "クラーケン": "src/assets/images/monsters_heroic/kraken.jpg",
+    "ペガサス": "src/assets/images/monsters_heroic/pegasus.jpg",
+    "キマイラ": "src/assets/images/monsters_heroic/chimera.jpg",
+    "デーモン": "src/assets/images/monsters_heroic/cerberus.jpg",
+    "レヴィアタン": "src/assets/images/monsters_heroic/leviathan.jpg",
+    "ネクロマンサー": "src/assets/images/monsters_heroic/necromancer.jpg",
+    "ファントム": "src/assets/images/monsters_heroic/phantom.jpg",
+
+    // 追加別名サポート
+    "ケルベロス": "src/assets/images/monsters_heroic/cerberus.jpg",
     "ワイバーン": "src/assets/images/monsters_heroic/dragon.jpg",
-    "タイタン": "src/assets/images/monsters_heroic/golem.jpg"
+    "ユニコーン": "src/assets/images/monsters_heroic/pegasus.jpg",
+    "タイタン": "src/assets/images/monsters_heroic/golem.jpg",
+    "ヒドラ": "src/assets/images/monsters_heroic/leviathan.jpg"
   };
 
   // 2. リアル迫力 (Epic Style)
