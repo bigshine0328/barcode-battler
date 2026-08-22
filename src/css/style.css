@@ -862,17 +862,17 @@ h1.logo {
   border: 2px solid rgba(0, 229, 255, 0.4);
 }
 
-/* 属性別ダイナミックカラー＆オーラフィルター (火・水・木) */
+/* 属性別ダイナミックオーラフィルター (火・水・木: 肌色や元の美麗イラストを崩さない自然な属性オーラ) */
 .card-art-img.element-fire {
-  filter: sepia(0.25) saturate(1.7) hue-rotate(-20deg) contrast(1.1) drop-shadow(0 0 10px rgba(255, 68, 68, 0.75));
+  filter: contrast(1.03) brightness(1.02) drop-shadow(0 0 10px rgba(255, 68, 68, 0.85));
 }
 
 .card-art-img.element-water {
-  filter: sepia(0.35) saturate(1.9) hue-rotate(165deg) contrast(1.1) drop-shadow(0 0 10px rgba(0, 210, 255, 0.85));
+  filter: contrast(1.03) brightness(1.02) drop-shadow(0 0 10px rgba(0, 210, 255, 0.9));
 }
 
 .card-art-img.element-wood {
-  filter: sepia(0.35) saturate(1.8) hue-rotate(75deg) contrast(1.1) drop-shadow(0 0 10px rgba(46, 213, 115, 0.85));
+  filter: contrast(1.03) brightness(1.02) drop-shadow(0 0 10px rgba(46, 213, 115, 0.9));
 }
 
 .arena-char .mini-sprite {
