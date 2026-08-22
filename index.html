@@ -42,6 +42,7 @@
         <button id="btn-nav-deck" class="btn btn-secondary" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-04');">📖 ずかん・デッキへんせい</button>
         <button id="btn-nav-battle" class="btn btn-gold" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-05');">⚔️ たいせんロビー</button>
       </div>
+      <button class="btn btn-dark" onclick="window.location.href='catalog.html'" style="margin-top:6px; font-size:0.82rem; border:1px solid #00e5ff; color:#00e5ff;">📋 全キャラ・全属性カタログを見る</button>
     </section>
 
     <!-- SCR-02: スキャン画面 -->
@@ -119,6 +120,7 @@
         <div style="display: flex; flex-direction: column; gap: 4px; background: rgba(0, 0, 0, 0.55); padding: 6px 8px; border-radius: 12px; border: 1px solid rgba(0, 229, 255, 0.35); margin-bottom: 6px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 0.74rem; font-weight: 800; color: var(--secondary-cyan);">🎨 イラスト比較 (ヒアリング用):</span>
+            <a href="catalog.html" style="font-size: 0.72rem; color: #ffd700; font-weight: 800; text-decoration: underline;">📋 全60種カタログ</a>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
             <button id="style-btn-hybrid" class="sub-tab-btn active" style="padding: 5px 2px; font-size: 0.70rem; white-space: nowrap;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('hybrid');">🌟 SSR迫力＋他王道</button>
