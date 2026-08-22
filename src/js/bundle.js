@@ -461,7 +461,7 @@
   };
 
   function getGraphicStyle() {
-    return localStorage.getItem('bb_graphic_style') || 'heroic';
+    return localStorage.getItem('bb_graphic_style') || 'hybrid';
   }
 
   function getCardGraphicPath(card) {
@@ -475,8 +475,27 @@
 
     const style = getGraphicStyle();
     const species = card.species || "";
+    const isSSR = (card.rarity === 'SSR');
 
-    // 1. 王道RPG (DQ・ポケモン風) モード
+    // 1. ハイブリッドモード (SSRのみEpic迫力 / SR・R・Nは王道RPG)
+    if (style === 'hybrid') {
+      if (isSSR) {
+        if (MonsterEpicMap[species]) return MonsterEpicMap[species];
+        for (const [key, path] of Object.entries(MonsterEpicMap)) {
+          if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
+            return path;
+          }
+        }
+      }
+      if (MonsterHeroicMap[species]) return MonsterHeroicMap[species];
+      for (const [key, path] of Object.entries(MonsterHeroicMap)) {
+        if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
+          return path;
+        }
+      }
+    }
+
+    // 2. 王道RPG (DQ・ポケモン風) モード
     if (style === 'heroic' || style === 'cool') {
       if (MonsterHeroicMap[species]) return MonsterHeroicMap[species];
       for (const [key, path] of Object.entries(MonsterHeroicMap)) {
@@ -486,7 +505,7 @@
       }
     }
 
-    // 2. リアル迫力 (Epic) モード
+    // 3. リアル迫力 (Epic) モード
     if (style === 'epic') {
       if (MonsterEpicMap[species]) return MonsterEpicMap[species];
       for (const [key, path] of Object.entries(MonsterEpicMap)) {
@@ -496,7 +515,7 @@
       }
     }
 
-    // 3. かわいい (Cute) モード または フォールバック
+    // 4. かわいい (Cute) モード または フォールバック
     if (MonsterCuteMap[species]) return MonsterCuteMap[species];
     for (const [key, path] of Object.entries(MonsterCuteMap)) {
       if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
@@ -2693,10 +2712,12 @@
   window.appGetGraphicStyle = getGraphicStyle;
   window.appSetGraphicStyle = function(style) {
     localStorage.setItem('bb_graphic_style', style);
+    const styleBtnHybrid = document.getElementById('style-btn-hybrid');
     const styleBtnHeroic = document.getElementById('style-btn-heroic');
     const styleBtnEpic = document.getElementById('style-btn-epic');
     const styleBtnCute = document.getElementById('style-btn-cute');
     
+    if (styleBtnHybrid) styleBtnHybrid.classList.toggle('active', style === 'hybrid');
     if (styleBtnHeroic) styleBtnHeroic.classList.toggle('active', style === 'heroic');
     if (styleBtnEpic) styleBtnEpic.classList.toggle('active', style === 'epic');
     if (styleBtnCute) styleBtnCute.classList.toggle('active', style === 'cute');

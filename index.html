@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="src/css/style.css?v=4.0.0-all-styles-final">
+  <link rel="stylesheet" href="src/css/style.css?v=4.0.0-hybrid-ssr-epic">
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <!-- iOS Safari / iPhone バーコードスキャン用 ZXing ライブラリ (AndroidはBarcodeDetector最優先) -->
   <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
@@ -115,15 +115,16 @@
 
       <!-- ずかんビュー (横スクロールゼロ・縦スクロール完全対応 & 全能力値常時表示) -->
       <div id="view-collection-tab" style="display: flex; flex-direction: column; flex: 1; width: 100%; overflow-x: hidden; overflow-y: auto; box-sizing: border-box;">
-        <!-- グラフィックスタイル切り替え (ヒアリング用: 王道RPG / リアル迫力 / かわいい) -->
+        <!-- グラフィックスタイル切り替え (ヒアリング用: ハイブリッド / 王道RPG / リアル迫力 / かわいい) -->
         <div style="display: flex; flex-direction: column; gap: 4px; background: rgba(0, 0, 0, 0.55); padding: 6px 8px; border-radius: 12px; border: 1px solid rgba(0, 229, 255, 0.35); margin-bottom: 6px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 0.74rem; font-weight: 800; color: var(--secondary-cyan);">🎨 イラスト比較 (ヒアリング用):</span>
           </div>
-          <div style="display: flex; gap: 3px; justify-content: space-between;">
-            <button id="style-btn-heroic" class="sub-tab-btn active" style="flex: 1; padding: 5px 2px; font-size: 0.70rem; white-space: nowrap;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('heroic');">👑 王道RPG(DQ風)</button>
-            <button id="style-btn-epic" class="sub-tab-btn" style="flex: 1; padding: 5px 2px; font-size: 0.70rem; white-space: nowrap;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('epic');">🔥 リアル迫力</button>
-            <button id="style-btn-cute" class="sub-tab-btn" style="flex: 1; padding: 5px 2px; font-size: 0.70rem; white-space: nowrap;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('cute');">✨ かわいい</button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+            <button id="style-btn-hybrid" class="sub-tab-btn active" style="padding: 5px 2px; font-size: 0.70rem; white-space: nowrap;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('hybrid');">🌟 SSR迫力＋他王道</button>
+            <button id="style-btn-heroic" class="sub-tab-btn" style="padding: 5px 2px; font-size: 0.70rem; white-space: nowrap;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('heroic');">👑 王道RPG(DQ風)</button>
+            <button id="style-btn-epic" class="sub-tab-btn" style="padding: 5px 2px; font-size: 0.70rem; white-space: nowrap;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('epic');">🔥 リアル迫力</button>
+            <button id="style-btn-cute" class="sub-tab-btn" style="padding: 5px 2px; font-size: 0.70rem; white-space: nowrap;" onclick="if(window.appSetGraphicStyle) window.appSetGraphicStyle('cute');">✨ かわいい</button>
           </div>
         </div>
 
@@ -356,6 +357,6 @@
   </div>
 
   <!-- スクリプト統合読み込み -->
-  <script src="src/js/bundle.js?v=4.0.0-all-styles-final"></script>
+  <script src="src/js/bundle.js?v=4.0.0-hybrid-ssr-epic"></script>
 </body>
 </html>

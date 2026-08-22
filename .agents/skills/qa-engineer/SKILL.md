@@ -18,6 +18,10 @@ description: Conducts acceptance testing, creates test scenarios, extracts issue
    - **異常系・限界テスト**: 通信断、不正入力、連打操作、セッション切れ。
 3. **問題点の抽出と修正提案**:
    - 発生したバグや使いづらい点を明確にドキュメント化し、優先度とともに実装チームへフィードバックする。
+4. **ドキュメント完全性検証 (Document Integrity Check)**:
+   - 受け入れ試験実施時、`docs/PRD.md`・`docs/Basic_Design.md`・`docs/UI_Design.md` の現行版が直前承認版と比較して不当な内容欠落・要約がないことを確認する。
+   - テストケースのトレーサビリティマトリクス（PRDの機能要件 F-01〜 と対応するテストケース）を照合し、PRDに記載されていた要件がドキュメント上から消えていないか検証すること。
+   - 欠落を発見した場合は、テスト結果報告書の問題点として報告すること。
 
 ## Output Format
 テスト結果および不具合報告は以下のMarkdownフォーマットで出力してください。
