@@ -352,95 +352,95 @@
     `.trim();
   }
 
-  // 1. 王道RPG (DQ・ポケモン風 黄金比スタイル 全20種族完全網羅)
+  // 1. 王道RPG (DQ・ポケモン風 黄金比スタイル 全20種族完全網羅 - 背景透明PNG)
   const MonsterHeroicMap = {
-    "ドラゴン": "src/assets/images/monsters_heroic/dragon.jpg",
-    "ゴーレム": "src/assets/images/monsters_heroic/golem.jpg",
-    "ナイト": "src/assets/images/monsters_heroic/knight.jpg",
-    "フェニックス": "src/assets/images/monsters_heroic/phoenix.jpg",
-    "タイガー": "src/assets/images/monsters_heroic/tiger.jpg",
-    "スライム": "src/assets/images/monsters_heroic/slime.jpg",
-    "ベア": "src/assets/images/monsters_heroic/bear.jpg",
-    "ロボ": "src/assets/images/monsters_heroic/robot.jpg",
-    "ウルフ": "src/assets/images/monsters_heroic/wolf.jpg",
-    "ライオン": "src/assets/images/monsters_heroic/lion.jpg",
-    "イエティ": "src/assets/images/monsters_heroic/yeti.jpg",
-    "グリフォン": "src/assets/images/monsters_heroic/griffon.jpg",
-    "バトロボ": "src/assets/images/monsters_heroic/battlerobot.jpg",
-    "クラーケン": "src/assets/images/monsters_heroic/kraken.jpg",
-    "ペガサス": "src/assets/images/monsters_heroic/pegasus.jpg",
-    "キマイラ": "src/assets/images/monsters_heroic/chimera.jpg",
-    "デーモン": "src/assets/images/monsters_heroic/cerberus.jpg",
-    "レヴィアタン": "src/assets/images/monsters_heroic/leviathan.jpg",
-    "ネクロマンサー": "src/assets/images/monsters_heroic/necromancer.jpg",
-    "ファントム": "src/assets/images/monsters_heroic/phantom.jpg",
+    "ドラゴン": "src/assets/images/monsters_heroic/dragon.png",
+    "ゴーレム": "src/assets/images/monsters_heroic/golem.png",
+    "ナイト": "src/assets/images/monsters_heroic/knight.png",
+    "フェニックス": "src/assets/images/monsters_heroic/phoenix.png",
+    "タイガー": "src/assets/images/monsters_heroic/tiger.png",
+    "スライム": "src/assets/images/monsters_heroic/slime.png",
+    "ベア": "src/assets/images/monsters_heroic/bear.png",
+    "ロボ": "src/assets/images/monsters_heroic/robot.png",
+    "ウルフ": "src/assets/images/monsters_heroic/wolf.png",
+    "ライオン": "src/assets/images/monsters_heroic/lion.png",
+    "イエティ": "src/assets/images/monsters_heroic/yeti.png",
+    "グリフォン": "src/assets/images/monsters_heroic/griffon.png",
+    "バトロボ": "src/assets/images/monsters_heroic/battlerobot.png",
+    "クラーケン": "src/assets/images/monsters_heroic/kraken.png",
+    "ペガサス": "src/assets/images/monsters_heroic/pegasus.png",
+    "キマイラ": "src/assets/images/monsters_heroic/chimera.png",
+    "デーモン": "src/assets/images/monsters_heroic/cerberus.png",
+    "レヴィアタン": "src/assets/images/monsters_heroic/leviathan.png",
+    "ネクロマンサー": "src/assets/images/monsters_heroic/necromancer.png",
+    "ファントム": "src/assets/images/monsters_heroic/phantom.png",
 
     // 追加別名サポート
-    "ケルベロス": "src/assets/images/monsters_heroic/cerberus.jpg",
-    "ワイバーン": "src/assets/images/monsters_heroic/dragon.jpg",
-    "ユニコーン": "src/assets/images/monsters_heroic/pegasus.jpg",
-    "タイタン": "src/assets/images/monsters_heroic/golem.jpg",
-    "ヒドラ": "src/assets/images/monsters_heroic/leviathan.jpg"
+    "ケルベロス": "src/assets/images/monsters_heroic/cerberus.png",
+    "ワイバーン": "src/assets/images/monsters_heroic/dragon.png",
+    "ユニコーン": "src/assets/images/monsters_heroic/pegasus.png",
+    "タイタン": "src/assets/images/monsters_heroic/golem.png",
+    "ヒドラ": "src/assets/images/monsters_heroic/leviathan.png"
   };
 
-  // 2. リアル迫力 (Epic Style 全20種族完全網羅)
+  // 2. リアル迫力 (Epic Style 全20種族完全網羅 - 背景透明PNG)
   const MonsterEpicMap = {
-    "ドラゴン": "src/assets/images/monsters_epic/dragon.jpg",
-    "ゴーレム": "src/assets/images/monsters_epic/golem.jpg",
-    "ナイト": "src/assets/images/monsters_epic/knight.jpg",
-    "フェニックス": "src/assets/images/monsters_epic/phoenix.jpg",
-    "タイガー": "src/assets/images/monsters_epic/tiger.jpg",
-    "スライム": "src/assets/images/monsters_epic/slime.jpg",
-    "ベア": "src/assets/images/monsters_epic/bear.jpg",
-    "ロボ": "src/assets/images/monsters_epic/robot.jpg",
-    "ウルフ": "src/assets/images/monsters_epic/wolf.jpg",
-    "ライオン": "src/assets/images/monsters_epic/lion.jpg",
-    "イエティ": "src/assets/images/monsters_epic/yeti.jpg",
-    "グリフォン": "src/assets/images/monsters_epic/griffon.jpg",
-    "バトロボ": "src/assets/images/monsters_epic/battlerobot.jpg",
-    "クラーケン": "src/assets/images/monsters_epic/kraken.jpg",
-    "ペガサス": "src/assets/images/monsters_epic/pegasus.jpg",
-    "キマイラ": "src/assets/images/monsters_epic/chimera.jpg",
-    "デーモン": "src/assets/images/monsters_epic/cerberus.jpg",
-    "レヴィアタン": "src/assets/images/monsters_epic/leviathan.jpg",
-    "ネクロマンサー": "src/assets/images/monsters_epic/necromancer.jpg",
-    "ファントム": "src/assets/images/monsters_epic/phantom.jpg",
+    "ドラゴン": "src/assets/images/monsters_epic/dragon.png",
+    "ゴーレム": "src/assets/images/monsters_epic/golem.png",
+    "ナイト": "src/assets/images/monsters_epic/knight.png",
+    "フェニックス": "src/assets/images/monsters_epic/phoenix.png",
+    "タイガー": "src/assets/images/monsters_epic/tiger.png",
+    "スライム": "src/assets/images/monsters_epic/slime.png",
+    "ベア": "src/assets/images/monsters_epic/bear.png",
+    "ロボ": "src/assets/images/monsters_epic/robot.png",
+    "ウルフ": "src/assets/images/monsters_epic/wolf.png",
+    "ライオン": "src/assets/images/monsters_epic/lion.png",
+    "イエティ": "src/assets/images/monsters_epic/yeti.png",
+    "グリフォン": "src/assets/images/monsters_epic/griffon.png",
+    "バトロボ": "src/assets/images/monsters_epic/battlerobot.png",
+    "クラーケン": "src/assets/images/monsters_epic/kraken.png",
+    "ペガサス": "src/assets/images/monsters_epic/pegasus.png",
+    "キマイラ": "src/assets/images/monsters_epic/chimera.png",
+    "デーモン": "src/assets/images/monsters_epic/cerberus.png",
+    "レヴィアタン": "src/assets/images/monsters_epic/leviathan.png",
+    "ネクロマンサー": "src/assets/images/monsters_epic/necromancer.png",
+    "ファントム": "src/assets/images/monsters_epic/phantom.png",
 
     // 追加別名サポート
-    "ケルベロス": "src/assets/images/monsters_epic/cerberus.jpg",
-    "ワイバーン": "src/assets/images/monsters_epic/dragon.jpg",
-    "ユニコーン": "src/assets/images/monsters_epic/pegasus.jpg",
-    "タイタン": "src/assets/images/monsters_epic/golem.jpg",
-    "ヒドラ": "src/assets/images/monsters_epic/leviathan.jpg"
+    "ケルベロス": "src/assets/images/monsters_epic/cerberus.png",
+    "ワイバーン": "src/assets/images/monsters_epic/dragon.png",
+    "ユニコーン": "src/assets/images/monsters_epic/pegasus.png",
+    "タイタン": "src/assets/images/monsters_epic/golem.png",
+    "ヒドラ": "src/assets/images/monsters_epic/leviathan.png"
   };
 
-  // 3. かわいい (Cute Style 全20種)
+  // 3. かわいい (Cute Style 全20種 - 背景透明PNG)
   const MonsterCuteMap = {
-    "ドラゴン": "src/assets/images/monsters_cute/dragon.jpg",
-    "ゴーレム": "src/assets/images/monsters_cute/golem.jpg",
-    "ナイト": "src/assets/images/monsters_cute/knight.jpg",
-    "フェニックス": "src/assets/images/monsters_cute/phoenix.jpg",
-    "タイガー": "src/assets/images/monsters_cute/tiger.jpg",
-    "スライム": "src/assets/images/monsters_cute/slime.jpg",
-    "ベア": "src/assets/images/monsters_cute/bear.jpg",
-    "ロボ": "src/assets/images/monsters_cute/robot.jpg",
-    "ウルフ": "src/assets/images/monsters_cute/wolf.jpg",
-    "ライオン": "src/assets/images/monsters_cute/lion.jpg",
-    "イエティ": "src/assets/images/monsters_cute/yeti.jpg",
-    "グリフォン": "src/assets/images/monsters_cute/griffon.jpg",
-    "バトロボ": "src/assets/images/monsters_cute/battlerobot.jpg",
-    "クラーケン": "src/assets/images/monsters_cute/kraken.jpg",
-    "ペガサス": "src/assets/images/monsters_cute/pegasus.jpg",
-    "キマイラ": "src/assets/images/monsters_cute/chimera.jpg",
-    "デーモン": "src/assets/images/monsters_cute/cerberus.jpg",
-    "レヴィアタン": "src/assets/images/monsters_cute/leviathan.jpg",
-    "ネクロマンサー": "src/assets/images/monsters_cute/necromancer.jpg",
-    "ファントム": "src/assets/images/monsters_cute/phantom.jpg",
-    "ケルベロス": "src/assets/images/monsters_cute/cerberus.jpg",
-    "ワイバーン": "src/assets/images/monsters_cute/dragon.jpg",
-    "ユニコーン": "src/assets/images/monsters_cute/pegasus.jpg",
-    "タイタン": "src/assets/images/monsters_cute/golem.jpg",
-    "ヒドラ": "src/assets/images/monsters_cute/leviathan.jpg"
+    "ドラゴン": "src/assets/images/monsters_cute/dragon.png",
+    "ゴーレム": "src/assets/images/monsters_cute/golem.png",
+    "ナイト": "src/assets/images/monsters_cute/knight.png",
+    "フェニックス": "src/assets/images/monsters_cute/phoenix.png",
+    "タイガー": "src/assets/images/monsters_cute/tiger.png",
+    "スライム": "src/assets/images/monsters_cute/slime.png",
+    "ベア": "src/assets/images/monsters_cute/bear.png",
+    "ロボ": "src/assets/images/monsters_cute/robot.png",
+    "ウルフ": "src/assets/images/monsters_cute/wolf.png",
+    "ライオン": "src/assets/images/monsters_cute/lion.png",
+    "イエティ": "src/assets/images/monsters_cute/yeti.png",
+    "グリフォン": "src/assets/images/monsters_cute/griffon.png",
+    "バトロボ": "src/assets/images/monsters_cute/battlerobot.png",
+    "クラーケン": "src/assets/images/monsters_cute/kraken.png",
+    "ペガサス": "src/assets/images/monsters_cute/pegasus.png",
+    "キマイラ": "src/assets/images/monsters_cute/chimera.png",
+    "デーモン": "src/assets/images/monsters_cute/cerberus.png",
+    "レヴィアタン": "src/assets/images/monsters_cute/leviathan.png",
+    "ネクロマンサー": "src/assets/images/monsters_cute/necromancer.png",
+    "ファントム": "src/assets/images/monsters_cute/phantom.png",
+    "ケルベロス": "src/assets/images/monsters_cute/cerberus.png",
+    "ワイバーン": "src/assets/images/monsters_cute/dragon.png",
+    "ユニコーン": "src/assets/images/monsters_cute/pegasus.png",
+    "タイタン": "src/assets/images/monsters_cute/golem.png",
+    "ヒドラ": "src/assets/images/monsters_cute/leviathan.png"
   };
 
   const MonsterCoolMap = MonsterHeroicMap;
@@ -450,14 +450,14 @@
   };
 
   const ItemImageMap = {
-    "えりくさー": "src/assets/images/items/elixir.jpg",
-    "はかいのつるぎ": "src/assets/images/items/sword.jpg",
-    "いあつのたて": "src/assets/images/items/shield.jpg",
-    "ひかりのたびびと": "src/assets/images/items/boots.jpg",
-    "びくとりーのたま": "src/assets/images/items/victory_orb.jpg",
-    "まほうのばくだん": "src/assets/images/items/bomb.jpg",
-    "ふ死鳥の水": "src/assets/images/items/phoenix_water.jpg",
-    "おうかんの輝き": "src/assets/images/items/crown_shine.jpg"
+    "えりくさー": "src/assets/images/items/elixir.png",
+    "はかいのつるぎ": "src/assets/images/items/sword.png",
+    "いあつのたて": "src/assets/images/items/shield.png",
+    "ひかりのたびびと": "src/assets/images/items/boots.png",
+    "びくとりーのたま": "src/assets/images/items/victory_orb.png",
+    "まほうのばくだん": "src/assets/images/items/bomb.png",
+    "ふ死鳥の水": "src/assets/images/items/phoenix_water.png",
+    "おうかんの輝き": "src/assets/images/items/crown_shine.png"
   };
 
   function getGraphicStyle() {

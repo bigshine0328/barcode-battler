@@ -837,7 +837,7 @@ h1.logo {
 }
 
 /* ==========================================
-   NanoBanana 純白背景3Dグラフィック表示スタイル (Zero Layout Shift)
+   背景透明 3Dグラフィック表示スタイル (Transparent Game Assets)
    ========================================== */
 .card-art-img {
   width: 100%;
@@ -845,34 +845,34 @@ h1.logo {
   object-fit: contain;
   border-radius: 8px;
   display: block;
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  background: transparent;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.65));
   transition: transform 0.2s ease-in-out;
 }
 
 .card:hover .card-art-img {
-  transform: scale(1.04);
+  transform: scale(1.06);
 }
 
 .char-showcase .card-art-img {
   max-height: 120px;
   width: auto;
   margin: 0 auto;
-  background: #ffffff;
-  border: 2px solid rgba(0, 229, 255, 0.4);
+  background: transparent;
+  filter: drop-shadow(0 8px 18px rgba(0, 229, 255, 0.5));
 }
 
-/* 属性別ダイナミックオーラフィルター (火・水・木: 肌色や元の美麗イラストを崩さない自然な属性オーラ) */
+/* 属性別ダイナミックオーラフィルター (火・水・木: キャラクターの輪郭に沿った光芒オーラ) */
 .card-art-img.element-fire {
-  filter: contrast(1.03) brightness(1.02) drop-shadow(0 0 10px rgba(255, 68, 68, 0.85));
+  filter: drop-shadow(0 0 12px rgba(255, 68, 68, 0.95)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7));
 }
 
 .card-art-img.element-water {
-  filter: contrast(1.03) brightness(1.02) drop-shadow(0 0 10px rgba(0, 210, 255, 0.9));
+  filter: drop-shadow(0 0 12px rgba(0, 210, 255, 0.95)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7));
 }
 
 .card-art-img.element-wood {
-  filter: contrast(1.03) brightness(1.02) drop-shadow(0 0 10px rgba(46, 213, 115, 0.9));
+  filter: drop-shadow(0 0 12px rgba(46, 213, 115, 0.95)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7));
 }
 
 .arena-char .mini-sprite {
@@ -889,7 +889,7 @@ h1.logo {
   max-height: 75px;
   object-fit: contain;
   border-radius: 8px;
-  background: #ffffff;
+  background: transparent;
 }
 
 /* レアリティ別 枠線・オーラエフェクト (SSR, SR, R, N) */

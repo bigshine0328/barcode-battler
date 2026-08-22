@@ -133,7 +133,7 @@
     .card-img-wrap {
       width: 170px;
       height: 170px;
-      background: #ffffff;
+      background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.08) 0%, rgba(10, 15, 29, 0.95) 100%);
       border-radius: 12px;
       overflow: hidden;
       display: flex;
@@ -142,35 +142,40 @@
       border: 3px solid #ffd700;
       margin-bottom: 10px;
       position: relative;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
     }
     .card-img-wrap.wrap-fire {
+      background: radial-gradient(circle at 50% 40%, rgba(255, 71, 87, 0.28) 0%, rgba(15, 23, 42, 0.95) 100%);
       border-color: #ff4757;
-      box-shadow: 0 0 14px rgba(255, 71, 87, 0.7);
+      box-shadow: 0 0 16px rgba(255, 71, 87, 0.5);
     }
     .card-img-wrap.wrap-water {
+      background: radial-gradient(circle at 50% 40%, rgba(0, 210, 211, 0.28) 0%, rgba(15, 23, 42, 0.95) 100%);
       border-color: #00d2d3;
-      box-shadow: 0 0 14px rgba(0, 210, 211, 0.7);
+      box-shadow: 0 0 16px rgba(0, 210, 211, 0.5);
     }
     .card-img-wrap.wrap-wood {
+      background: radial-gradient(circle at 50% 40%, rgba(46, 213, 115, 0.28) 0%, rgba(15, 23, 42, 0.95) 100%);
       border-color: #2ed573;
-      box-shadow: 0 0 14px rgba(46, 213, 115, 0.7);
+      box-shadow: 0 0 16px rgba(46, 213, 115, 0.5);
     }
 
     .card-art-img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      background: transparent;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7));
       transition: all 0.3s ease;
     }
     .card-art-img.element-fire {
-      filter: contrast(1.03) brightness(1.02) drop-shadow(0 0 10px rgba(255, 68, 68, 0.85));
+      filter: drop-shadow(0 0 12px rgba(255, 68, 68, 0.9)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
     }
     .card-art-img.element-water {
-      filter: contrast(1.03) brightness(1.02) drop-shadow(0 0 10px rgba(0, 210, 255, 0.9));
+      filter: drop-shadow(0 0 12px rgba(0, 210, 255, 0.9)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
     }
     .card-art-img.element-wood {
-      filter: contrast(1.03) brightness(1.02) drop-shadow(0 0 10px rgba(46, 213, 115, 0.9));
+      filter: drop-shadow(0 0 12px rgba(46, 213, 115, 0.9)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
     }
     .card-badge {
       display: inline-block;
@@ -285,14 +290,14 @@
     ];
 
     const ITEMS_LIST = [
-      { name: "えりくさー", img: "src/assets/images/items/elixir.jpg", desc: "HPを200回復する聖なる霊薬。" },
-      { name: "はかいのつるぎ", img: "src/assets/images/items/sword.jpg", desc: "ATKを+40上昇させる燃え盛る大剣。" },
-      { name: "いあつのたて", img: "src/assets/images/items/shield.jpg", desc: "DEFを+40上昇させる黄金の守護盾。" },
-      { name: "ひかりのたびびと", img: "src/assets/images/items/boots.jpg", desc: "SPDを+30上昇させ先制率を高めるブーツ。" },
-      { name: "びくとりーのたま", img: "src/assets/images/items/victory_orb.jpg", desc: "会心率(クリティカル)を+25%上昇させる宝珠。" },
-      { name: "まほうのばくだん", img: "src/assets/images/items/bomb.jpg", desc: "敵全体に120固定ダメージを与える魔法爆弾。" },
-      { name: "ふ死鳥の水", img: "src/assets/images/items/phoenix_water.jpg", desc: "SPを全回復し強力な必殺技を即発動可能にする。" },
-      { name: "おうかんの輝き", img: "src/assets/images/items/crown_shine.jpg", desc: "全ステータス(HP/ATK/DEF/SPD)を+15%強化する。" }
+      { name: "えりくさー", img: "src/assets/images/items/elixir.png", desc: "HPを200回復する聖なる霊薬。" },
+      { name: "はかいのつるぎ", img: "src/assets/images/items/sword.png", desc: "ATKを+40上昇させる燃え盛る大剣。" },
+      { name: "いあつのたて", img: "src/assets/images/items/shield.png", desc: "DEFを+40上昇させる黄金の守護盾。" },
+      { name: "ひかりのたびびと", img: "src/assets/images/items/boots.png", desc: "SPDを+30上昇させ先制率を高めるブーツ。" },
+      { name: "びくとりーのたま", img: "src/assets/images/items/victory_orb.png", desc: "会心率(クリティカル)を+25%上昇させる宝珠。" },
+      { name: "まほうのばくだん", img: "src/assets/images/items/bomb.png", desc: "敵全体に120固定ダメージを与える魔法爆弾。" },
+      { name: "ふ死鳥の水", img: "src/assets/images/items/phoenix_water.png", desc: "SPを全回復し強力な必殺技を即発動可能にする。" },
+      { name: "おうかんの輝き", img: "src/assets/images/items/crown_shine.png", desc: "全ステータス(HP/ATK/DEF/SPD)を+15%強化する。" }
     ];
 
     let currentStyle = 'hybrid';
@@ -301,13 +306,13 @@
     function getImgPath(speciesKey, style, isSSR) {
       const fileKey = speciesKey;
       if (style === 'hybrid') {
-        if (isSSR) return `src/assets/images/monsters_epic/${fileKey}.jpg`;
-        return `src/assets/images/monsters_heroic/${fileKey}.jpg`;
+        if (isSSR) return `src/assets/images/monsters_epic/${fileKey}.png`;
+        return `src/assets/images/monsters_heroic/${fileKey}.png`;
       }
-      if (style === 'heroic') return `src/assets/images/monsters_heroic/${fileKey}.jpg`;
-      if (style === 'epic') return `src/assets/images/monsters_epic/${fileKey}.jpg`;
-      if (style === 'cute') return `src/assets/images/monsters_cute/${fileKey}.jpg`;
-      return `src/assets/images/monsters_heroic/${fileKey}.jpg`;
+      if (style === 'heroic') return `src/assets/images/monsters_heroic/${fileKey}.png`;
+      if (style === 'epic') return `src/assets/images/monsters_epic/${fileKey}.png`;
+      if (style === 'cute') return `src/assets/images/monsters_cute/${fileKey}.png`;
+      return `src/assets/images/monsters_heroic/${fileKey}.png`;
     }
 
     function renderCatalog() {
