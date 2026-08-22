@@ -141,12 +141,36 @@
       align-items: center;
       border: 3px solid #ffd700;
       margin-bottom: 10px;
+      position: relative;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
     }
-    .card-img-wrap img {
+    .card-img-wrap.wrap-fire {
+      border-color: #ff4757;
+      box-shadow: 0 0 14px rgba(255, 71, 87, 0.7);
+    }
+    .card-img-wrap.wrap-water {
+      border-color: #00d2d3;
+      box-shadow: 0 0 14px rgba(0, 210, 211, 0.7);
+    }
+    .card-img-wrap.wrap-wood {
+      border-color: #2ed573;
+      box-shadow: 0 0 14px rgba(46, 213, 115, 0.7);
+    }
+
+    .card-art-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: all 0.3s ease;
+    }
+    .card-art-img.element-fire {
+      filter: sepia(0.25) saturate(1.75) hue-rotate(-20deg) contrast(1.1) drop-shadow(0 0 8px rgba(255, 68, 68, 0.75));
+    }
+    .card-art-img.element-water {
+      filter: sepia(0.40) saturate(2.0) hue-rotate(165deg) contrast(1.1) drop-shadow(0 0 8px rgba(0, 210, 255, 0.85));
+    }
+    .card-art-img.element-wood {
+      filter: sepia(0.35) saturate(1.85) hue-rotate(75deg) contrast(1.1) drop-shadow(0 0 8px rgba(46, 213, 115, 0.85));
     }
     .card-badge {
       display: inline-block;
@@ -350,8 +374,8 @@
               <span class="card-badge ${attr.badgeClass}">${attr.icon} ${attr.name}</span>
               <span style="font-weight:900; font-size:0.78rem; color:${isSSR ? '#ffd700' : '#00e5ff'};">${rarity}</span>
             </div>
-            <div class="card-img-wrap" style="border-color: ${isSSR ? '#ffd700' : (rarity === 'SR' ? '#a855f7' : '#3b82f6')};">
-              <img src="${imgPath}" alt="${sp.name}" loading="lazy">
+            <div class="card-img-wrap wrap-${attr.id}" style="border-color: ${isSSR ? '#ffd700' : (rarity === 'SR' ? '#a855f7' : (attr.id === 'fire' ? '#ff4757' : attr.id === 'water' ? '#00d2d3' : '#2ed573'))};">
+              <img src="${imgPath}" class="card-art-img element-${attr.id}" alt="${sp.name}" loading="lazy">
             </div>
             <div style="font-weight:900; font-size:0.95rem; margin-bottom:4px; color:#fff;">
               ${sp.name} [${attr.name.charAt(0)}]

@@ -864,15 +864,15 @@ h1.logo {
 
 /* 属性別ダイナミックカラー＆オーラフィルター (火・水・木) */
 .card-art-img.element-fire {
-  filter: drop-shadow(0 0 8px rgba(255, 51, 68, 0.65));
+  filter: sepia(0.25) saturate(1.7) hue-rotate(-20deg) contrast(1.1) drop-shadow(0 0 10px rgba(255, 68, 68, 0.75));
 }
 
 .card-art-img.element-water {
-  filter: hue-rotate(185deg) saturate(1.2) drop-shadow(0 0 8px rgba(0, 229, 255, 0.7));
+  filter: sepia(0.35) saturate(1.9) hue-rotate(165deg) contrast(1.1) drop-shadow(0 0 10px rgba(0, 210, 255, 0.85));
 }
 
 .card-art-img.element-wood {
-  filter: hue-rotate(85deg) saturate(1.2) drop-shadow(0 0 8px rgba(0, 255, 136, 0.7));
+  filter: sepia(0.35) saturate(1.8) hue-rotate(75deg) contrast(1.1) drop-shadow(0 0 10px rgba(46, 213, 115, 0.85));
 }
 
 .arena-char .mini-sprite {
