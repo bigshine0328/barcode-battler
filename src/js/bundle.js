@@ -450,14 +450,14 @@
   };
 
   const ItemImageMap = {
-    "えりくさー": "src/assets/images/items/elixir.png",
-    "はかいのつるぎ": "src/assets/images/items/sword.png",
-    "いあつのたて": "src/assets/images/items/shield.png",
-    "ひかりのたびびと": "src/assets/images/items/boots.png",
-    "びくとりーのたま": "src/assets/images/items/victory_orb.png",
-    "まほうのばくだん": "src/assets/images/items/bomb.png",
-    "ふ死鳥の水": "src/assets/images/items/phoenix_water.png",
-    "おうかんの輝き": "src/assets/images/items/crown_shine.png"
+    "えりくさー": "src/assets/images/cards_items/elixir.jpg",
+    "はかいのつるぎ": "src/assets/images/cards_items/sword.jpg",
+    "いあつのたて": "src/assets/images/cards_items/shield.jpg",
+    "ひかりのたびびと": "src/assets/images/cards_items/boots.jpg",
+    "びくとりーのたま": "src/assets/images/cards_items/victory_orb.jpg",
+    "まほうのばくだん": "src/assets/images/cards_items/bomb.jpg",
+    "ふ死鳥の水": "src/assets/images/cards_items/phoenix_water.jpg",
+    "おうかんの輝き": "src/assets/images/cards_items/crown_shine.jpg"
   };
 
   const SpeciesFileKeyMap = {
@@ -496,34 +496,32 @@
     const fileKey = SpeciesFileKeyMap[species] || "dragon";
     const elemKey = ElementKeyMap[element] || "fire";
 
-    // 1. 新・世界観背景付きTCGアート (cards_standard: 全60種完全配備)
     const stdCardPath = `src/assets/images/cards_standard/${fileKey}_${elemKey}.jpg`;
+    const ssrCardPath = `src/assets/images/cards_ssr/${fileKey}_${elemKey}.jpg`;
 
-    // 2. ハイブリッドモード (SSRはEpic / 他は通常TCGフルアート)
+    // 1. ハイブリッドモード (SSRはEpic専用フルアート / SR・R・Nは王道RPGフルアート)
     if (style === 'hybrid') {
-      if (isSSR) {
-        if (MonsterEpicMap[species]) return MonsterEpicMap[species];
-      }
+      if (isSSR) return ssrCardPath;
       return stdCardPath;
     }
 
-    // 3. 王道RPG TCGフルアートモード (全レアリティ)
+    // 2. リアル迫力 (Epic) モード (全レアリティSSRグラフィック)
+    if (style === 'epic') {
+      return ssrCardPath;
+    }
+
+    // 3. 王道RPG (Heroic/Standard) モード (全レアリティ通常グラフィック)
     if (style === 'heroic' || style === 'cool' || style === 'standard') {
       return stdCardPath;
     }
 
-    // 4. リアル迫力 (Epic) モード
-    if (style === 'epic') {
-      if (MonsterEpicMap[species]) return MonsterEpicMap[species];
-    }
-
-    // 5. かわいい (Cute) モード
+    // 4. かわいい (Cute) モード
     if (style === 'cute') {
       if (MonsterCuteMap[species]) return MonsterCuteMap[species];
     }
 
     // フォールバック
-    return stdCardPath;
+    return isSSR ? ssrCardPath : stdCardPath;
   }
 
   function getCharacterSpriteSvg(card) {

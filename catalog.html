@@ -290,14 +290,14 @@
     ];
 
     const ITEMS_LIST = [
-      { name: "えりくさー", img: "src/assets/images/items/elixir.png", desc: "HPを200回復する聖なる霊薬。" },
-      { name: "はかいのつるぎ", img: "src/assets/images/items/sword.png", desc: "ATKを+40上昇させる燃え盛る大剣。" },
-      { name: "いあつのたて", img: "src/assets/images/items/shield.png", desc: "DEFを+40上昇させる黄金の守護盾。" },
-      { name: "ひかりのたびびと", img: "src/assets/images/items/boots.png", desc: "SPDを+30上昇させ先制率を高めるブーツ。" },
-      { name: "びくとりーのたま", img: "src/assets/images/items/victory_orb.png", desc: "会心率(クリティカル)を+25%上昇させる宝珠。" },
-      { name: "まほうのばくだん", img: "src/assets/images/items/bomb.png", desc: "敵全体に120固定ダメージを与える魔法爆弾。" },
-      { name: "ふ死鳥の水", img: "src/assets/images/items/phoenix_water.png", desc: "SPを全回復し強力な必殺技を即発動可能にする。" },
-      { name: "おうかんの輝き", img: "src/assets/images/items/crown_shine.png", desc: "全ステータス(HP/ATK/DEF/SPD)を+15%強化する。" }
+      { name: "えりくさー", img: "src/assets/images/cards_items/elixir.jpg", desc: "HPを200回復する聖なる霊薬。" },
+      { name: "はかいのつるぎ", img: "src/assets/images/cards_items/sword.jpg", desc: "ATKを+40上昇させる燃え盛る大剣。" },
+      { name: "いあつのたて", img: "src/assets/images/cards_items/shield.jpg", desc: "DEFを+40上昇させる黄金の守護盾。" },
+      { name: "ひかりのたびびと", img: "src/assets/images/cards_items/boots.jpg", desc: "SPDを+30上昇させ先制率を高めるブーツ。" },
+      { name: "びくとりーのたま", img: "src/assets/images/cards_items/victory_orb.jpg", desc: "会心率(クリティカル)を+25%上昇させる宝珠。" },
+      { name: "まほうのばくだん", img: "src/assets/images/cards_items/bomb.jpg", desc: "敵全体に120固定ダメージを与える魔法爆弾。" },
+      { name: "ふ死鳥の水", img: "src/assets/images/cards_items/phoenix_water.jpg", desc: "SPを全回復し強力な必殺技を即発動可能にする。" },
+      { name: "おうかんの輝き", img: "src/assets/images/cards_items/crown_shine.jpg", desc: "全ステータス(HP/ATK/DEF/SPD)を+15%強化する。" }
     ];
 
     let currentStyle = 'hybrid';
@@ -307,16 +307,24 @@
       const fileKey = speciesKey;
       const elem = attrId || 'fire';
 
-      // 1. 新・世界観背景付きTCGアート (cards_standard: 全60種完全配備)
-      if (style === 'standard' || style === 'heroic' || style === 'hybrid') {
-        if (style === 'hybrid' && isSSR) {
-          return `src/assets/images/monsters_epic/${fileKey}.png`;
-        }
-        return `src/assets/images/cards_standard/${fileKey}_${elem}.jpg`;
+      const stdCardPath = `src/assets/images/cards_standard/${fileKey}_${elem}.jpg`;
+      const ssrCardPath = `src/assets/images/cards_ssr/${fileKey}_${elem}.jpg`;
+
+      // 1. ハイブリッドモード (SSRはEpic専用フルアート / SR・R・Nは王道RPGフルアート)
+      if (style === 'hybrid') {
+        if (isSSR) return ssrCardPath;
+        return stdCardPath;
       }
-      if (style === 'epic') return `src/assets/images/monsters_epic/${fileKey}.png`;
+      // 2. リアル迫力 (Epic) モード (全レアリティSSRグラフィック)
+      if (style === 'epic') return ssrCardPath;
+
+      // 3. 王道RPG (Heroic/Standard) モード (全レアリティ通常グラフィック)
+      if (style === 'heroic' || style === 'standard') return stdCardPath;
+
+      // 4. かわいい (Cute) モード
       if (style === 'cute') return `src/assets/images/monsters_cute/${fileKey}.png`;
-      return `src/assets/images/cards_standard/${fileKey}_${elem}.jpg`;
+
+      return isSSR ? ssrCardPath : stdCardPath;
     }
 
     function renderCatalog() {
