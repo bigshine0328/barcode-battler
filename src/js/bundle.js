@@ -527,12 +527,11 @@
   function getCharacterSpriteSvg(card) {
     if (!card) return generateCharacterSvg("ドラゴン", "火", "N");
 
-    // NanoBanana グラフィックアセットが存在する場合は画像として描画 (Zero Layout Shift)
+    // フルアートグラフィックアセットが存在する場合は画像として描画 (Zero Layout Shift)
     const graphicPath = getCardGraphicPath(card);
     if (graphicPath) {
-      const elemClass = card.element === '水' ? 'element-water' : card.element === '木' ? 'element-wood' : 'element-fire';
       const rarClass = `rarity-art-${card.rarity || 'N'}`;
-      return `<img src="${graphicPath}" class="card-art-img ${elemClass} ${rarClass}" alt="${card.name || 'カード'}" loading="lazy">`;
+      return `<img src="${graphicPath}" class="card-art-img ${rarClass}" alt="${card.name || 'カード'}" loading="lazy">`;
     }
 
     if (card.type === 'item') {
