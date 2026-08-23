@@ -1,6 +1,6 @@
 Add-Type -AssemblyName System.Drawing
 
-function Optimize-Image {
+function Optimize-SingleCard {
     param(
         [string]$Path,
         [int]$TargetSize = 512,
@@ -18,15 +18,14 @@ function Optimize-Image {
     $w = $img.Width
     $h = $img.Height
 
-    # 中央正方形クロップ領域
+    # 正方形中央クロップ
     $cropSize = [Math]::Min($w, $h)
     $cropX = [int](($w - $cropSize) / 2)
     $cropY = [int](($h - $cropSize) / 2)
     $srcRect = New-Object System.Drawing.Rectangle($cropX, $cropY, $cropSize, $cropSize)
     $destRect = New-Object System.Drawing.Rectangle(0, 0, $TargetSize, $TargetSize)
 
-    # 512x512 高品質リサイズ
-    $bmp = New-Object System.Drawing.Bitmap $TargetSize, $TargetSize, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb
+    $bmp = New-Object System.Drawing.Bitmap($TargetSize, $TargetSize)
     $graph = [System.Drawing.Graphics]::FromImage($bmp)
     $graph.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
     $graph.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
@@ -49,13 +48,8 @@ function Optimize-Image {
     Write-Host "Optimized (512x512): $([System.IO.Path]::GetFileName($fullPath))"
 }
 
-# src/assets/images 以下の全JPG/PNGを走査・最適化
-$targets = @("src\assets\images\cards_standard", "src\assets\images\cards_ssr", "src\assets\images\cards_items", "src\assets\images\monsters_heroic", "src\assets\images\monsters_epic", "src\assets\images\monsters_cute", "src\assets\images\items", "src\assets\images\samples")
-foreach ($folder in $targets) {
-    if (Test-Path $folder) {
-        Get-ChildItem -Path $folder -Recurse -Filter "*.jpg" | ForEach-Object {
-            Optimize-Image -Path $_.FullName
-        }
-    }
+$files = Get-ChildItem -Path "src/assets/images/cards_standard" -Filter "*.jpg"
+foreach ($f in $files) {
+    Optimize-SingleCard -Path $f.FullName -TargetSize 512 -Quality 85
 }
-Write-Host "All images successfully optimized to 512x512!"
+Write-Host "Successfully optimized all $($files.Count) standard cards!"

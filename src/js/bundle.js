@@ -460,6 +460,21 @@
     "おうかんの輝き": "src/assets/images/items/crown_shine.png"
   };
 
+  const SpeciesFileKeyMap = {
+    "ドラゴン": "dragon", "ゴーレム": "golem", "ナイト": "knight", "フェニックス": "phoenix",
+    "タイガー": "tiger", "スライム": "slime", "ベア": "bear", "ロボ": "robot",
+    "ウルフ": "wolf", "ライオン": "lion", "イエティ": "yeti", "グリフォン": "griffon",
+    "バトロボ": "battlerobot", "クラーケン": "kraken", "ペガサス": "pegasus", "キマイラ": "chimera",
+    "デーモン": "cerberus", "ケルベロス": "cerberus", "レヴィアタン": "leviathan",
+    "ネクロマンサー": "necromancer", "ファントム": "phantom", "ワイバーン": "dragon",
+    "ユニコーン": "pegasus", "タイタン": "golem", "ヒドラ": "leviathan"
+  };
+
+  const ElementKeyMap = {
+    "火": "fire", "水": "water", "木": "wood",
+    "fire": "fire", "water": "water", "wood": "wood"
+  };
+
   function getGraphicStyle() {
     return localStorage.getItem('bb_graphic_style') || 'hybrid';
   }
@@ -475,59 +490,40 @@
 
     const style = getGraphicStyle();
     const species = card.species || "";
+    const element = card.element || "火";
     const isSSR = (card.rarity === 'SSR');
 
-    // 1. ハイブリッドモード (SSRのみEpic迫力 / SR・R・Nは王道RPG)
+    const fileKey = SpeciesFileKeyMap[species] || "dragon";
+    const elemKey = ElementKeyMap[element] || "fire";
+
+    // 1. 新・世界観背景付きTCGアート (cards_standard: 全60種完全配備)
+    const stdCardPath = `src/assets/images/cards_standard/${fileKey}_${elemKey}.jpg`;
+
+    // 2. ハイブリッドモード (SSRはEpic / 他は通常TCGフルアート)
     if (style === 'hybrid') {
       if (isSSR) {
         if (MonsterEpicMap[species]) return MonsterEpicMap[species];
-        for (const [key, path] of Object.entries(MonsterEpicMap)) {
-          if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
-            return path;
-          }
-        }
       }
-      if (MonsterHeroicMap[species]) return MonsterHeroicMap[species];
-      for (const [key, path] of Object.entries(MonsterHeroicMap)) {
-        if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
-          return path;
-        }
-      }
+      return stdCardPath;
     }
 
-    // 2. 王道RPG (DQ・ポケモン風) モード
-    if (style === 'heroic' || style === 'cool') {
-      if (MonsterHeroicMap[species]) return MonsterHeroicMap[species];
-      for (const [key, path] of Object.entries(MonsterHeroicMap)) {
-        if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
-          return path;
-        }
-      }
+    // 3. 王道RPG TCGフルアートモード (全レアリティ)
+    if (style === 'heroic' || style === 'cool' || style === 'standard') {
+      return stdCardPath;
     }
 
-    // 3. リアル迫力 (Epic) モード
+    // 4. リアル迫力 (Epic) モード
     if (style === 'epic') {
       if (MonsterEpicMap[species]) return MonsterEpicMap[species];
-      for (const [key, path] of Object.entries(MonsterEpicMap)) {
-        if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
-          return path;
-        }
-      }
     }
 
-    // 4. かわいい (Cute) モード または フォールバック
-    if (MonsterCuteMap[species]) return MonsterCuteMap[species];
-    for (const [key, path] of Object.entries(MonsterCuteMap)) {
-      if ((card.name && card.name.includes(key)) || (species && species.includes(key))) {
-        return path;
-      }
+    // 5. かわいい (Cute) モード
+    if (style === 'cute') {
+      if (MonsterCuteMap[species]) return MonsterCuteMap[species];
     }
 
-    for (const [key, path] of Object.entries(ItemImageMap)) {
-      if (card.name && card.name.includes(key)) return path;
-    }
-
-    return null;
+    // フォールバック
+    return stdCardPath;
   }
 
   function getCharacterSpriteSvg(card) {

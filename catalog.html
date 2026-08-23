@@ -303,16 +303,20 @@
     let currentStyle = 'hybrid';
     let currentAttr = 'all';
 
-    function getImgPath(speciesKey, style, isSSR) {
+    function getImgPath(speciesKey, style, isSSR, attrId) {
       const fileKey = speciesKey;
-      if (style === 'hybrid') {
-        if (isSSR) return `src/assets/images/monsters_epic/${fileKey}.png`;
-        return `src/assets/images/monsters_heroic/${fileKey}.png`;
+      const elem = attrId || 'fire';
+
+      // 1. 新・世界観背景付きTCGアート (cards_standard: 全60種完全配備)
+      if (style === 'standard' || style === 'heroic' || style === 'hybrid') {
+        if (style === 'hybrid' && isSSR) {
+          return `src/assets/images/monsters_epic/${fileKey}.png`;
+        }
+        return `src/assets/images/cards_standard/${fileKey}_${elem}.jpg`;
       }
-      if (style === 'heroic') return `src/assets/images/monsters_heroic/${fileKey}.png`;
       if (style === 'epic') return `src/assets/images/monsters_epic/${fileKey}.png`;
       if (style === 'cute') return `src/assets/images/monsters_cute/${fileKey}.png`;
-      return `src/assets/images/monsters_heroic/${fileKey}.png`;
+      return `src/assets/images/cards_standard/${fileKey}_${elem}.jpg`;
     }
 
     function renderCatalog() {
@@ -361,7 +365,7 @@
           // SSRデモ用（火属性をSSR、水属性をSR、木属性をRとしてシミュレート）
           const rarity = (attr.id === 'fire') ? 'SSR' : (attr.id === 'water' ? 'SR' : 'R');
           const isSSR = (rarity === 'SSR');
-          const imgPath = getImgPath(fileKey, currentStyle, isSSR);
+          const imgPath = getImgPath(fileKey, currentStyle, isSSR, attr.id);
 
           // 属性によるステータス補正
           let hp = sp.baseHp;
