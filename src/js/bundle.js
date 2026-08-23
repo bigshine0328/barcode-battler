@@ -352,8 +352,189 @@
     `.trim();
   }
 
+  // 1. 王道RPG (DQ・ポケモン風 黄金比スタイル 全20種族完全網羅 - 背景透明PNG)
+  const MonsterHeroicMap = {
+    "ドラゴン": "src/assets/images/monsters_heroic/dragon.png",
+    "ゴーレム": "src/assets/images/monsters_heroic/golem.png",
+    "ナイト": "src/assets/images/monsters_heroic/knight.png",
+    "フェニックス": "src/assets/images/monsters_heroic/phoenix.png",
+    "タイガー": "src/assets/images/monsters_heroic/tiger.png",
+    "スライム": "src/assets/images/monsters_heroic/slime.png",
+    "ベア": "src/assets/images/monsters_heroic/bear.png",
+    "ロボ": "src/assets/images/monsters_heroic/robot.png",
+    "ウルフ": "src/assets/images/monsters_heroic/wolf.png",
+    "ライオン": "src/assets/images/monsters_heroic/lion.png",
+    "イエティ": "src/assets/images/monsters_heroic/yeti.png",
+    "グリフォン": "src/assets/images/monsters_heroic/griffon.png",
+    "バトロボ": "src/assets/images/monsters_heroic/battlerobot.png",
+    "クラーケン": "src/assets/images/monsters_heroic/kraken.png",
+    "ペガサス": "src/assets/images/monsters_heroic/pegasus.png",
+    "キマイラ": "src/assets/images/monsters_heroic/chimera.png",
+    "デーモン": "src/assets/images/monsters_heroic/cerberus.png",
+    "レヴィアタン": "src/assets/images/monsters_heroic/leviathan.png",
+    "ネクロマンサー": "src/assets/images/monsters_heroic/necromancer.png",
+    "ファントム": "src/assets/images/monsters_heroic/phantom.png",
+
+    // 追加別名サポート
+    "ケルベロス": "src/assets/images/monsters_heroic/cerberus.png",
+    "ワイバーン": "src/assets/images/monsters_heroic/dragon.png",
+    "ユニコーン": "src/assets/images/monsters_heroic/pegasus.png",
+    "タイタン": "src/assets/images/monsters_heroic/golem.png",
+    "ヒドラ": "src/assets/images/monsters_heroic/leviathan.png"
+  };
+
+  // 2. リアル迫力 (Epic Style 全20種族完全網羅 - 背景透明PNG)
+  const MonsterEpicMap = {
+    "ドラゴン": "src/assets/images/monsters_epic/dragon.png",
+    "ゴーレム": "src/assets/images/monsters_epic/golem.png",
+    "ナイト": "src/assets/images/monsters_epic/knight.png",
+    "フェニックス": "src/assets/images/monsters_epic/phoenix.png",
+    "タイガー": "src/assets/images/monsters_epic/tiger.png",
+    "スライム": "src/assets/images/monsters_epic/slime.png",
+    "ベア": "src/assets/images/monsters_epic/bear.png",
+    "ロボ": "src/assets/images/monsters_epic/robot.png",
+    "ウルフ": "src/assets/images/monsters_epic/wolf.png",
+    "ライオン": "src/assets/images/monsters_epic/lion.png",
+    "イエティ": "src/assets/images/monsters_epic/yeti.png",
+    "グリフォン": "src/assets/images/monsters_epic/griffon.png",
+    "バトロボ": "src/assets/images/monsters_epic/battlerobot.png",
+    "クラーケン": "src/assets/images/monsters_epic/kraken.png",
+    "ペガサス": "src/assets/images/monsters_epic/pegasus.png",
+    "キマイラ": "src/assets/images/monsters_epic/chimera.png",
+    "デーモン": "src/assets/images/monsters_epic/cerberus.png",
+    "レヴィアタン": "src/assets/images/monsters_epic/leviathan.png",
+    "ネクロマンサー": "src/assets/images/monsters_epic/necromancer.png",
+    "ファントム": "src/assets/images/monsters_epic/phantom.png",
+
+    // 追加別名サポート
+    "ケルベロス": "src/assets/images/monsters_epic/cerberus.png",
+    "ワイバーン": "src/assets/images/monsters_epic/dragon.png",
+    "ユニコーン": "src/assets/images/monsters_epic/pegasus.png",
+    "タイタン": "src/assets/images/monsters_epic/golem.png",
+    "ヒドラ": "src/assets/images/monsters_epic/leviathan.png"
+  };
+
+  // 3. かわいい (Cute Style 全20種 - 背景透明PNG)
+  const MonsterCuteMap = {
+    "ドラゴン": "src/assets/images/monsters_cute/dragon.png",
+    "ゴーレム": "src/assets/images/monsters_cute/golem.png",
+    "ナイト": "src/assets/images/monsters_cute/knight.png",
+    "フェニックス": "src/assets/images/monsters_cute/phoenix.png",
+    "タイガー": "src/assets/images/monsters_cute/tiger.png",
+    "スライム": "src/assets/images/monsters_cute/slime.png",
+    "ベア": "src/assets/images/monsters_cute/bear.png",
+    "ロボ": "src/assets/images/monsters_cute/robot.png",
+    "ウルフ": "src/assets/images/monsters_cute/wolf.png",
+    "ライオン": "src/assets/images/monsters_cute/lion.png",
+    "イエティ": "src/assets/images/monsters_cute/yeti.png",
+    "グリフォン": "src/assets/images/monsters_cute/griffon.png",
+    "バトロボ": "src/assets/images/monsters_cute/battlerobot.png",
+    "クラーケン": "src/assets/images/monsters_cute/kraken.png",
+    "ペガサス": "src/assets/images/monsters_cute/pegasus.png",
+    "キマイラ": "src/assets/images/monsters_cute/chimera.png",
+    "デーモン": "src/assets/images/monsters_cute/cerberus.png",
+    "レヴィアタン": "src/assets/images/monsters_cute/leviathan.png",
+    "ネクロマンサー": "src/assets/images/monsters_cute/necromancer.png",
+    "ファントム": "src/assets/images/monsters_cute/phantom.png",
+    "ケルベロス": "src/assets/images/monsters_cute/cerberus.png",
+    "ワイバーン": "src/assets/images/monsters_cute/dragon.png",
+    "ユニコーン": "src/assets/images/monsters_cute/pegasus.png",
+    "タイタン": "src/assets/images/monsters_cute/golem.png",
+    "ヒドラ": "src/assets/images/monsters_cute/leviathan.png"
+  };
+
+  const MonsterCoolMap = MonsterHeroicMap;
+
+  const MonsterImageMap = {
+    ...MonsterCuteMap
+  };
+
+  const ItemImageMap = {
+    "えりくさー": "src/assets/images/cards_items/elixir.jpg",
+    "はかいのつるぎ": "src/assets/images/cards_items/sword.jpg",
+    "いあつのたて": "src/assets/images/cards_items/shield.jpg",
+    "ひかりのたびびと": "src/assets/images/cards_items/boots.jpg",
+    "びくとりーのたま": "src/assets/images/cards_items/victory_orb.jpg",
+    "まほうのばくだん": "src/assets/images/cards_items/bomb.jpg",
+    "ふ死鳥の水": "src/assets/images/cards_items/phoenix_water.jpg",
+    "おうかんの輝き": "src/assets/images/cards_items/crown_shine.jpg"
+  };
+
+  const SpeciesFileKeyMap = {
+    "ドラゴン": "dragon", "ゴーレム": "golem", "ナイト": "knight", "フェニックス": "phoenix",
+    "タイガー": "tiger", "スライム": "slime", "ベア": "bear", "ロボ": "robot",
+    "ウルフ": "wolf", "ライオン": "lion", "イエティ": "yeti", "グリフォン": "griffon",
+    "バトロボ": "battlerobot", "クラーケン": "kraken", "ペガサス": "pegasus", "キマイラ": "chimera",
+    "デーモン": "cerberus", "ケルベロス": "cerberus", "レヴィアタン": "leviathan",
+    "ネクロマンサー": "necromancer", "ファントム": "phantom", "ワイバーン": "dragon",
+    "ユニコーン": "pegasus", "タイタン": "golem", "ヒドラ": "leviathan"
+  };
+
+  const ElementKeyMap = {
+    "火": "fire", "水": "water", "木": "wood",
+    "fire": "fire", "water": "water", "wood": "wood"
+  };
+
+  function getGraphicStyle() {
+    return localStorage.getItem('bb_graphic_style') || 'hybrid';
+  }
+
+  function getCardGraphicPath(card) {
+    if (!card) return null;
+    if (card.type === 'item') {
+      for (const [key, path] of Object.entries(ItemImageMap)) {
+        if (card.name && card.name.includes(key)) return path;
+      }
+      return null;
+    }
+
+    const style = getGraphicStyle();
+    const species = card.species || "";
+    const element = card.element || "火";
+    const isSSR = (card.rarity === 'SSR');
+
+    const fileKey = SpeciesFileKeyMap[species] || "dragon";
+    const elemKey = ElementKeyMap[element] || "fire";
+
+    const stdCardPath = `src/assets/images/cards_standard/${fileKey}_${elemKey}.jpg`;
+    const ssrCardPath = `src/assets/images/cards_ssr/${fileKey}_${elemKey}.jpg`;
+
+    // 1. ハイブリッドモード (SSRはEpic専用フルアート / SR・R・Nは王道RPGフルアート)
+    if (style === 'hybrid') {
+      if (isSSR) return ssrCardPath;
+      return stdCardPath;
+    }
+
+    // 2. リアル迫力 (Epic) モード (全レアリティSSRグラフィック)
+    if (style === 'epic') {
+      return ssrCardPath;
+    }
+
+    // 3. 王道RPG (Heroic/Standard) モード (全レアリティ通常グラフィック)
+    if (style === 'heroic' || style === 'cool' || style === 'standard') {
+      return stdCardPath;
+    }
+
+    // 4. かわいい (Cute) モード
+    if (style === 'cute') {
+      if (MonsterCuteMap[species]) return MonsterCuteMap[species];
+    }
+
+    // フォールバック
+    return isSSR ? ssrCardPath : stdCardPath;
+  }
+
   function getCharacterSpriteSvg(card) {
     if (!card) return generateCharacterSvg("ドラゴン", "火", "N");
+
+    // NanoBanana グラフィックアセットが存在する場合は画像として描画 (Zero Layout Shift)
+    const graphicPath = getCardGraphicPath(card);
+    if (graphicPath) {
+      const elemClass = card.element === '水' ? 'element-water' : card.element === '木' ? 'element-wood' : 'element-fire';
+      const rarClass = `rarity-art-${card.rarity || 'N'}`;
+      return `<img src="${graphicPath}" class="card-art-img ${elemClass} ${rarClass}" alt="${card.name || 'カード'}" loading="lazy">`;
+    }
+
     if (card.type === 'item') {
       return ITEM_ICONS[card.effectType] || ITEM_ICONS["heal"];
     }
@@ -848,6 +1029,7 @@
 
       return {
         id: c?.id || `char_${Math.random()}`,
+        type: c?.type || "character",
         name: c?.name || (isPlayer ? "爆炎ドラゴン" : "アクアタイガー"),
         element: c?.element || "火",
         rarity: c?.rarity || "R",
@@ -1536,7 +1718,7 @@
       return; // Android はここで完了
     }
 
-    // ②【iPhone / iOS Safari専用フォールバックパス】ZXing-JS によるキャンバス映像フレームデコード
+    // ②【iPhone / iOS Safari専用フォールバックパス】ZXing-JS による高精度デコード
     if (window.ZXing) {
       if (!zxingReader) {
         try {
@@ -2520,6 +2702,24 @@
   window.appCancelHost = cancelHost;
   window.appExecutePlayerAction = executePlayerAction;
   window.appOpenBattleSwitchModal = openBattleSwitchModal;
+
+  window.appGetGraphicStyle = getGraphicStyle;
+  window.appSetGraphicStyle = function(style) {
+    localStorage.setItem('bb_graphic_style', style);
+    const styleBtnHybrid = document.getElementById('style-btn-hybrid');
+    const styleBtnHeroic = document.getElementById('style-btn-heroic');
+    const styleBtnEpic = document.getElementById('style-btn-epic');
+    const styleBtnCute = document.getElementById('style-btn-cute');
+    
+    if (styleBtnHybrid) styleBtnHybrid.classList.toggle('active', style === 'hybrid');
+    if (styleBtnHeroic) styleBtnHeroic.classList.toggle('active', style === 'heroic');
+    if (styleBtnEpic) styleBtnEpic.classList.toggle('active', style === 'epic');
+    if (styleBtnCute) styleBtnCute.classList.toggle('active', style === 'cute');
+
+    renderCollection();
+    renderDeckView();
+    if (appState.currentScreen === 'lobby') renderLobby();
+  };
 
   document.addEventListener('DOMContentLoaded', () => {
     StorageManager.migrateCollectionData();

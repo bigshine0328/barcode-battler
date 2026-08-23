@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スタイル比較検証 - 選択肢C vs 選択肢A</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/css/style.css?v=4.0.0-transparent-assets">
+  <style>
+    body {
+      background: #0b0f19;
+      color: #fff;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      margin: 0;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .header-banner {
+      text-align: center;
+      padding: 16px;
+      background: linear-gradient(180deg, #1e293b, #0f172a);
+      border-radius: 16px;
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+    .comp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .comp-box {
+      background: #151d30;
+      border-radius: 18px;
+      border: 1px solid #2e3d5b;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .comp-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .comp-desc {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 14px;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    /* 選択肢C: ミュージアム・フィギュア展示風 プレミアムフレーム */
+    .museum-card {
+      width: 250px;
+      background: linear-gradient(180deg, #1a2236, #0e1322);
+      border-radius: 16px;
+      border: 2px solid #ffd700;
+      padding: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 14px rgba(255, 215, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .museum-frame {
+      width: 230px;
+      height: 230px;
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid rgba(0, 0, 0, 0.15);
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+    .museum-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .museum-plate {
+      margin-top: 8px;
+      width: 100%;
+      background: linear-gradient(180deg, #2a344d, #1a233a);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      border-radius: 8px;
+      padding: 6px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* 選択肢A: 王道TCG・世界観背景付きカードアート */
+    .tcg-card {
+      width: 250px;
+      background: linear-gradient(180deg, #1a2236, #0e1322);
+      border-radius: 16px;
+      border: 2px solid #00e5ff;
+      padding: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 14px rgba(0, 229, 255, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .tcg-frame {
+      width: 230px;
+      height: 230px;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid rgba(0, 229, 255, 0.3);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+    .tcg-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-banner">
+    <div style="margin-bottom: 6px;">
+      <a href="index.html" style="color: #00e5ff; text-decoration: none; font-weight: 800; font-size: 0.9rem;">← ゲームに戻る</a>
+    </div>
+    <h1 style="font-size: 1.35rem; font-weight: 900; color: #ffd700; margin: 0 0 6px 0;">
+      🎨 カードビジュアル比較検証
+    </h1>
+    <div style="font-size: 0.82rem; color: #94a3b8;">
+      【選択肢C：白背景ミュージアム展示枠】 vs 【選択肢A：世界観背景付きTCGアート】
+    </div>
+  </div>
+
+  <!-- ウルフ比較 -->
+  <div style="font-size: 1.1rem; font-weight: 900; color: #00e5ff; margin-bottom: 12px;">
+    🐺 Case 1: ウルフ (Wolf)
+  </div>
+  <div class="comp-grid">
+    <!-- 選択肢C: ミュージアム風白背景 -->
+    <div class="comp-box">
+      <div class="comp-title" style="color: #ffd700;">
+        🏛️ 選択肢C: ミュージアム展示風
+      </div>
+      <div class="comp-desc">
+        白背景を「立体フィギュアの展示アクリルケース」としてデザイン。<br>
+        白い毛並みや白い息の欠損が一切なく、100%綺麗な元のまま表示されます。
+      </div>
+      <div class="museum-card">
+        <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:6px; font-weight:900; font-size:0.75rem;">
+          <span style="color:#00d2d3;">💧 水属性</span>
+          <span style="color:#ffd700;">SSR</span>
+        </div>
+        <div class="museum-frame">
+          <img src="src/assets/images/monsters_epic/wolf.jpg" alt="ウルフ">
+        </div>
+        <div class="museum-plate">
+          <div style="font-weight:900; font-size:0.92rem; color:#ffd700;">ウルフ (フロストウルフ)</div>
+          <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">HP 430 / ATK 155 / DEF 105</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 選択肢A: 世界観背景付きTCGアート -->
+    <div class="comp-box">
+      <div class="comp-title" style="color: #00e5ff;">
+        🌟 選択肢A: 世界観背景付きTCGアート
+      </div>
+      <div class="comp-desc">
+        オーロラ揺らめく雪山と吹雪の世界観背景が描かれたフルイラスト。<br>
+        ポケカや遊戯王のような圧倒的な重厚感とプロクオリティの没入感です。
+      </div>
+      <div class="tcg-card">
+        <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:6px; font-weight:900; font-size:0.75rem;">
+          <span style="color:#00d2d3;">💧 水属性</span>
+          <span style="color:#ffd700;">SSR</span>
+        </div>
+        <div class="tcg-frame">
+          <img src="src/assets/images/samples/wolf_tcg_bg.jpg" alt="ウルフTCG">
+        </div>
+        <div class="museum-plate" style="border-color: rgba(0, 229, 255, 0.4);">
+          <div style="font-weight:900; font-size:0.92rem; color:#00e5ff;">エピック・アイスウルフ</div>
+          <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">HP 430 / ATK 155 / DEF 105</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- スライム比較 -->
+  <div style="font-size: 1.1rem; font-weight: 900; color: #ff6b81; margin-bottom: 12px;">
+    💧 Case 2: スライム (Slime)
+  </div>
+  <div class="comp-grid">
+    <!-- 選択肢C: ミュージアム風白背景 -->
+    <div class="comp-box">
+      <div class="comp-title" style="color: #ffd700;">
+        🏛️ 選択肢C: ミュージアム展示風
+      </div>
+      <div class="comp-desc">
+        透明なゲル状ボディと足元の反射が、展示ステージとして自然に映えます。<br>
+        透過処理のギザギザや床の抜け落ちがゼロになります。
+      </div>
+      <div class="museum-card">
+        <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:6px; font-weight:900; font-size:0.75rem;">
+          <span style="color:#00d2d3;">💧 水属性</span>
+          <span style="color:#ffd700;">SSR</span>
+        </div>
+        <div class="museum-frame">
+          <img src="src/assets/images/monsters_epic/slime.jpg" alt="スライム">
+        </div>
+        <div class="museum-plate">
+          <div style="font-weight:900; font-size:0.92rem; color:#ffd700;">クリスタルスライム</div>
+          <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">HP 420 / ATK 110 / DEF 100</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 選択肢A: 世界観背景付きTCGアート -->
+    <div class="comp-box">
+      <div class="comp-title" style="color: #00e5ff;">
+        🌟 選択肢A: 世界観背景付きTCGアート
+      </div>
+      <div class="comp-desc">
+        マグマと巨大な結晶が群生する神秘的な水晶洞窟の背景。<br>
+        キャラクターが世界の中に完全に溶け込み、最高の迫力になります。
+      </div>
+      <div class="tcg-card">
+        <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:6px; font-weight:900; font-size:0.75rem;">
+          <span style="color:#00d2d3;">💧 水属性</span>
+          <span style="color:#ffd700;">SSR</span>
+        </div>
+        <div class="tcg-frame">
+          <img src="src/assets/images/samples/slime_tcg_bg.jpg" alt="スライムTCG">
+        </div>
+        <div class="museum-plate" style="border-color: rgba(0, 229, 255, 0.4);">
+          <div style="font-weight:900; font-size:0.92rem; color:#00e5ff;">マグマクリスタル・スライム</div>
+          <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">HP 420 / ATK 110 / DEF 100</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ドラゴン比較 (王道RPGスタイル) -->
+  <div style="font-size: 1.1rem; font-weight: 900; color: #ffa502; margin-bottom: 12px;">
+    🐲 Case 3: ドラゴン (王道RPGスタイル)
+  </div>
+  <div class="comp-grid">
+    <!-- 選択肢C: ミュージアム風白背景 -->
+    <div class="comp-box">
+      <div class="comp-title" style="color: #ffd700;">
+        🏛️ 選択肢C: ミュージアム展示風
+      </div>
+      <div class="comp-desc">
+        DQ風・ポケモン風の親しみやすいドラゴンの姿がすっきりと際立ちます。
+      </div>
+      <div class="museum-card">
+        <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:6px; font-weight:900; font-size:0.75rem;">
+          <span style="color:#ff4757;">🔥 火属性</span>
+          <span style="color:#ffd700;">SSR</span>
+        </div>
+        <div class="museum-frame">
+          <img src="src/assets/images/monsters_heroic/dragon.jpg" alt="ドラゴン">
+        </div>
+        <div class="museum-plate">
+          <div style="font-weight:900; font-size:0.92rem; color:#ffd700;">フレイムドラゴン</div>
+          <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">HP 480 / ATK 160 / DEF 120</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 選択肢A: 世界観背景付きTCGアート -->
+    <div class="comp-box">
+      <div class="comp-title" style="color: #00e5ff;">
+        🌟 選択肢A: 世界観背景付きTCGアート
+      </div>
+      <div class="comp-desc">
+        夕焼けと噴煙が立ち上る火山岩の上に堂々と立つ王道RPGドラゴン。<br>
+        カード1枚の物語性が大幅に向上します。
+      </div>
+      <div class="tcg-card">
+        <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:6px; font-weight:900; font-size:0.75rem;">
+          <span style="color:#ff4757;">🔥 火属性</span>
+          <span style="color:#ffd700;">SSR</span>
+        </div>
+        <div class="tcg-frame">
+          <img src="src/assets/images/samples/dragon_heroic_bg.jpg" alt="ドラゴンTCG">
+        </div>
+        <div class="museum-plate" style="border-color: rgba(0, 229, 255, 0.4);">
+          <div style="font-weight:900; font-size:0.92rem; color:#00e5ff;">ボルケーノ・ドラゴン</div>
+          <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">HP 480 / ATK 160 / DEF 120</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

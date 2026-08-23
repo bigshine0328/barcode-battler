@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>バーコードバトラー - 全キャラクター・全属性カタログ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/css/style.css?v=4.0.0-hybrid-ssr-epic">
+  <style>
+    body {
+      background: #0d111d;
+      color: #fff;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      margin: 0;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    .catalog-header {
+      text-align: center;
+      padding: 16px 8px;
+      background: linear-gradient(180deg, rgba(26, 32, 53, 0.9), rgba(15, 23, 42, 0.95));
+      border-radius: 16px;
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .catalog-title {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+      margin: 0 0 6px 0;
+    }
+    .controls-panel {
+      position: sticky;
+      top: 8px;
+      z-index: 100;
+      background: rgba(13, 17, 29, 0.95);
+      backdrop-filter: blur(8px);
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    }
+    .btn-filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    .btn-filter {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.80rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-filter.active {
+      background: #ffd700;
+      color: #0d111d;
+      border-color: #ffd700;
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+    }
+    .btn-filter-fire.active {
+      background: #ff4757;
+      color: #fff;
+      border-color: #ff4757;
+      box-shadow: 0 0 12px rgba(255, 71, 87, 0.5);
+    }
+    .btn-filter-water.active {
+      background: #00d2d3;
+      color: #0d111d;
+      border-color: #00d2d3;
+      box-shadow: 0 0 12px rgba(0, 210, 211, 0.5);
+    }
+    .btn-filter-wood.active {
+      background: #2ed573;
+      color: #0d111d;
+      border-color: #2ed573;
+      box-shadow: 0 0 12px rgba(46, 213, 115, 0.5);
+    }
+    .species-section {
+      background: #151c2e;
+      border-radius: 16px;
+      border: 1px solid #2e3b55;
+      padding: 14px;
+      margin-bottom: 24px;
+    }
+    .species-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #2e3b55;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .species-name {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #00e5ff;
+    }
+    .attr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .catalog-card {
+      background: #1e293b;
+      border-radius: 14px;
+      padding: 10px;
+      border: 2px solid #334155;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .catalog-card.attr-fire { border-color: #ff4757; background: linear-gradient(180deg, #2a1b24, #181d2f); }
+    .catalog-card.attr-water { border-color: #00d2d3; background: linear-gradient(180deg, #162a36, #181d2f); }
+    .catalog-card.attr-wood { border-color: #2ed573; background: linear-gradient(180deg, #1b2e23, #181d2f); }
+
+    .card-img-wrap {
+      width: 170px;
+      height: 170px;
+      background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.08) 0%, rgba(10, 15, 29, 0.95) 100%);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 3px solid #ffd700;
+      margin-bottom: 10px;
+      position: relative;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+    }
+    .card-img-wrap.wrap-fire {
+      background: radial-gradient(circle at 50% 40%, rgba(255, 71, 87, 0.28) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border-color: #ff4757;
+      box-shadow: 0 0 16px rgba(255, 71, 87, 0.5);
+    }
+    .card-img-wrap.wrap-water {
+      background: radial-gradient(circle at 50% 40%, rgba(0, 210, 211, 0.28) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border-color: #00d2d3;
+      box-shadow: 0 0 16px rgba(0, 210, 211, 0.5);
+    }
+    .card-img-wrap.wrap-wood {
+      background: radial-gradient(circle at 50% 40%, rgba(46, 213, 115, 0.28) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border-color: #2ed573;
+      box-shadow: 0 0 16px rgba(46, 213, 115, 0.5);
+    }
+
+    .card-art-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: transparent;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7));
+      transition: all 0.3s ease;
+    }
+    .card-art-img.element-fire {
+      filter: drop-shadow(0 0 12px rgba(255, 68, 68, 0.9)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
+    }
+    .card-art-img.element-water {
+      filter: drop-shadow(0 0 12px rgba(0, 210, 255, 0.9)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
+    }
+    .card-art-img.element-wood {
+      filter: drop-shadow(0 0 12px rgba(46, 213, 115, 0.9)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
+    }
+    .card-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+    .badge-fire { background: #ff4757; color: #fff; }
+    .badge-water { background: #00d2d3; color: #0d111d; }
+    .badge-wood { background: #2ed573; color: #0d111d; }
+    
+    .stats-table {
+      width: 100%;
+      font-size: 0.76rem;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    .stats-table td {
+      padding: 3px 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .stats-label {
+      color: #94a3b8;
+      font-weight: 800;
+    }
+    .stats-val {
+      color: #fff;
+      font-weight: 900;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="catalog-header">
+    <div style="margin-bottom: 8px;">
+      <a href="index.html" style="color: #00e5ff; text-decoration: none; font-weight: 800; font-size: 0.9rem;">← ゲームに戻る</a>
+    </div>
+    <h1 class="catalog-title">📖 全20種族・全属性グラフィックカタログ</h1>
+    <div style="font-size: 0.8rem; color: #94a3b8;">
+      全20種族 × 3属性 (火・水・木) ＝ 全60パターン ＋ 強化アイテム全8種
+    </div>
+  </div>
+
+  <div class="controls-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 0.8rem; font-weight: 900; color: #ffd700;">🎨 表示スタイル切替:</span>
+      <span style="font-size: 0.74rem; color: #94a3b8;" id="current-style-label">🌟 ハイブリッド (SSR迫力＋他王道)</span>
+    </div>
+    <div class="btn-filter-group">
+      <button class="btn-filter active" onclick="setStyle('hybrid', this)">🌟 ハイブリッド</button>
+      <button class="btn-filter" onclick="setStyle('heroic', this)">👑 王道RPG(DQ風)</button>
+      <button class="btn-filter" onclick="setStyle('epic', this)">🔥 リアル迫力</button>
+      <button class="btn-filter" onclick="setStyle('cute', this)">✨ かわいい</button>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+      <span style="font-size: 0.8rem; font-weight: 900; color: #00e5ff;">🔍 属性フィルター:</span>
+    </div>
+    <div class="btn-filter-group">
+      <button class="btn-filter active" onclick="filterAttr('all', this)">すべて (60種)</button>
+      <button class="btn-filter btn-filter-fire" onclick="filterAttr('fire', this)">🔥 火属性 (20種)</button>
+      <button class="btn-filter btn-filter-water" onclick="filterAttr('water', this)">💧 水属性 (20種)</button>
+      <button class="btn-filter btn-filter-wood" onclick="filterAttr('wood', this)">🌿 木属性 (20種)</button>
+      <button class="btn-filter" onclick="filterAttr('item', this)">💊 アイテム (8種)</button>
+    </div>
+  </div>
+
+  <!-- キャラクター一覧コンテナ -->
+  <div id="character-catalog-container"></div>
+
+  <!-- アイテム一覧コンテナ -->
+  <div id="item-catalog-container" style="display: none;">
+    <div class="species-section">
+      <div class="species-header">
+        <span class="species-name" style="color: #ffd700;">💊 強化アイテム (全8種)</span>
+      </div>
+      <div class="attr-grid" id="item-grid-container"></div>
+    </div>
+  </div>
+
+  <script>
+    const SPECIES_LIST = [
+      { key: "dragon", name: "ドラゴン", baseHp: 480, baseAtk: 160, baseDef: 120, baseSpd: 110, desc: "強靭な竜鱗と圧倒的な火力を誇る最強の竜王。" },
+      { key: "knight", name: "ナイト", baseHp: 520, baseAtk: 130, baseDef: 150, baseSpd: 95, desc: "聖剣と光の盾で仲間を守る神聖なる聖騎士。" },
+      { key: "golem", name: "ゴーレム", baseHp: 650, baseAtk: 140, baseDef: 180, baseSpd: 60, desc: "圧倒的な防御力と巨岩の拳を持つ古代タイタン。" },
+      { key: "slime", name: "スライム", baseHp: 420, baseAtk: 110, baseDef: 100, baseSpd: 140, desc: "高い回避力と素早さを誇るぷるぷる水晶生命体。" },
+      { key: "tiger", name: "タイガー", baseHp: 440, baseAtk: 170, baseDef: 95, baseSpd: 150, desc: "獲物を瞬時に仕留める俊敏なサーベルタイガー。" },
+      { key: "phoenix", name: "フェニックス", baseHp: 500, baseAtk: 150, baseDef: 110, baseSpd: 130, desc: "聖なる猛炎をまとい蘇る神聖なる不死鳥。" },
+      { key: "robot", name: "ロボ", baseHp: 550, baseAtk: 145, baseDef: 160, baseSpd: 85, desc: "黄金の装甲とレーザーブレードを構える重装メカ。" },
+      { key: "wolf", name: "ウルフ", baseHp: 430, baseAtk: 155, baseDef: 105, baseSpd: 145, desc: "氷晶のたてがみと透き通る蒼き瞳の誇り高き魔狼。" },
+      { key: "lion", name: "ライオン", baseHp: 490, baseAtk: 165, baseDef: 115, baseSpd: 120, desc: "百獣の黄金鎧を纏い業火を操る若き獅子王。" },
+      { key: "bear", name: "ベア", baseHp: 600, baseAtk: 150, baseDef: 140, baseSpd: 80, desc: "新緑のアーマーと古代の腕輪をつける森の豪傑クマ。" },
+      { key: "yeti", name: "イエティ", baseHp: 580, baseAtk: 135, baseDef: 145, baseSpd: 90, desc: "もふもふの体と巨大な氷腕で力こぶを作る雪男。" },
+      { key: "griffon", name: "グリフォン", baseHp: 470, baseAtk: 155, baseDef: 115, baseSpd: 135, desc: "鷲の頭と獅子の肉体を持つ気品ある天空の覇者。" },
+      { key: "battlerobot", name: "バトロボ", baseHp: 530, baseAtk: 160, baseDef: 150, baseSpd: 100, desc: "近未来ハイテク装甲とツインキャノンを構えるサイバーメカ。" },
+      { key: "kraken", name: "クラーケン", baseHp: 560, baseAtk: 140, baseDef: 135, baseSpd: 105, desc: "黄金の三叉槍と貝殻盾を持つ深海のタコ王。" },
+      { key: "pegasus", name: "ペガサス", baseHp: 460, baseAtk: 130, baseDef: 110, baseSpd: 160, desc: "黄金に輝く翼と蹄で天空を駆ける神聖な天馬。" },
+      { key: "chimera", name: "キマイラ", baseHp: 510, baseAtk: 155, baseDef: 125, baseSpd: 115, desc: "獅子・山羊・竜翼・蛇尾が三位一体となった伝説の怪獣。" },
+      { key: "cerberus", name: "デーモン(ケルベロス)", keyImg: "cerberus", baseHp: 490, baseAtk: 165, baseDef: 110, baseSpd: 125, desc: "炎の首輪をつけた三つ首の元気なファイアハウンド。" },
+      { key: "leviathan", name: "レヴィアタン", baseHp: 540, baseAtk: 145, baseDef: 140, baseSpd: 115, desc: "碧羅の鱗とヒレ翼を広げ優雅に泳ぐ深海の水竜。" },
+      { key: "necromancer", name: "ネクロマンサー", baseHp: 410, baseAtk: 175, baseDef: 90, baseSpd: 130, desc: "魔法の帽子と水晶杖を持ち小霊を操る少年魔法使い。" },
+      { key: "phantom", name: "ファントム", baseHp: 430, baseAtk: 160, baseDef: 95, baseSpd: 155, desc: "星くずオーラを放ち魔女帽子をかぶる愛らしいゴースト。" }
+    ];
+
+    const ATTR_LIST = [
+      { id: "fire", name: "火属性", color: "#ff4757", icon: "🔥", badgeClass: "badge-fire", cardClass: "attr-fire", bonusDesc: "木属性に1.5倍ダメージ" },
+      { id: "water", name: "水属性", color: "#00d2d3", icon: "💧", badgeClass: "badge-water", cardClass: "attr-water", bonusDesc: "火属性に1.5倍ダメージ" },
+      { id: "wood", name: "木属性", color: "#2ed573", icon: "🌿", badgeClass: "badge-wood", cardClass: "attr-wood", bonusDesc: "水属性に1.5倍ダメージ" }
+    ];
+
+    const ITEMS_LIST = [
+      { name: "えりくさー", img: "src/assets/images/cards_items/elixir.jpg", desc: "HPを200回復する聖なる霊薬。" },
+      { name: "はかいのつるぎ", img: "src/assets/images/cards_items/sword.jpg", desc: "ATKを+40上昇させる燃え盛る大剣。" },
+      { name: "いあつのたて", img: "src/assets/images/cards_items/shield.jpg", desc: "DEFを+40上昇させる黄金の守護盾。" },
+      { name: "ひかりのたびびと", img: "src/assets/images/cards_items/boots.jpg", desc: "SPDを+30上昇させ先制率を高めるブーツ。" },
+      { name: "びくとりーのたま", img: "src/assets/images/cards_items/victory_orb.jpg", desc: "会心率(クリティカル)を+25%上昇させる宝珠。" },
+      { name: "まほうのばくだん", img: "src/assets/images/cards_items/bomb.jpg", desc: "敵全体に120固定ダメージを与える魔法爆弾。" },
+      { name: "ふ死鳥の水", img: "src/assets/images/cards_items/phoenix_water.jpg", desc: "SPを全回復し強力な必殺技を即発動可能にする。" },
+      { name: "おうかんの輝き", img: "src/assets/images/cards_items/crown_shine.jpg", desc: "全ステータス(HP/ATK/DEF/SPD)を+15%強化する。" }
+    ];
+
+    let currentStyle = 'hybrid';
+    let currentAttr = 'all';
+
+    function getImgPath(speciesKey, style, isSSR, attrId) {
+      const fileKey = speciesKey;
+      const elem = attrId || 'fire';
+
+      const stdCardPath = `src/assets/images/cards_standard/${fileKey}_${elem}.jpg`;
+      const ssrCardPath = `src/assets/images/cards_ssr/${fileKey}_${elem}.jpg`;
+
+      // 1. ハイブリッドモード (SSRはEpic専用フルアート / SR・R・Nは王道RPGフルアート)
+      if (style === 'hybrid') {
+        if (isSSR) return ssrCardPath;
+        return stdCardPath;
+      }
+      // 2. リアル迫力 (Epic) モード (全レアリティSSRグラフィック)
+      if (style === 'epic') return ssrCardPath;
+
+      // 3. 王道RPG (Heroic/Standard) モード (全レアリティ通常グラフィック)
+      if (style === 'heroic' || style === 'standard') return stdCardPath;
+
+      // 4. かわいい (Cute) モード
+      if (style === 'cute') return `src/assets/images/monsters_cute/${fileKey}.png`;
+
+      return isSSR ? ssrCardPath : stdCardPath;
+    }
+
+    function renderCatalog() {
+      const container = document.getElementById('character-catalog-container');
+      const itemContainer = document.getElementById('item-catalog-container');
+      
+      if (currentAttr === 'item') {
+        container.style.display = 'none';
+        itemContainer.style.display = 'block';
+        renderItems();
+        return;
+      }
+
+      container.style.display = 'block';
+      itemContainer.style.display = 'none';
+      container.innerHTML = '';
+
+      SPECIES_LIST.forEach((sp, spIdx) => {
+        const fileKey = sp.keyImg || sp.key;
+        const filteredAttrs = (currentAttr === 'all') 
+          ? ATTR_LIST 
+          : ATTR_LIST.filter(a => a.id === currentAttr);
+
+        if (filteredAttrs.length === 0) return;
+
+        const section = document.createElement('div');
+        section.className = 'species-section';
+
+        section.innerHTML = `
+          <div class="species-header">
+            <div>
+              <span class="species-name">#${spIdx + 1} ${sp.name}</span>
+              <span style="font-size:0.8rem; color:#94a3b8; margin-left:8px;">(${sp.desc})</span>
+            </div>
+            <div style="font-size:0.75rem; color:#ffd700; font-weight:800;">
+              基礎HP: ${sp.baseHp} | ATK: ${sp.baseAtk} | DEF: ${sp.baseDef} | SPD: ${sp.baseSpd}
+            </div>
+          </div>
+          <div class="attr-grid" id="grid-${sp.key}"></div>
+        `;
+
+        container.appendChild(section);
+
+        const grid = section.querySelector(`#grid-${sp.key}`);
+        filteredAttrs.forEach((attr, attrIdx) => {
+          // SSRデモ用（火属性をSSR、水属性をSR、木属性をRとしてシミュレート）
+          const rarity = (attr.id === 'fire') ? 'SSR' : (attr.id === 'water' ? 'SR' : 'R');
+          const isSSR = (rarity === 'SSR');
+          const imgPath = getImgPath(fileKey, currentStyle, isSSR, attr.id);
+
+          // 属性によるステータス補正
+          let hp = sp.baseHp;
+          let atk = sp.baseAtk;
+          let def = sp.baseDef;
+          let spd = sp.baseSpd;
+          if (attr.id === 'fire') atk = Math.round(atk * 1.15);
+          if (attr.id === 'water') def = Math.round(def * 1.15);
+          if (attr.id === 'wood') { hp = Math.round(hp * 1.10); spd = Math.round(spd * 1.10); }
+
+          const card = document.createElement('div');
+          card.className = `catalog-card ${attr.cardClass}`;
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:4px; align-items:center;">
+              <span class="card-badge ${attr.badgeClass}">${attr.icon} ${attr.name}</span>
+              <span style="font-weight:900; font-size:0.78rem; color:${isSSR ? '#ffd700' : '#00e5ff'};">${rarity}</span>
+            </div>
+            <div class="card-img-wrap wrap-${attr.id}" style="border-color: ${isSSR ? '#ffd700' : (rarity === 'SR' ? '#a855f7' : (attr.id === 'fire' ? '#ff4757' : attr.id === 'water' ? '#00d2d3' : '#2ed573'))};">
+              <img src="${imgPath}" class="card-art-img element-${attr.id}" alt="${sp.name}" loading="lazy">
+            </div>
+            <div style="font-weight:900; font-size:0.95rem; margin-bottom:4px; color:#fff;">
+              ${sp.name} [${attr.name.charAt(0)}]
+            </div>
+            <div style="font-size:0.72rem; color:#ffd700; margin-bottom:4px;">
+              ${attr.bonusDesc}
+            </div>
+            <table class="stats-table">
+              <tr><td class="stats-label">❤️ HP</td><td class="stats-val" style="color:#ff6b81;">${hp}</td></tr>
+              <tr><td class="stats-label">⚔️ ATK (攻撃)</td><td class="stats-val" style="color:#ffa502;">${atk}</td></tr>
+              <tr><td class="stats-label">🛡️ DEF (防御)</td><td class="stats-val" style="color:#70a1ff;">${def}</td></tr>
+              <tr><td class="stats-label">⚡ SPD (速さ)</td><td class="stats-val" style="color:#7bed9f;">${spd}</td></tr>
+            </table>
+          `;
+          grid.appendChild(card);
+        });
+      });
+    }
+
+    function renderItems() {
+      const grid = document.getElementById('item-grid-container');
+      grid.innerHTML = '';
+      ITEMS_LIST.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'catalog-card';
+        card.style.borderColor = '#ffd700';
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:4px; align-items:center;">
+            <span class="card-badge" style="background:#ffd700; color:#0d111d;">💊 ITEM #${idx + 1}</span>
+            <span style="font-weight:900; font-size:0.78rem; color:#ffd700;">強化アイテム</span>
+          </div>
+          <div class="card-img-wrap" style="border-color:#ffd700;">
+            <img src="${item.img}" alt="${item.name}">
+          </div>
+          <div style="font-weight:900; font-size:0.95rem; margin-bottom:4px; color:#ffd700;">
+            ${item.name}
+          </div>
+          <div style="font-size:0.76rem; color:#e2e8f0; text-align:center; padding:4px;">
+            ${item.desc}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function setStyle(style, btn) {
+      currentStyle = style;
+      document.querySelectorAll('.controls-panel .btn-filter-group:first-of-type .btn-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const labelMap = {
+        'hybrid': '🌟 ハイブリッド (SSR迫力＋他王道)',
+        'heroic': '👑 王道RPG (全レアDQ・ポケモン風)',
+        'epic': '🔥 リアル迫力 (全レアEpic)',
+        'cute': '✨ かわいい (全レアCute)'
+      };
+      document.getElementById('current-style-label').innerText = labelMap[style] || style;
+      renderCatalog();
+    }
+
+    function filterAttr(attr, btn) {
+      currentAttr = attr;
+      document.querySelectorAll('.controls-panel .btn-filter-group:last-of-type .btn-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCatalog();
+    }
+
+    // 初回レンダリング
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCatalog();
+    });
+  </script>
+</body>
+</html>
