@@ -106,8 +106,11 @@
     <!-- SCR-04: 図鑑 & デッキ画面 -->
     <section id="SCR-04" class="screen">
       <header>
-        <button class="btn-back-home" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-01');" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
-        <h1 class="logo" style="font-size:1.1rem;">📖 ずかん・デッキ</h1>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn-back-home" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-01');" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
+          <h1 class="logo" style="font-size:1.1rem;">📖 ずかん・デッキ</h1>
+        </div>
+        <div id="collection-count-badge" class="counter-badge">しょじ 0/100</div>
       </header>
 
       <!-- メインタブ切替 -->

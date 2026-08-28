@@ -1530,6 +1530,10 @@
     if (countBadge) {
       countBadge.textContent = `しょじ ${collection.length}/100`;
     }
+    const colCountBadge = document.getElementById('collection-count-badge');
+    if (colCountBadge) {
+      colCountBadge.textContent = `しょじ ${collection.length}/100`;
+    }
 
     const showcase = document.getElementById('home-showcase');
     if (!showcase) return;
@@ -1567,6 +1571,15 @@
 
   function renderCollection() {
     const collection = StorageManager.getCollection();
+    const colCountBadge = document.getElementById('collection-count-badge');
+    if (colCountBadge) {
+      colCountBadge.textContent = `しょじ ${collection.length}/100`;
+    }
+    const homeCountBadge = document.getElementById('home-count-badge');
+    if (homeCountBadge) {
+      homeCountBadge.textContent = `しょじ ${collection.length}/100`;
+    }
+
     const deck = StorageManager.getDeck();
     const grid = document.getElementById('collection-grid-container');
     if (!grid) return;

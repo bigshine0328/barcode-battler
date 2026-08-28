@@ -318,6 +318,9 @@ export class UIController {
     if (!grid) return;
 
     const collection = StorageManager.getCollection();
+    const colCountBadge = document.getElementById('collection-count-badge');
+    if (colCountBadge) colCountBadge.textContent = `しょじ ${collection.length}/100`;
+
     grid.innerHTML = "";
 
     if (collection.length === 0) {
