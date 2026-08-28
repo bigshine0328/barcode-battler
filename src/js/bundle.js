@@ -1965,10 +1965,19 @@
       if (zxingReader && scanCanvas && scanVideo.videoWidth > 0 && scanVideo.videoHeight > 0) {
         isDecoding = true;
         try {
+          // 高速かつ正確なバーコード認識のため、キャンバス解像度を最適幅（640px）にリサイズ
+          const maxDim = 640;
+          let w = scanVideo.videoWidth;
+          let h = scanVideo.videoHeight;
+          if (w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          }
+          scanCanvas.width = w;
+          scanCanvas.height = h;
+
           const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
-          scanCanvas.width = scanVideo.videoWidth;
-          scanCanvas.height = scanVideo.videoHeight;
-          ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+          ctx.drawImage(scanVideo, 0, 0, w, h);
 
           if (typeof zxingReader.decodeFromCanvas === 'function') {
             zxingReader.decodeFromCanvas(scanCanvas).then(res => {
@@ -1979,13 +1988,13 @@
               } else {
                 setTimeout(() => {
                   scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-                }, 120);
+                }, 100);
               }
             }).catch(() => {
               isDecoding = false;
               setTimeout(() => {
                 scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-              }, 120);
+              }, 100);
             });
             return;
           }

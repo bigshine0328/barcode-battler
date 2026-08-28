@@ -184,20 +184,36 @@ export class UIController {
         // ② iOS Safari フォールバック
         try {
           if (!this.zxingReader) {
-            this.zxingReader = new window.ZXing.BrowserMultiFormatReader();
+            const hints = new Map();
+            hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+              window.ZXing.BarcodeFormat.EAN_13,
+              window.ZXing.BarcodeFormat.EAN_8,
+              window.ZXing.BarcodeFormat.QR_CODE,
+              window.ZXing.BarcodeFormat.CODE_128,
+              window.ZXing.BarcodeFormat.UPC_A
+            ]);
+            hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
+            this.zxingReader = new window.ZXing.BrowserMultiFormatReader(hints);
           }
+          const maxDim = 640;
+          let w = video.videoWidth;
+          let h = video.videoHeight;
+          if (w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          }
+          canvas.width = w;
+          canvas.height = h;
           const ctx = canvas.getContext('2d', { willReadFrequently: true });
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const result = await this.zxingReader.decodeFromImageElement(canvas);
+          ctx.drawImage(video, 0, 0, w, h);
+          const result = await this.zxingReader.decodeFromCanvas(canvas);
           if (result && result.text) {
             this.stopCamera();
             this.processScanResult(result.text);
           }
         } catch (e) {}
       }
-    }, 300);
+    }, 200);
   }
 
   bindScanEvents() {
