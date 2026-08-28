@@ -485,6 +485,73 @@ export function runAllTests() {
   mockScanLoop(false, true);
   assert(executedEngine === 'zxing_fallback', "ハイブリッドスキャナー: BarcodeDetector非対応時はiOSフォールバック(ZXing)が確実に実行されること");
 
+  // 23. データバックアップ＆リストア機能テスト (v4.4.0)
+  localStorage.clear();
+  const backupCard1 = {
+    id: "char_test_1",
+    barcode: "4901234567891",
+    type: "character",
+    name: "テストドラゴン",
+    species: "ドラゴン",
+    element: "火",
+    rarity: "SR",
+    level: 5,
+    exp: 250,
+    hp: 1500,
+    maxHp: 1500,
+    atk: 200,
+    def: 100,
+    spd: 60,
+    memo: "バックアップ用メモ",
+    createdAt: Date.now()
+  };
+  const backupCard2 = {
+    id: "item_test_2",
+    barcode: "4909876543212",
+    type: "item",
+    name: "えりくさー",
+    effectType: "heal",
+    value: 300,
+    desc: "HPを 300 かいふく！",
+    rarity: "R",
+    createdAt: Date.now()
+  };
+  StorageManager.saveToCollection(backupCard1);
+  StorageManager.saveToCollection(backupCard2);
+  StorageManager.setDeckSlot('mainChar', backupCard1);
+  StorageManager.setDeckSlot('itemCard1', backupCard2);
+
+  // 23-1. バックアップエクスポート
+  const exported = StorageManager.exportBackupData();
+  assert(exported.version === "4.4.0" && exported.appName === "barcode_battler", "バックアップ出力: 正しいバージョンとアプリ名が出力されること");
+  assert(Array.isArray(exported.collection) && exported.collection.length === 2, "バックアップ出力: 所持カード配列(2件)が正しく出力されること");
+  assert(exported.deck.mainChar.id === backupCard1.id, "バックアップ出力: デッキのメインキャラ情報が含まれること");
+  assert(exported.deck.itemCard1.id === backupCard2.id, "バックアップ出力: デッキのアイテム情報が含まれること");
+
+  // 23-2. バリデーション
+  assert(StorageManager.validateBackupData(exported).valid === true, "バリデーション: 正常なバックアップデータがvalid判定されること");
+  assert(StorageManager.validateBackupData(null).valid === false, "バリデーション: nullデータが拒絶されること");
+  assert(StorageManager.validateBackupData({ collection: "invalid" }).valid === false, "バリデーション: collectionが非配列の場合に拒絶されること");
+  assert(StorageManager.validateBackupData({ collection: Array(101).fill({ id: "x", name: "n", type: "character" }) }).valid === false, "バリデーション: 100件超過データが拒絶されること");
+
+  // 23-3. リストア上書き復元
+  localStorage.clear();
+  assert(StorageManager.getCollection().length === 0, "リストア準備: 初期化状態で所持数0件であること");
+  const restoreRes = StorageManager.importBackupData(exported);
+  assert(restoreRes.success === true && restoreRes.count === 2, "リストア実行: 正常終了し2件復元されること");
+  assert(StorageManager.getCollection().length === 2, "リストア確認: LocalStorageに2件のカードが復元されていること");
+  const restoredDeck = StorageManager.getDeck();
+  assert(restoredDeck.mainChar && restoredDeck.mainChar.id === backupCard1.id, "リストア確認: デッキのメインキャラが完全復元されること");
+  assert(restoredDeck.itemCard1 && restoredDeck.itemCard1.id === backupCard2.id, "リストア確認: デッキのアイテムが完全復元されること");
+
+  // 23-4. テキストコード相互変換復元
+  const codeText = StorageManager.exportBackupCodeText();
+  assert(typeof codeText === 'string' && codeText.length > 0, "コード生成: 有効なバックアップコード文字列が生成されること");
+  localStorage.clear();
+  const codeRestoreRes = StorageManager.importBackupFromCodeText(codeText);
+  assert(codeRestoreRes.success === true && codeRestoreRes.count === 2, "コード復元: テキストコードからのデコード＆復元が成功すること");
+  assert(StorageManager.getCollection().length === 2, "コード復元確認: 復元後に2件のカードが存在すること");
+
   return results;
 }
 

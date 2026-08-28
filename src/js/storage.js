@@ -190,4 +190,173 @@ export class StorageManager {
       return false;
     }
   }
+
+  // --- バックアップ・リストア機能 (v4.4.0) ---
+  static exportBackupData() {
+    const collection = this.getCollection();
+    const deck = this.getDeck();
+    let graphicStyle = 'hybrid';
+    try {
+      graphicStyle = localStorage.getItem('bb_graphic_style') || 'hybrid';
+    } catch (e) {}
+
+    return {
+      version: "4.4.0",
+      appName: "barcode_battler",
+      exportedAt: new Date().toISOString(),
+      collection: collection,
+      deck: deck,
+      settings: {
+        graphicStyle: graphicStyle
+      }
+    };
+  }
+
+  static exportBackupJsonFile() {
+    const backupData = this.exportBackupData();
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const filename = `barcode_battler_backup_${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.json`;
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  static exportBackupCodeText() {
+    const backupData = this.exportBackupData();
+    const jsonStr = JSON.stringify(backupData);
+    try {
+      if (typeof TextEncoder !== 'undefined' && typeof btoa !== 'undefined') {
+        const utf8Bytes = new TextEncoder().encode(jsonStr);
+        let binaryStr = "";
+        for (let i = 0; i < utf8Bytes.length; i++) {
+          binaryStr += String.fromCharCode(utf8Bytes[i]);
+        }
+        return btoa(binaryStr);
+      }
+      return jsonStr;
+    } catch (e) {
+      return jsonStr;
+    }
+  }
+
+  static validateBackupData(data) {
+    if (!data || typeof data !== 'object') {
+      return { valid: false, error: "データが不正なオブジェクトです。" };
+    }
+    if (!Array.isArray(data.collection)) {
+      return { valid: false, error: "所持カードデータ（collection）が見つかりません。" };
+    }
+    if (data.collection.length > 100) {
+      return { valid: false, error: "カード所持上限（100枚）を超過しています。" };
+    }
+
+    for (let i = 0; i < data.collection.length; i++) {
+      const card = data.collection[i];
+      if (!card || typeof card !== 'object' || !card.id || !card.name || !card.type) {
+        return { valid: false, error: `カードデータ(${i + 1}枚目)の形式が不正です。` };
+      }
+    }
+
+    return { valid: true };
+  }
+
+  static importBackupData(backupPayload) {
+    const val = this.validateBackupData(backupPayload);
+    if (!val.valid) {
+      return { success: false, message: val.error || "データ検証エラー", count: 0 };
+    }
+
+    try {
+      const collection = backupPayload.collection.slice(0, 100);
+      localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(collection));
+
+      this.migrateCollectionData();
+
+      if (backupPayload.deck && typeof backupPayload.deck === 'object') {
+        localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(backupPayload.deck));
+      }
+
+      if (backupPayload.settings && backupPayload.settings.graphicStyle) {
+        localStorage.setItem('bb_graphic_style', backupPayload.settings.graphicStyle);
+      }
+
+      return {
+        success: true,
+        message: `バックアップデータを復元しました！（所持数: ${collection.length}枚）`,
+        count: collection.length
+      };
+    } catch (e) {
+      return { success: false, message: `復元中にエラーが発生しました: ${e.message}`, count: 0 };
+    }
+  }
+
+  static importBackupFromCodeText(codeText) {
+    if (!codeText || typeof codeText !== 'string') {
+      return { success: false, message: "バックアップコードが入力されていません。", count: 0 };
+    }
+
+    let parsed = null;
+    const trimmed = codeText.trim();
+
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch (e) {}
+    }
+
+    if (!parsed) {
+      try {
+        if (typeof atob !== 'undefined' && typeof TextDecoder !== 'undefined') {
+          const binStr = atob(trimmed);
+          const bytes = new Uint8Array(binStr.length);
+          for (let i = 0; i < binStr.length; i++) {
+            bytes[i] = binStr.charCodeAt(i);
+          }
+          const jsonStr = new TextDecoder().decode(bytes);
+          parsed = JSON.parse(jsonStr);
+        }
+      } catch (e) {}
+    }
+
+    if (!parsed) {
+      return { success: false, message: "無効なバックアップコードです。形式をご確認ください。", count: 0 };
+    }
+
+    return this.importBackupData(parsed);
+  }
+
+  static importBackupFromFile(file) {
+    return new Promise((resolve) => {
+      if (!file) {
+        resolve({ success: false, message: "ファイルが選択されていません。", count: 0 });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target.result;
+          const parsed = JSON.parse(content);
+          const res = StorageManager.importBackupData(parsed);
+          resolve(res);
+        } catch (err) {
+          resolve({ success: false, message: "JSONファイルの解析に失敗しました。破損している可能性があります。", count: 0 });
+        }
+      };
+      reader.onerror = () => {
+        resolve({ success: false, message: "ファイルの読み込みに失敗しました。", count: 0 });
+      };
+      reader.readAsText(file);
+    });
+  }
 }

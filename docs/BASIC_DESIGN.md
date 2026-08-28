@@ -1,13 +1,20 @@
 # 📐 システム基本設計書 (BASIC_DESIGN.md)
 
 - **システム名**: バーコードバトラー Web アプリケーション
-- **バージョン**: `v3.8.0` (Hybrid Barcode Scanner: Android Native + iOS ZXing Fallback)
-- **最終更新日**: 2026年8月16日
+- **バージョン**: `v4.4.0` (Data Backup & Restore: JSON File + Code Text Import/Export)
+- **最終更新日**: 2026年8月28日
 - **作成担当**: `software-engineer`
 
 ---
 
 ## 改定履歴 (Changelog)
+- **v4.4.0 (2026-08-28)**:
+  - 【新機能・アーキテクチャ拡張】データバックアップ＆リストアモジュール（`StorageManager` 拡張）を設計。
+    - `exportBackupData()` / `exportBackupJsonFile()` / `exportBackupCodeText()` によるJSONファイル保存およびテキストコピー出力。
+    - `validateBackupData()` によるスキーマ・型・件数上限バリデーション。
+    - `importBackupData()` / `importBackupFromFile()` / `importBackupFromCodeText()` による安全な完全上書き復元とマイグレーション。
+- **v4.3.0 (2026-08-24)**:
+  - 【UI改善】全128枚世界観背景付きTCGアート配備完了に伴う属性オーラ削除およびレアリティ枠演出一本化。
 - **v3.8.0 (2026-08-16)**:
   - 【新機能・互換性拡張】ハイブリッド・バーコードスキャンアーキテクチャ（`BarcodeDetector` ＋ `ZXing-JS`）を設計。
     - Android/PC Chrome等: `window.BarcodeDetector` によるネイティブハードウェア解析を最優先実行（Zero-Impact）。
@@ -152,6 +159,59 @@ interface DeckState {
   itemCard1: ItemCard | null;
   itemCard2: ItemCard | null;
   itemCard3: ItemCard | null;
+}
+```
+
+### 3.4 バックアップデータ構造 (`BackupPayload`)
+```typescript
+interface BackupPayload {
+  version: string;          // 例: "4.4.0"
+  appName: string;          // "barcode_battler"
+  exportedAt: string;       // ISO8601 タイムスタンプ
+  collection: (CharacterCard | ItemCard)[]; // 最大100枚
+  deck: DeckState;
+  settings?: {
+    graphicStyle?: string;
+  };
+}
+```
+
+---
+
+## 4. ストレージ＆データ管理アーキテクチャ (`StorageManager`)
+
+### 4.1 バックアップ＆リストア API 仕様
+```javascript
+export class StorageManager {
+  // --- 既存メソッド ---
+  static getCollection();
+  static saveToCollection(card);
+  static deleteFromCollection(cardId);
+  static getDeck();
+  static setDeckSlot(slotType, card);
+  static migrateCollectionData();
+
+  // --- バックアップ・リストア拡張メソッド (v4.4.0) ---
+  // 1. バックアップデータオブジェクト生成
+  static exportBackupData(): BackupPayload;
+
+  // 2. JSONファイルダウンロード実行
+  static exportBackupJsonFile(): void;
+
+  // 3. バックアップテキストコード(Base64)生成
+  static exportBackupCodeText(): string;
+
+  // 4. データバリデーション (スキーマ・型・件数検証)
+  static validateBackupData(data: any): { valid: boolean; error?: string };
+
+  // 5. データ上書き復元実行 ＋ マイグレーション
+  static importBackupData(backup: BackupPayload): { success: boolean; message: string; count: number };
+
+  // 6. JSONファイルからの読み込み＆復元
+  static importBackupFromFile(file: File): Promise<{ success: boolean; message: string; count: number }>;
+
+  // 7. テキストコードからのデコード＆復元
+  static importBackupFromCodeText(codeText: string): { success: boolean; message: string; count: number };
 }
 ```
 

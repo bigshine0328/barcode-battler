@@ -14,7 +14,7 @@ global.localStorage = new LocalStorageMock();
 
 import { runAllTests } from './unit-tests.js';
 
-console.log("=== Running Barcode Battler Unit Tests (v4.3.0) ===");
+console.log("=== Running Barcode Battler Unit Tests (v4.4.0) ===");
 const results = runAllTests();
 
 let passed = 0;
