@@ -1872,82 +1872,133 @@
     }
   }
 
+  let isDecoding = false;
+
   function scanBarcodeLoop() {
-    if (!scanVideo || scanVideo.readyState < 2) {
+    if (!scanVideo || scanVideo.readyState < 2 || isDecoding) {
       scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
       return;
     }
 
     // ①【Android / PC Chrome最優先パス】BarcodeDetector によるネイティブ超高速解析 (Zero-Impact)
     if ('BarcodeDetector' in window) {
+      isDecoding = true;
       try {
         const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code', 'code_128'] });
         detector.detect(scanVideo).then(barcodes => {
+          isDecoding = false;
           if (barcodes && barcodes.length > 0) {
             const raw = barcodes[0].rawValue;
             stopCamera();
             handleScanBarcode(raw);
           } else {
-            scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+            setTimeout(() => {
+              scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+            }, 80);
           }
         }).catch(() => {
-          scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+          isDecoding = false;
+          setTimeout(() => {
+            scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+          }, 100);
         });
       } catch (e) {
-        scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+        isDecoding = false;
+        setTimeout(() => {
+          scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+        }, 100);
       }
-      return; // Android はここで完了
+      return;
     }
 
     // ②【iPhone / iOS Safari専用フォールバックパス】ZXing-JS による高精度デコード
     if (window.ZXing) {
       if (!zxingReader) {
         try {
-          zxingReader = new window.ZXing.BrowserMultiFormatReader();
+          const hints = new Map();
+          const formats = [
+            window.ZXing.BarcodeFormat.EAN_13,
+            window.ZXing.BarcodeFormat.EAN_8,
+            window.ZXing.BarcodeFormat.QR_CODE,
+            window.ZXing.BarcodeFormat.CODE_128,
+            window.ZXing.BarcodeFormat.UPC_A,
+            window.ZXing.BarcodeFormat.UPC_E
+          ];
+          hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+          hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
+          zxingReader = new window.ZXing.BrowserMultiFormatReader(hints);
         } catch (e) {
-          console.warn("ZXing init failed:", e);
+          try {
+            zxingReader = new window.ZXing.BrowserMultiFormatReader();
+          } catch (err) {
+            console.warn("ZXing init failed:", err);
+          }
         }
       }
 
       if (zxingReader) {
-        // A. Video要素からのダイレクトデコード（公式推奨・最速）
-        zxingReader.decodeFromVideoElement(scanVideo).then(result => {
-          if (result && result.text) {
-            stopCamera();
-            handleScanBarcode(result.text);
-          } else {
-            scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-          }
-        }).catch(() => {
-          // B. Canvas 2D経由のフォールバック
-          if (scanCanvas && scanVideo.videoWidth > 0 && scanVideo.videoHeight > 0) {
-            try {
-              const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
-              scanCanvas.width = scanVideo.videoWidth;
-              scanCanvas.height = scanVideo.videoHeight;
-              ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
-              if (zxingReader.decodeFromCanvas) {
-                zxingReader.decodeFromCanvas(scanCanvas).then(res => {
-                  if (res && res.text) {
-                    stopCamera();
-                    handleScanBarcode(res.text);
-                  } else {
+        isDecoding = true;
+
+        // Canvas経由でのフレーム抽出＆デコード（iOS Safariで最も安定・排他安全）
+        if (scanCanvas && scanVideo.videoWidth > 0 && scanVideo.videoHeight > 0) {
+          try {
+            const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
+            scanCanvas.width = scanVideo.videoWidth;
+            scanCanvas.height = scanVideo.videoHeight;
+            ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+
+            if (typeof zxingReader.decodeFromCanvas === 'function') {
+              zxingReader.decodeFromCanvas(scanCanvas).then(res => {
+                isDecoding = false;
+                if (res && res.text) {
+                  stopCamera();
+                  handleScanBarcode(res.text);
+                } else {
+                  setTimeout(() => {
                     scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-                  }
-                }).catch(() => {
+                  }, 120);
+                }
+              }).catch(() => {
+                isDecoding = false;
+                setTimeout(() => {
                   scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-                });
-                return;
-              }
-            } catch (e) {}
+                }, 120);
+              });
+              return;
+            }
+          } catch (e) {
+            isDecoding = false;
           }
-          scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-        });
-        return;
+        }
+
+        // Direct Video Element Fallback
+        if (typeof zxingReader.decodeFromVideoElement === 'function') {
+          zxingReader.decodeFromVideoElement(scanVideo).then(result => {
+            isDecoding = false;
+            if (result && result.text) {
+              stopCamera();
+              handleScanBarcode(result.text);
+            } else {
+              setTimeout(() => {
+                scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+              }, 120);
+            }
+          }).catch(() => {
+            isDecoding = false;
+            setTimeout(() => {
+              scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+            }, 120);
+          });
+          return;
+        }
+
+        isDecoding = false;
       }
     }
 
-    scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+    setTimeout(() => {
+      scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
+    }, 150);
   }
 
   // iPhone/ブラウザ用: 写真撮影・画像ファイル選択による確実なバーコードスキャン
@@ -1972,16 +2023,53 @@
         } catch (e) {}
       }
 
-      // 2. iPhone / iOS ZXing
+      // 2. iPhone / iOS ZXing (Canvasリサイズ併用で高精度認識)
       if (window.ZXing) {
         try {
-          const reader = new window.ZXing.BrowserMultiFormatReader();
-          const res = await reader.decodeFromImageElement(img);
-          if (res && res.text) {
-            handleScanBarcode(res.text);
+          const hints = new Map();
+          const formats = [
+            window.ZXing.BarcodeFormat.EAN_13,
+            window.ZXing.BarcodeFormat.EAN_8,
+            window.ZXing.BarcodeFormat.QR_CODE,
+            window.ZXing.BarcodeFormat.CODE_128,
+            window.ZXing.BarcodeFormat.UPC_A,
+            window.ZXing.BarcodeFormat.UPC_E
+          ];
+          hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+          hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
+          const reader = new window.ZXing.BrowserMultiFormatReader(hints);
+
+          // 画像要素からの直接デコード
+          try {
+            const res = await reader.decodeFromImageElement(img);
+            if (res && res.text) {
+              handleScanBarcode(res.text);
+              return;
+            }
+          } catch(errDirect) {}
+
+          // Canvas経由でのデコード（リサイズ最適化）
+          const tempCanvas = document.createElement('canvas');
+          const maxDim = 1200;
+          let w = img.width || 800;
+          let h = img.height || 600;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+            else { w = Math.round((w * maxDim) / h); h = maxDim; }
+          }
+          tempCanvas.width = w;
+          tempCanvas.height = h;
+          const tempCtx = tempCanvas.getContext('2d');
+          tempCtx.drawImage(img, 0, 0, w, h);
+
+          const resCanvas = await reader.decodeFromCanvas(tempCanvas);
+          if (resCanvas && resCanvas.text) {
+            handleScanBarcode(resCanvas.text);
             return;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn("Image scan decode error:", e);
+        }
       }
 
       if (msg) msg.textContent = "バーコードが見つかりませんでした。別の写真を試すかコードを入力してください。";
