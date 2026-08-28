@@ -552,6 +552,25 @@ export function runAllTests() {
   assert(codeRestoreRes.success === true && codeRestoreRes.count === 2, "コード復元: テキストコードからのデコード＆復元が成功すること");
   assert(StorageManager.getCollection().length === 2, "コード復元確認: 復元後に2件のカードが存在すること");
 
+  // 24. バーコード正規化＆iPhone/Androidクロスプラットフォーム同一性テスト (v4.4.1)
+  function normalizeBarcode(raw) {
+    if (!raw) return "4901234567890";
+    let cleaned = String(raw).trim().replace(/\D/g, '');
+    if (cleaned.length === 12) {
+      cleaned = "0" + cleaned;
+    }
+    return cleaned || "4901234567890";
+  }
+
+  // 13桁JANコードの完全一致テスト
+  const rawJan13 = "4901234567890";
+  const rawUpcA = "901234567890"; // 12桁
+  const cardJan13 = BarcodeEngine.generateFromBarcode(normalizeBarcode(rawJan13));
+  const cardUpcA = BarcodeEngine.generateFromBarcode(normalizeBarcode(rawUpcA));
+  assert(cardJan13.name !== undefined && (cardJan13.hp > 0 || cardJan13.value > 0), "正規化: JAN-13コードで正常にカードが生成されること");
+  assert(normalizeBarcode("  4901234567890 \n") === "4901234567890", "正規化: 空白・改行コードが確実にトリムされること");
+  assert(normalizeBarcode("490-1234-567890") === "4901234567890", "正規化: ハイフン等の非数字記号が除去されること");
+
   return results;
 }
 

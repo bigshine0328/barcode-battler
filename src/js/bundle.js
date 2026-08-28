@@ -1764,9 +1764,20 @@
     modal.classList.add('active');
   }
 
+  function normalizeBarcode(raw) {
+    if (!raw) return "4901234567890";
+    let cleaned = String(raw).trim().replace(/\D/g, '');
+    // 12桁（UPC-A）として読み取られた場合、先頭に0を補完してEAN-13(13桁)に正規化
+    if (cleaned.length === 12) {
+      cleaned = "0" + cleaned;
+    }
+    return cleaned || "4901234567890";
+  }
+
   function handleScanBarcode(codeStr) {
     if (!codeStr) return;
-    const card = BarcodeEngine.generateFromBarcode(codeStr);
+    const normalizedCode = normalizeBarcode(codeStr);
+    const card = BarcodeEngine.generateFromBarcode(normalizedCode);
     appState.scannedCard = card;
 
     const resCard = document.getElementById('scan-result-card');
@@ -1818,40 +1829,57 @@
       return;
     }
 
+    stopCamera();
+
     if (scanVideo) {
+      scanVideo.muted = true;
+      scanVideo.playsInline = true;
       scanVideo.setAttribute('autoplay', 'true');
       scanVideo.setAttribute('playsinline', 'true');
       scanVideo.setAttribute('webkit-playsinline', 'true');
-      scanVideo.muted = true;
+      scanVideo.setAttribute('muted', 'true');
     }
 
-    const constraintsCandidates = [
-      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
-      { video: { facingMode: 'environment' } },
-      { video: true }
-    ];
-
-    let stream = null;
-    for (const constraints of constraintsCandidates) {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        if (stream) break;
-      } catch (e) {
-        console.warn("Camera constraint attempt failed:", constraints, e);
+    const constraints = {
+      audio: false,
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
       }
-    }
+    };
 
-    if (stream && scanVideo) {
-      scanVideo.srcObject = stream;
-      try {
-        await scanVideo.play();
-      } catch (e) {
-        console.warn("Video play exception:", e);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (stream && scanVideo) {
+        scanVideo.srcObject = stream;
+        scanVideo.onloadedmetadata = () => {
+          scanVideo.play().catch(e => console.warn("Video play exception:", e));
+        };
+        try {
+          await scanVideo.play();
+        } catch(e) {}
+
+        if (msg) msg.textContent = "カメラをバーコードに合わせてください...";
+        setTimeout(() => {
+          scanBarcodeLoop();
+        }, 150);
       }
-      if (msg) msg.textContent = "カメラをバーコードに合わせてください...";
-      scanBarcodeLoop();
-    } else {
-      if (msg) msg.textContent = "カメラの起動に失敗しました。下のテストコードをお試しください。";
+    } catch (e) {
+      console.warn("Camera constraint attempt failed, trying basic environment mode:", e);
+      try {
+        const streamFallback = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (streamFallback && scanVideo) {
+          scanVideo.srcObject = streamFallback;
+          await scanVideo.play();
+          if (msg) msg.textContent = "カメラをバーコードに合わせてください...";
+          setTimeout(() => {
+            scanBarcodeLoop();
+          }, 150);
+        }
+      } catch (e2) {
+        if (msg) msg.textContent = "カメラの起動に失敗しました。下のテストコードまたは写真撮影をお試しください。";
+      }
     }
   }
 
@@ -1860,9 +1888,6 @@
       cancelAnimationFrame(scanAnimationId);
       scanAnimationId = null;
     }
-    if (zxingReader) {
-      try { zxingReader.reset(); } catch(e){}
-    }
     if (scanVideo && scanVideo.srcObject) {
       try {
         const tracks = scanVideo.srcObject.getTracks();
@@ -1870,6 +1895,7 @@
       } catch (e) {}
       scanVideo.srcObject = null;
     }
+    isDecoding = false;
   }
 
   let isDecoding = false;
@@ -1911,7 +1937,7 @@
       return;
     }
 
-    // ②【iPhone / iOS Safari専用フォールバックパス】ZXing-JS による高精度デコード
+    // ②【iPhone / iOS Safari専用フォールバックパス】ZXing-JS による完全非干渉キャンバス解析
     if (window.ZXing) {
       if (!zxingReader) {
         try {
@@ -1936,63 +1962,36 @@
         }
       }
 
-      if (zxingReader) {
+      if (zxingReader && scanCanvas && scanVideo.videoWidth > 0 && scanVideo.videoHeight > 0) {
         isDecoding = true;
+        try {
+          const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
+          scanCanvas.width = scanVideo.videoWidth;
+          scanCanvas.height = scanVideo.videoHeight;
+          ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
 
-        // Canvas経由でのフレーム抽出＆デコード（iOS Safariで最も安定・排他安全）
-        if (scanCanvas && scanVideo.videoWidth > 0 && scanVideo.videoHeight > 0) {
-          try {
-            const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
-            scanCanvas.width = scanVideo.videoWidth;
-            scanCanvas.height = scanVideo.videoHeight;
-            ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
-
-            if (typeof zxingReader.decodeFromCanvas === 'function') {
-              zxingReader.decodeFromCanvas(scanCanvas).then(res => {
-                isDecoding = false;
-                if (res && res.text) {
-                  stopCamera();
-                  handleScanBarcode(res.text);
-                } else {
-                  setTimeout(() => {
-                    scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-                  }, 120);
-                }
-              }).catch(() => {
-                isDecoding = false;
+          if (typeof zxingReader.decodeFromCanvas === 'function') {
+            zxingReader.decodeFromCanvas(scanCanvas).then(res => {
+              isDecoding = false;
+              if (res && res.text) {
+                stopCamera();
+                handleScanBarcode(res.text);
+              } else {
                 setTimeout(() => {
                   scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
                 }, 120);
-              });
-              return;
-            }
-          } catch (e) {
-            isDecoding = false;
-          }
-        }
-
-        // Direct Video Element Fallback
-        if (typeof zxingReader.decodeFromVideoElement === 'function') {
-          zxingReader.decodeFromVideoElement(scanVideo).then(result => {
-            isDecoding = false;
-            if (result && result.text) {
-              stopCamera();
-              handleScanBarcode(result.text);
-            } else {
+              }
+            }).catch(() => {
+              isDecoding = false;
               setTimeout(() => {
                 scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
               }, 120);
-            }
-          }).catch(() => {
-            isDecoding = false;
-            setTimeout(() => {
-              scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-            }, 120);
-          });
-          return;
+            });
+            return;
+          }
+        } catch (e) {
+          isDecoding = false;
         }
-
-        isDecoding = false;
       }
     }
 

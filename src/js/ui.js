@@ -234,8 +234,14 @@ export class UIController {
     });
   }
 
-  processScanResult(barcodeStr) {
-    this.scannedTempCard = BarcodeEngine.generateFromBarcode(barcodeStr);
+  processScanResult(code) {
+    if (!code) return;
+    let cleaned = String(code).trim().replace(/\D/g, '');
+    if (cleaned.length === 12) {
+      cleaned = "0" + cleaned;
+    }
+    const finalCode = cleaned || "4901234567890";
+    this.scannedTempCard = BarcodeEngine.generateFromBarcode(finalCode);
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
     const resultBox = document.getElementById('scan-result-card');
