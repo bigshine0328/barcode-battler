@@ -1916,6 +1916,30 @@
         }
         Quagga.start();
         isQuaggaActive = true;
+
+        // iOS Safari で確実にビデオフレームを画面描画するための属性・スタイル強制適用
+        setTimeout(() => {
+          const qVideo = cameraBox.querySelector('video');
+          if (qVideo) {
+            qVideo.playsInline = true;
+            qVideo.muted = true;
+            qVideo.autoplay = true;
+            qVideo.setAttribute('playsinline', 'true');
+            qVideo.setAttribute('webkit-playsinline', 'true');
+            qVideo.setAttribute('muted', 'true');
+            qVideo.setAttribute('autoplay', 'true');
+            qVideo.style.width = '100%';
+            qVideo.style.height = '100%';
+            qVideo.style.objectFit = 'cover';
+            qVideo.style.position = 'absolute';
+            qVideo.style.top = '0';
+            qVideo.style.left = '0';
+            qVideo.style.zIndex = '2';
+            qVideo.style.display = 'block';
+            qVideo.play().catch(e => {});
+          }
+        }, 50);
+
         if (msg) msg.textContent = "バーコードを枠に合わせてください...";
       });
 
