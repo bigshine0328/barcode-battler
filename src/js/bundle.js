@@ -1817,70 +1817,124 @@
   }
 
   // ==========================================
-  // カメラ堅牢起動 (Robust Hybrid Camera Engine: Android Native + iOS Fallback)
+  // カメラ堅牢起動 (Hybrid Engine: Android BarcodeDetector + iOS Quagga2)
   // ==========================================
+  let isQuaggaActive = false;
+
   async function startCamera() {
-    scanVideo = document.getElementById('scan-video');
-    scanCanvas = document.getElementById('scan-canvas');
-    const msg = document.getElementById('camera-status-msg');
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      if (msg) msg.textContent = "お使いのブラウザはカメラに対応していません。テストボタンをご利用ください。";
-      return;
-    }
-
     stopCamera();
 
-    if (scanVideo) {
-      scanVideo.muted = true;
-      scanVideo.playsInline = true;
-      scanVideo.setAttribute('autoplay', 'true');
-      scanVideo.setAttribute('playsinline', 'true');
-      scanVideo.setAttribute('webkit-playsinline', 'true');
-      scanVideo.setAttribute('muted', 'true');
-    }
+    const msg = document.getElementById('camera-status-msg');
+    const cameraBox = document.querySelector('.camera-box');
+    scanVideo = document.getElementById('scan-video');
+    scanCanvas = document.getElementById('scan-canvas');
 
-    const constraints = {
-      audio: false,
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
+    if (msg) msg.textContent = "カメラを起動しています...";
+
+    // ①【Android / PC Chrome最優先パス】BarcodeDetector によるネイティブ超高速解析
+    if ('BarcodeDetector' in window) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (msg) msg.textContent = "お使いのブラウザはカメラに対応していません。テストボタンをご利用ください。";
+        return;
       }
-    };
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (stream && scanVideo) {
-        scanVideo.srcObject = stream;
-        scanVideo.onloadedmetadata = () => {
-          scanVideo.play().catch(e => console.warn("Video play exception:", e));
-        };
-        try {
-          await scanVideo.play();
-        } catch(e) {}
-
-        if (msg) msg.textContent = "カメラをバーコードに合わせてください...";
-        setTimeout(() => {
-          scanBarcodeLoop();
-        }, 150);
+      if (scanVideo) {
+        scanVideo.style.display = 'block';
+        scanVideo.muted = true;
+        scanVideo.playsInline = true;
+        scanVideo.setAttribute('autoplay', 'true');
+        scanVideo.setAttribute('playsinline', 'true');
+        scanVideo.setAttribute('webkit-playsinline', 'true');
+        scanVideo.setAttribute('muted', 'true');
       }
-    } catch (e) {
-      console.warn("Camera constraint attempt failed, trying basic environment mode:", e);
+
+      const constraints = {
+        audio: false,
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+
       try {
-        const streamFallback = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        if (streamFallback && scanVideo) {
-          scanVideo.srcObject = streamFallback;
-          await scanVideo.play();
-          if (msg) msg.textContent = "カメラをバーコードに合わせてください...";
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (stream && scanVideo) {
+          scanVideo.srcObject = stream;
+          scanVideo.onloadedmetadata = () => {
+            scanVideo.play().catch(e => console.warn("Video play error:", e));
+          };
+          try { await scanVideo.play(); } catch(e) {}
+          if (msg) msg.textContent = "バーコードを枠に合わせてください...";
           setTimeout(() => {
             scanBarcodeLoop();
           }, 150);
+          return;
         }
-      } catch (e2) {
-        if (msg) msg.textContent = "カメラの起動に失敗しました。下のテストコードまたは写真撮影をお試しください。";
+      } catch (e) {
+        console.warn("Native camera start failed, trying Quagga fallback:", e);
       }
     }
+
+    // ②【iPhone / iOS Safari専用パス】Quagga2 による 1Dバーコード（JAN-13/JAN-8）高精度解析
+    if (typeof Quagga !== 'undefined' && cameraBox) {
+      if (scanVideo) scanVideo.style.display = 'none'; // Quaggaが内部で専用videoを生成するため既存videoは非表示
+      if (scanCanvas) scanCanvas.style.display = 'none';
+
+      Quagga.init({
+        inputStream: {
+          name: "LiveStream",
+          type: "LiveStream",
+          target: cameraBox,
+          constraints: {
+            facingMode: "environment",
+            width: { min: 640, ideal: 1280, max: 1920 },
+            height: { min: 480, ideal: 720, max: 1080 }
+          }
+        },
+        locator: {
+          patchSize: "medium",
+          halfSample: true
+        },
+        numOfWorkers: (navigator.hardwareConcurrency ? Math.min(4, navigator.hardwareConcurrency) : 2),
+        frequency: 10,
+        decoder: {
+          readers: [
+            "ean_reader",
+            "ean_8_reader",
+            "code_128_reader",
+            "upc_reader",
+            "upc_e_reader"
+          ]
+        },
+        locate: true
+      }, function(err) {
+        if (err) {
+          console.error("Quagga init failed:", err);
+          if (msg) msg.textContent = "カメラの起動に失敗しました。下のテストコードまたは写真撮影をお試しください。";
+          return;
+        }
+        Quagga.start();
+        isQuaggaActive = true;
+        if (msg) msg.textContent = "バーコードを枠に合わせてください...";
+      });
+
+      Quagga.offDetected(handleQuaggaDetected);
+      Quagga.onDetected(handleQuaggaDetected);
+      return;
+    }
+
+    if (msg) msg.textContent = "カメラライブラリの読み込みに失敗しました。下のテストボタンをご利用ください。";
+  }
+
+  function handleQuaggaDetected(result) {
+    if (!result || !result.codeResult || !result.codeResult.code) return;
+    const rawCode = result.codeResult.code;
+    const normalized = normalizeBarcode(rawCode);
+    if (!normalized) return;
+
+    stopCamera();
+    handleScanBarcode(normalized);
   }
 
   function stopCamera() {
@@ -1895,6 +1949,27 @@
       } catch (e) {}
       scanVideo.srcObject = null;
     }
+    if (isQuaggaActive && typeof Quagga !== 'undefined') {
+      try {
+        Quagga.offDetected(handleQuaggaDetected);
+        Quagga.stop();
+      } catch (e) {}
+      isQuaggaActive = false;
+
+      // Quaggaが生成した余計なDOM要素をクリーンアップ
+      const cameraBox = document.querySelector('.camera-box');
+      if (cameraBox) {
+        const extraVideos = cameraBox.querySelectorAll('video:not(#scan-video)');
+        extraVideos.forEach(v => {
+          try {
+            if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+          } catch(e) {}
+          v.remove();
+        });
+        const extraCanvases = cameraBox.querySelectorAll('canvas:not(#scan-canvas)');
+        extraCanvases.forEach(c => c.remove());
+      }
+    }
     isDecoding = false;
   }
 
@@ -1906,7 +1981,7 @@
       return;
     }
 
-    // ①【Android / PC Chrome最優先パス】BarcodeDetector によるネイティブ超高速解析 (Zero-Impact)
+    // Android/PC Chrome BarcodeDetector ループ
     if ('BarcodeDetector' in window) {
       isDecoding = true;
       try {
@@ -1937,73 +2012,6 @@
       return;
     }
 
-    // ②【iPhone / iOS Safari専用フォールバックパス】ZXing-JS による完全非干渉キャンバス解析
-    if (window.ZXing) {
-      if (!zxingReader) {
-        try {
-          const hints = new Map();
-          const formats = [
-            window.ZXing.BarcodeFormat.EAN_13,
-            window.ZXing.BarcodeFormat.EAN_8,
-            window.ZXing.BarcodeFormat.QR_CODE,
-            window.ZXing.BarcodeFormat.CODE_128,
-            window.ZXing.BarcodeFormat.UPC_A,
-            window.ZXing.BarcodeFormat.UPC_E
-          ];
-          hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-          hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
-          zxingReader = new window.ZXing.BrowserMultiFormatReader(hints);
-        } catch (e) {
-          try {
-            zxingReader = new window.ZXing.BrowserMultiFormatReader();
-          } catch (err) {
-            console.warn("ZXing init failed:", err);
-          }
-        }
-      }
-
-      if (zxingReader && scanCanvas && scanVideo.videoWidth > 0 && scanVideo.videoHeight > 0) {
-        isDecoding = true;
-        try {
-          // 高速かつ正確なバーコード認識のため、キャンバス解像度を最適幅（640px）にリサイズ
-          const maxDim = 640;
-          let w = scanVideo.videoWidth;
-          let h = scanVideo.videoHeight;
-          if (w > maxDim) {
-            h = Math.round((h * maxDim) / w);
-            w = maxDim;
-          }
-          scanCanvas.width = w;
-          scanCanvas.height = h;
-
-          const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
-          ctx.drawImage(scanVideo, 0, 0, w, h);
-
-          if (typeof zxingReader.decodeFromCanvas === 'function') {
-            zxingReader.decodeFromCanvas(scanCanvas).then(res => {
-              isDecoding = false;
-              if (res && res.text) {
-                stopCamera();
-                handleScanBarcode(res.text);
-              } else {
-                setTimeout(() => {
-                  scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-                }, 100);
-              }
-            }).catch(() => {
-              isDecoding = false;
-              setTimeout(() => {
-                scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
-              }, 100);
-            });
-            return;
-          }
-        } catch (e) {
-          isDecoding = false;
-        }
-      }
-    }
-
     setTimeout(() => {
       scanAnimationId = requestAnimationFrame(scanBarcodeLoop);
     }, 150);
@@ -2017,73 +2025,56 @@
     const msg = document.getElementById('camera-status-msg');
     if (msg) msg.textContent = "画像を解析中...";
 
-    const img = new Image();
-    img.onload = async () => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUrl = e.target.result;
+
       // 1. Android/PC BarcodeDetector
       if ('BarcodeDetector' in window) {
-        try {
-          const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code', 'code_128'] });
-          const barcodes = await detector.detect(img);
-          if (barcodes && barcodes.length > 0) {
-            handleScanBarcode(barcodes[0].rawValue);
-            return;
-          }
-        } catch (e) {}
-      }
-
-      // 2. iPhone / iOS ZXing (Canvasリサイズ併用で高精度認識)
-      if (window.ZXing) {
-        try {
-          const hints = new Map();
-          const formats = [
-            window.ZXing.BarcodeFormat.EAN_13,
-            window.ZXing.BarcodeFormat.EAN_8,
-            window.ZXing.BarcodeFormat.QR_CODE,
-            window.ZXing.BarcodeFormat.CODE_128,
-            window.ZXing.BarcodeFormat.UPC_A,
-            window.ZXing.BarcodeFormat.UPC_E
-          ];
-          hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-          hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
-          const reader = new window.ZXing.BrowserMultiFormatReader(hints);
-
-          // 画像要素からの直接デコード
+        const img = new Image();
+        img.onload = async () => {
           try {
-            const res = await reader.decodeFromImageElement(img);
-            if (res && res.text) {
-              handleScanBarcode(res.text);
+            const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code', 'code_128'] });
+            const barcodes = await detector.detect(img);
+            if (barcodes && barcodes.length > 0) {
+              handleScanBarcode(barcodes[0].rawValue);
               return;
             }
-          } catch(errDirect) {}
-
-          // Canvas経由でのデコード（リサイズ最適化）
-          const tempCanvas = document.createElement('canvas');
-          const maxDim = 1200;
-          let w = img.width || 800;
-          let h = img.height || 600;
-          if (w > maxDim || h > maxDim) {
-            if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
-            else { w = Math.round((w * maxDim) / h); h = maxDim; }
-          }
-          tempCanvas.width = w;
-          tempCanvas.height = h;
-          const tempCtx = tempCanvas.getContext('2d');
-          tempCtx.drawImage(img, 0, 0, w, h);
-
-          const resCanvas = await reader.decodeFromCanvas(tempCanvas);
-          if (resCanvas && resCanvas.text) {
-            handleScanBarcode(resCanvas.text);
-            return;
-          }
-        } catch (e) {
-          console.warn("Image scan decode error:", e);
-        }
+          } catch (err) {}
+          decodeWithQuagga(dataUrl);
+        };
+        img.src = dataUrl;
+        return;
       }
 
-      if (msg) msg.textContent = "バーコードが見つかりませんでした。別の写真を試すかコードを入力してください。";
+      // 2. iPhone / iOS Quagga2 decodeSingle
+      decodeWithQuagga(dataUrl);
     };
+    reader.readAsDataURL(file);
 
-    img.src = URL.createObjectURL(file);
+    function decodeWithQuagga(src) {
+      if (typeof Quagga !== 'undefined') {
+        Quagga.decodeSingle({
+          src: src,
+          numOfWorkers: 0,
+          inputStream: {
+            size: 800
+          },
+          decoder: {
+            readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader", "upc_e_reader"]
+          },
+          locate: true
+        }, function(result) {
+          if (result && result.codeResult && result.codeResult.code) {
+            handleScanBarcode(result.codeResult.code);
+          } else {
+            if (msg) msg.textContent = "バーコードが見つかりませんでした。別の写真を試すかコードを入力してください。";
+          }
+        });
+      } else {
+        if (msg) msg.textContent = "バーコードが見つかりませんでした。別の写真を試すかコードを入力してください。";
+      }
+    }
   }
 
   // ==========================================

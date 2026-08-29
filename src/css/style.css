@@ -581,6 +581,20 @@ h1.logo {
   box-sizing: border-box;
 }
 
+.camera-box video,
+.camera-box video.videoCamera {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.camera-box canvas.drawingBuffer {
+  display: none !important;
+}
+
 .scan-laser {
   position: absolute;
   top: 0;
@@ -590,6 +604,8 @@ h1.logo {
   background: var(--primary-pink);
   box-shadow: 0 0 15px var(--primary-pink);
   animation: scanAnim 2s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 5;
 }
 
 @keyframes scanAnim {

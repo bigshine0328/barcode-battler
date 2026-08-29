@@ -463,27 +463,27 @@ export function runAllTests() {
   assert(generatedTeam1p.length === 1, "ランダム自動選抜: 1P対戦で1体が選出されること");
   assert(["char_a", "char_b", "char_c", "char_d"].includes(generatedTeam1p[0].id), "ランダム自動選抜: 図鑑内のキャラから1体が選ばれること");
 
-  // 22. ハイブリッドスキャナー分岐安全性テスト (v3.8.0)
+  // 22. ハイブリッドスキャナー分岐安全性テスト (v4.4.2)
   // パターンA: Android (BarcodeDetector利用可能時) -> ネイティブパスが最優先実行されること
   let executedEngine = null;
-  function mockScanLoop(hasNativeDetector, hasZXing) {
+  function mockScanLoop(hasNativeDetector, hasQuagga) {
     if (hasNativeDetector) {
       executedEngine = 'native_barcode_detector';
       return;
     }
-    if (hasZXing) {
-      executedEngine = 'zxing_fallback';
+    if (hasQuagga) {
+      executedEngine = 'quagga2_fallback';
       return;
     }
     executedEngine = 'none';
   }
 
   mockScanLoop(true, true);
-  assert(executedEngine === 'native_barcode_detector', "ハイブリッドスキャナー: BarcodeDetector存在時はAndroidネイティブパスが最優先されZXingは実行されないこと (Zero-Impact)");
+  assert(executedEngine === 'native_barcode_detector', "ハイブリッドスキャナー: BarcodeDetector存在時はAndroidネイティブパスが最優先されQuaggaは実行されないこと (Zero-Impact)");
 
-  // パターンB: iPhone / iOS Safari (BarcodeDetector非対応時) -> ZXingフォールバックが確実に起動すること
+  // パターンB: iPhone / iOS Safari (BarcodeDetector非対応時) -> Quagga2フォールバックが確実に起動すること
   mockScanLoop(false, true);
-  assert(executedEngine === 'zxing_fallback', "ハイブリッドスキャナー: BarcodeDetector非対応時はiOSフォールバック(ZXing)が確実に実行されること");
+  assert(executedEngine === 'quagga2_fallback', "ハイブリッドスキャナー: BarcodeDetector非対応時はiOSフォールバック(Quagga2)が確実に実行されること");
 
   // 23. データバックアップ＆リストア機能テスト (v4.4.0)
   localStorage.clear();
