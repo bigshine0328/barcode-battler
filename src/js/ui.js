@@ -91,7 +91,7 @@ export class UIController {
   renderHome() {
     const collection = StorageManager.getCollection();
     const countBadge = document.getElementById('home-count-badge');
-    if (countBadge) countBadge.textContent = `しょじ ${collection.length}/100`;
+    if (countBadge) countBadge.textContent = `所持 ${collection.length}/100`;
 
     const showcase = document.getElementById('home-showcase');
     const deck = StorageManager.getDeck();
@@ -341,7 +341,7 @@ export class UIController {
 
     const collection = StorageManager.getCollection();
     const colCountBadge = document.getElementById('collection-count-badge');
-    if (colCountBadge) colCountBadge.textContent = `しょじ ${collection.length}/100`;
+    if (colCountBadge) colCountBadge.textContent = `所持 ${collection.length}/100`;
 
     grid.innerHTML = "";
 

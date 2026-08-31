@@ -1528,11 +1528,11 @@
 
     const countBadge = document.getElementById('home-count-badge');
     if (countBadge) {
-      countBadge.textContent = `しょじ ${collection.length}/100`;
+      countBadge.textContent = `所持 ${collection.length}/100`;
     }
     const colCountBadge = document.getElementById('collection-count-badge');
     if (colCountBadge) {
-      colCountBadge.textContent = `しょじ ${collection.length}/100`;
+      colCountBadge.textContent = `所持 ${collection.length}/100`;
     }
 
     const showcase = document.getElementById('home-showcase');
@@ -1573,11 +1573,11 @@
     const collection = StorageManager.getCollection();
     const colCountBadge = document.getElementById('collection-count-badge');
     if (colCountBadge) {
-      colCountBadge.textContent = `しょじ ${collection.length}/100`;
+      colCountBadge.textContent = `所持 ${collection.length}/100`;
     }
     const homeCountBadge = document.getElementById('home-count-badge');
     if (homeCountBadge) {
-      homeCountBadge.textContent = `しょじ ${collection.length}/100`;
+      homeCountBadge.textContent = `所持 ${collection.length}/100`;
     }
 
     const deck = StorageManager.getDeck();
@@ -3049,7 +3049,7 @@
             openStorageLimitModal(appState.scannedCard);
           } else {
             StorageManager.saveToCollection(appState.scannedCard);
-            alert(`「${appState.scannedCard.name}」を ずかんに ほぞんしました！`);
+            alert(`「${appState.scannedCard.name}」を図鑑に保存しました！`);
             switchScreen('SCR-04');
           }
         }
@@ -3063,7 +3063,7 @@
         if (selectedDeleteCardId && appState.scannedCard) {
           StorageManager.replaceCardInCollection(selectedDeleteCardId, appState.scannedCard);
           document.getElementById('storage-limit-modal')?.classList.remove('active');
-          alert(`入れ替えて「${appState.scannedCard.name}」を ずかんに ほぞんしました！`);
+          alert(`入れ替えて「${appState.scannedCard.name}」を図鑑に保存しました！`);
           switchScreen('SCR-04');
         }
       });

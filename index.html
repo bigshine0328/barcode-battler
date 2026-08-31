@@ -6,11 +6,11 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>バーコードバトラー (v4.4.2)</title>
+  <title>バーコードバトラー (v4.5.0)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="src/css/style.css?v=4.4.2-quagga-scan-fix">
+  <link rel="stylesheet" href="src/css/style.css?v=4.5.0-ui-refinement">
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <!-- 1Dバーコード（JAN-13 / JAN-8 / EAN）専用 高精度スキャンエンジン Quagga2 (iOS Safari / iPhone 完全対応) -->
   <script src="https://unpkg.com/@ericblade/quagga2@1.7.4/dist/quagga.min.js"></script>
@@ -26,10 +26,10 @@
       <header>
         <div>
           <h1 class="logo">⚡ バーコードバトラー</h1>
-          <span class="version-tag">v4.4.2</span>
+          <span class="version-tag">v4.5.0</span>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <div id="home-count-badge" class="counter-badge">しょじ 0/100</div>
+          <div id="home-count-badge" class="counter-badge">所持 0/100</div>
           <button id="btn-open-settings" style="background: rgba(255,255,255,0.1); border: 1px solid var(--secondary-cyan); border-radius: 50%; width: 32px; height: 32px; font-size: 1rem; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="データ管理・バックアップ">⚙️</button>
         </div>
       </header>
@@ -42,10 +42,10 @@
         <div style="color: var(--text-muted);">バーコードを スキャンして<br>キャラを ゲットしよう！</div>
       </div>
 
-      <button id="btn-nav-scan" class="btn btn-primary" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-02');">📷 バーコードをすきゃん！</button>
+      <button id="btn-nav-scan" class="btn btn-primary" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-02');">📷 バーコードをスキャン</button>
       <div class="btn-group">
-        <button id="btn-nav-deck" class="btn btn-secondary" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-04');">📖 ずかん・デッキへんせい</button>
-        <button id="btn-nav-battle" class="btn btn-gold" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-05');">⚔️ たいせんロビー</button>
+        <button id="btn-nav-deck" class="btn btn-secondary" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-04');">📖 図鑑・デッキ編成</button>
+        <button id="btn-nav-battle" class="btn btn-gold" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-05');">⚔️ 対戦ロビー</button>
       </div>
     </section>
 
@@ -76,17 +76,10 @@
         </label>
       </div>
 
-      <div class="demo-barcode-section">
-        <div style="font-size: 0.82rem; font-weight: 800;">🧪 テスト用バーコード（カメラがない環境用）</div>
-        <div class="demo-btn-grid" style="grid-template-columns: 1fr 1fr 1fr;">
-          <button class="demo-btn btn-demo-barcode" data-code="49000001207" style="font-size:0.75rem;">🔥 火ドラゴン</button>
-          <button class="demo-btn btn-demo-barcode" data-code="49000001018" style="font-size:0.75rem;">💧 水ドラゴン</button>
-          <button class="demo-btn btn-demo-barcode" data-code="49000001135" style="font-size:0.75rem;">🌲 木ドラゴン</button>
-        </div>
-
-        <div style="margin-top: 8px; display: flex; gap: 6px;">
+      <div class="demo-barcode-section" style="margin-top: 10px;">
+        <div style="display: flex; gap: 6px;">
           <input type="text" id="input-manual-barcode" class="memo-input" placeholder="JANコード直接入力 (例: 4901234...)" style="margin:0; font-size:0.82rem;">
-          <button id="btn-manual-scan" class="btn btn-secondary" style="width: auto; min-height:42px; margin:0; font-size:0.88rem;">けってい</button>
+          <button id="btn-manual-scan" class="btn btn-secondary" style="width: auto; min-height:42px; margin:0; font-size:0.88rem;">決定</button>
         </div>
       </div>
     </section>
@@ -94,14 +87,14 @@
     <!-- SCR-03: スキャン結果画面 -->
     <section id="SCR-03" class="screen">
       <header>
-        <h1 class="logo">✨ スキャンせいか</h1>
+        <h1 class="logo">✨ スキャン結果</h1>
       </header>
 
       <div id="scan-result-card" class="char-showcase"></div>
 
       <input type="text" id="scanned-memo-input" class="memo-input" placeholder="📝 商品名やメモを入力（例: ポテトチップス）">
 
-      <button id="btn-save-scanned" class="btn btn-primary">📖 ずかんに ほぞんする</button>
+      <button id="btn-save-scanned" class="btn btn-primary">📖 図鑑に保存する</button>
       <button class="btn btn-dark btn-back-home" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-01');">🏠 ホームへ もどる</button>
     </section>
 
@@ -110,15 +103,15 @@
       <header>
         <div style="display: flex; align-items: center; gap: 8px;">
           <button class="btn-back-home" onclick="if(window.appSwitchScreen) window.appSwitchScreen('SCR-01');" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">← もどる</button>
-          <h1 class="logo" style="font-size:1.1rem;">📖 ずかん・デッキ</h1>
+          <h1 class="logo" style="font-size:1.1rem;">📖 図鑑・デッキ</h1>
         </div>
-        <div id="collection-count-badge" class="counter-badge">しょじ 0/100</div>
+        <div id="collection-count-badge" class="counter-badge">所持 0/100</div>
       </header>
 
       <!-- メインタブ切替 -->
       <div style="display: flex; gap: 6px; margin: 8px 0 4px 0;">
-        <button id="tab-btn-collection" class="tab-btn active" onclick="if(window.appSelectTab) window.appSelectTab('col');">📖 所持ずかん</button>
-        <button id="tab-btn-deck" class="tab-btn" onclick="if(window.appSelectTab) window.appSelectTab('deck');">⚔️ デッキへんせい</button>
+        <button id="tab-btn-collection" class="tab-btn active" onclick="if(window.appSelectTab) window.appSelectTab('col');">📖 所持図鑑</button>
+        <button id="tab-btn-deck" class="tab-btn" onclick="if(window.appSelectTab) window.appSelectTab('deck');">⚔️ デッキ編成</button>
       </div>
 
       <!-- ずかんビュー (横スクロールゼロ・縦スクロール完全対応 & 全能力値常時表示) -->
@@ -193,27 +186,27 @@
         </div>
 
         <button id="btn-create-room" class="btn btn-primary" onclick="if(window.appCreateRoom) window.appCreateRoom();" style="min-height: 52px; margin-bottom: 8px;">
-          🏠 へやをつくる (コードはっこう)
+          🏠 対戦ルーム作成
         </button>
 
-        <div style="background: var(--surface-color); padding: 10px; border-radius: 14px; border: 1px solid #2e3558;">
-          <div style="font-weight: 800; font-size: 0.82rem; margin-bottom: 4px;">🔑 へやにはいる</div>
+        <div style="background: var(--surface-color); padding: 10px; border-radius: 14px; border-line: 1px solid #2e3558; border: 1px solid #2e3558;">
+          <div style="font-weight: 800; font-size: 0.82rem; margin-bottom: 4px;">🔑 対戦ルームに入る</div>
           <input type="number" id="input-guest-code" class="memo-input" placeholder="4けたのコードを入力 (例: 7821)">
-          <button id="btn-join-room" class="btn btn-secondary" onclick="if(window.appJoinRoom) window.appJoinRoom();" style="margin:0;">さんかする</button>
+          <button id="btn-join-room" class="btn btn-secondary" onclick="if(window.appJoinRoom) window.appJoinRoom();" style="margin:0;">参加する</button>
         </div>
 
         <div style="margin-top: 14px; text-align: center;">
-          <button id="btn-cpu-battle" class="btn btn-gold" onclick="if(window.appStartCpuBattle) window.appStartCpuBattle();">🤖 ひとりで CPU対戦テスト</button>
+          <button id="btn-cpu-battle" class="btn btn-gold" onclick="if(window.appStartCpuBattle) window.appStartCpuBattle();">🤖 CPUと対戦</button>
         </div>
       </div>
 
       <div id="lobby-host-wait-view" style="display: none; text-align: center; margin-top: 20px;">
-        <div style="font-size: 0.82rem; color: var(--text-muted);">友達に このコードを おしえよう！</div>
+        <div style="font-size: 0.82rem; color: var(--text-muted);">友達にこのコードを教えよう！</div>
         <div id="host-room-code" style="font-family: var(--font-arcade); font-size: 2.6rem; color: var(--accent-gold); margin: 10px 0; letter-spacing: 4px;">
           ----
         </div>
         <div style="color: var(--secondary-cyan); font-weight: 800; font-size: 0.82rem;">
-          🌀 あいてのさんかを まっています...
+          🌀 相手の参加を待っています...
         </div>
         <button id="btn-cancel-host" class="btn btn-dark" onclick="if(window.appCancelHost) window.appCancelHost();" style="margin-top: 14px;">キャンセルして もどる</button>
       </div>
@@ -394,12 +387,12 @@
 
     <!-- 全画面共通フッター -->
     <div style="position: absolute; bottom: 4px; left: 0; width: 100%; text-align: center; font-size: 0.70rem; color: rgba(255,255,255,0.4); font-family: var(--font-arcade); pointer-events: none; z-index: 10;">
-      バーコードバトラー v4.4.2
+      バーコードバトラー v4.5.0
     </div>
 
   </div>
 
   <!-- スクリプト統合読み込み -->
-  <script src="src/js/bundle.js?v=4.4.2-quagga-scan-fix"></script>
+  <script src="src/js/bundle.js?v=4.5.0-ui-refinement"></script>
 </body>
 </html>
